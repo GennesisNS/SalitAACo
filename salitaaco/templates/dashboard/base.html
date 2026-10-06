@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{% block title %}SalitAACo - Filipino AAC{% endblock %}</title>
+    {% block page_css %}<link rel="stylesheet" href="{% static 'css/index.css' %}" />{% endblock %}
+    {% include "components/head_scripts.html" %}
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    {% include "components/toasts.html" %}
+
+    <div class="dashboard">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebarBrand">SalitAACo <small>Filipino AAC</small></div>
+
+        <nav>
+          {% for category in navigation_items %}
+          <div class="sidebarSection">{{ category.name }}</div>
+          {% for item in category.items %}
+          <a class="sidebarItem {% if item.active %}active{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>
+            <span aria-hidden="true">{{ item.icon|safe }}</span> {{ item.name }}
+          </a>
+          {% endfor %}
+          {% endfor %}
+        </nav>
+
+        <div class="sidebarUser">
+          <span class="sidebarAvatar">
+            {% if current_profile.has_avatar %}
+            <img src="{% url 'view_avatar' %}?v={{ current_profile.updated_at|date:'U' }}" alt="avatar" />
+            {% else %}👤{% endif %}
+          </span>
+          <span class="name">{{ current_profile.display_name }}</span>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="linkBtn" type="submit">Log out</button>
+          </form>
+        </div>
+      </aside>
+      <div class="sidebarBackdrop" id="sidebarBackdrop"></div>
+
+      <div class="dashboardContent">
+        <div class="mobileTopbar">
+          <button class="menuBtn" id="menuBtn" type="button" aria-label="Buksan ang menu">☰</button>
+          SalitAACo
+        </div>
+
+        {% block page_header %}{% endblock %}
+        <main>
+          {% block main %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

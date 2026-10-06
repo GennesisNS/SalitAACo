@@ -1,0 +1,91 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block page_header %}
+<header>
+  <div class="sentence-row">
+    <div id="sentence"><span id="placeholder" style="color: var(--sub)">Pindutin ang mga salita...</span></div>
+    <button class="iconbtn" id="clearBtn" type="button">✕ Burahin</button>
+  </div>
+  <div class="toggles">
+    <label><input type="checkbox" id="darkToggle" /> Madilim na tema</label>
+    <button class="iconbtn" id="editModeBtn" type="button" style="padding: 6px 12px; min-height: auto">
+      ✏️ I-edit ang mga cell
+    </button>
+    <button class="iconbtn" type="button" data-open-modal="rating" style="padding: 6px 12px; min-height: auto">
+      ⭐ I-rate ang app
+    </button>
+  </div>
+</header>
+{% endblock %}
+
+{% block main %}
+<div class="tabs" id="tabs"></div>
+<div class="aspect" id="aspectBar" style="display: none">
+  <button type="button" data-a="past" class="active">nangyari na</button>
+  <button type="button" data-a="present">ngayon</button>
+  <button type="button" data-a="future">mamaya</button>
+</div>
+<div class="grid" id="grid"></div>
+
+<footer>Gawa para sa mga batang Pilipino na nangangailangan ng tulong sa pakikipag-usap.</footer>
+
+<!-- Forms without visible fields: board.js fills them in and submits them in edit mode. -->
+<form id="tileImageForm" method="post" enctype="multipart/form-data" class="hidden">
+  {% csrf_token %}
+  <input type="hidden" name="tile_image_form" value="1" />
+  {{ tile_image_form.word }}
+  {{ tile_image_form.image }}
+</form>
+
+<form id="tileSoundForm" method="post" enctype="multipart/form-data" class="hidden">
+  {% csrf_token %}
+  <input type="hidden" name="tile_sound_form" value="1" />
+  {{ tile_sound_form.word }}
+  {{ tile_sound_form.sound }}
+</form>
+
+<form id="resetTileForm" method="post" class="hidden">
+  {% csrf_token %}
+</form>
+
+<!-- ============== RATE THE APP MODAL ============== -->
+<div class="settingsBackdrop hidden" data-modal="rating" data-open="{{ show_rating_modal|yesno:'true,false' }}">
+  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="rateTitle" style="max-width: 420px">
+    <div class="settingsHeader">
+      <h2 id="rateTitle">⭐ I-rate ang SalitAACo</h2>
+      <button class="closeBtn" type="button" data-close-modal="rating" aria-label="Isara">&times;</button>
+    </div>
+    <form id="rateForm" method="post" class="settingsBody ratingBox">
+      {% csrf_token %}
+      <p class="desc">
+        Tumulong ito sa mga developer na mapaganda pa ang app. Makikita ng mga developer ang iyong rating at komento
+        sa admin dashboard.
+      </p>
+
+      <div class="starPicker" id="starPicker">
+        <span data-v="1">★</span>
+        <span data-v="2">★</span>
+        <span data-v="3">★</span>
+        <span data-v="4">★</span>
+        <span data-v="5">★</span>
+      </div>
+      {{ rating_form.rating }}
+      <div class="err" id="rateErr">{{ rating_form.rating.errors }}</div>
+
+      <label for="{{ rating_form.comment.id_for_label }}" style="margin-top: 0">{{ rating_form.comment.label }}</label>
+      {{ rating_form.comment }}
+      <small class="fieldError">{{ rating_form.comment.errors }}</small>
+
+      <button class="primaryBtn" type="submit" name="rating_form" style="margin-top: 14px; width: 100%">
+        💾 I-submit ang rating
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ board_data|json_script:"board-data" }}
+<script src="{% static 'js/board.js' %}" defer></script>
+{% endblock %}

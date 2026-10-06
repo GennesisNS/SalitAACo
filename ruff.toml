@@ -1,0 +1,11 @@
+exclude = [
+    ".venv",
+    "legacy",
+    "**/migrations/*",
+]
+
+[lint]
+select = ["F"]
+
+[format]
+indent-style = "space"

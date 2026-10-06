@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{% block title %}SalitAACo - Filipino AAC{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/index.css' %}" />
+    {% include "components/head_scripts.html" %}
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    {% include "components/toasts.html" %}
+    <div id="authScreen">
+      <div class="authBox">
+        {% block body %}{% endblock %}
+      </div>
+    </div>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

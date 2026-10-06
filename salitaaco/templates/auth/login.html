@@ -1,0 +1,24 @@
+{% extends "auth/base.html" %}
+
+{% block body %}
+<h1>SalitAACo</h1>
+<p class="sub">Filipino AAC - Mag-log in para simulan</p>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}" />
+
+  <label for="{{ login_form.username.id_for_label }}">{{ login_form.username.label }}</label>
+  {{ login_form.username }}
+  <small class="fieldError">{{ login_form.username.errors }}</small>
+
+  <label for="{{ login_form.password.id_for_label }}">{{ login_form.password.label }}</label>
+  {{ login_form.password }}
+  <small class="fieldError">{{ login_form.password.errors }}</small>
+
+  <div class="err">{{ login_form.non_field_errors }}</div>
+  <button class="go" type="submit">Mag-log in</button>
+</form>
+
+<div class="switch">Wala ka pang account? <a href="{% url 'register' %}">Mag-sign up</a></div>
+{% endblock %}

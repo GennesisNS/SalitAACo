@@ -1,6 +1,23 @@
 /vendor/
+/legacy/vendor/
 node_modules/
 /node_modules/*
 
 package-lock.json
 package.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Django
+.env
+db.sqlite3
+/staticfiles/
+/logs/*
+!/logs/.gitkeep
+
+# Uploads: keep the folders, ignore what users put in them
+/media/*/*
+!/media/*/.gitkeep
