@@ -1,15 +1,18 @@
 <?php
 
-// Served at /admin through routes.php, so every link below is relative to the project root.
-// If this file is the only one loaded, it was opened directly: forward to the real address.
+// Served through routes.php. The <base> tag below anchors every relative link
+// (CSS, api/... calls) at the project root, whatever address this page is given.
+// If this file is the only one loaded, it was opened directly: forward to its routed address.
 if (count(get_included_files()) === 1) {
-    header("Location: ../admin");
+    $routes = require __DIR__ . "/../routes.php";
+    header("Location: ../" . array_search("frontend/admin.php", $routes, true));
     exit;
 }
 
 require __DIR__ . "/../backend/config.php";
 $loggedIn = isset($_SESSION["user_id"]);
 $isAdmin = $loggedIn && !empty($_SESSION["is_admin"]);
+$appUrl = array_search("frontend/index.php", $routes, true) ?: "./";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -17,6 +20,7 @@ $isAdmin = $loggedIn && !empty($_SESSION["is_admin"]);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SalitAACo - Admin Dashboard</title>
+    <base href="<?php echo htmlspecialchars($base); ?>/" />
     <link rel="stylesheet" href="frontend/css/admin.css" />
   </head>
   <body>
@@ -73,7 +77,7 @@ $isAdmin = $loggedIn && !empty($_SESSION["is_admin"]);
           class="go"
           onclick="
             fetch('api/auth', { method: 'POST', body: new URLSearchParams({ action: 'logout' }) }).then(
-              () => (location.href = './'),
+              () => (location.href = '<?php echo htmlspecialchars($appUrl, ENT_QUOTES); ?>'),
             )
           "
         >
@@ -88,7 +92,7 @@ $isAdmin = $loggedIn && !empty($_SESSION["is_admin"]);
       <h1>📊 SalitAACo - Admin dashboard</h1>
       <div class="right">
         <span>👤 <?php echo htmlspecialchars($_SESSION["display_name"]); ?></span>
-        <a href="./">Buksan ang app</a>
+        <a href="<?php echo htmlspecialchars($appUrl); ?>">Buksan ang app</a>
         <button id="logoutBtn">Log out</button>
       </div>
     </header>
@@ -160,7 +164,7 @@ $isAdmin = $loggedIn && !empty($_SESSION["is_admin"]);
     <script>
       document.getElementById("logoutBtn").onclick = async () => {
         await fetch("api/auth", { method: "POST", body: new URLSearchParams({ action: "logout" }) });
-        location.href = "./";
+        location.href = <?php echo json_encode($appUrl); ?>;
       };
 
       function fmtBytes(n) {

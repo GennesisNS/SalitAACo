@@ -1,9 +1,11 @@
 <?php
 
-// Served at / through routes.php, so every link below is relative to the project root.
-// If this file is the only one loaded, it was opened directly: forward to the real address.
+// Served through routes.php. The <base> tag below anchors every relative link
+// (CSS, api/... calls) at the project root, whatever address this page is given.
+// If this file is the only one loaded, it was opened directly: forward to its routed address.
 if (count(get_included_files()) === 1) {
-    header("Location: ../");
+    $routes = require __DIR__ . "/../routes.php";
+    header("Location: ../" . array_search("frontend/index.php", $routes, true));
     exit;
 }
 
@@ -17,6 +19,7 @@ $displayName = $_SESSION["display_name"] ?? "";
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>SalitAACo - Filipino AAC</title>
+    <base href="<?php echo htmlspecialchars($base); ?>/" />
     <link rel="stylesheet" href="frontend/css/index.css" />
   </head>
   <body>
