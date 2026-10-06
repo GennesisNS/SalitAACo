@@ -162,6 +162,37 @@ To run the app on a server:
 3. Run the app with a WSGI server. The entry point is `salitaaco.wsgi:application`; `gunicorn` is in `requirements.txt` for Linux servers.
 4. Have the web server in front serve the `staticfiles/` folder at `/static/` and pass everything else to the app. Do not give it the `media/` folder.
 
+## Using MySQL in production
+
+Development and production each have their own `.env`, so nothing is converted: the same migrations build the tables on either database.
+
+1. On the production MySQL server (MySQL 8, or MariaDB 10.5 or newer), create an empty database:
+   ```sql
+   CREATE DATABASE salitaaco CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+2. In the production `.env`, set `DB_ENGINE=mysql` and the `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT` values.
+3. Run `python manage.py migrate`. This creates every table and the `Administrator` group.
+
+Production then starts empty. Sign up, and run `make_admin` for your account.
+
+### Bringing data along from SQLite
+
+Only needed if the SQLite database holds accounts you want to keep.
+
+1. On the machine with the SQLite data, export it. `-Xutf8` is needed on Windows, or the export fails on emoji:
+   ```
+   python -Xutf8 manage.py dumpdata --natural-foreign --natural-primary --exclude contenttypes --exclude auth.permission --exclude sessions --exclude admin.logentry --indent 2 -o data.json
+   ```
+2. Copy `data.json` and the whole `media/` folder to the production machine. The database only stores the file names of pictures and recordings; the files themselves are in `media/`.
+3. On production, after step 3 above and before anyone signs up:
+   ```
+   python manage.py loaddata data.json
+   ```
+
+Passwords, admin rights, pictures, recordings, usage counts and ratings come across. Sessions do not, so everyone logs in again. Delete `data.json` afterwards: it contains the password hashes.
+
+To bring the PHP application's data to production instead, run `import_php_data` there (see above) rather than exporting from SQLite.
+
 ## Troubleshooting
 
 | What you see                                              | What to do                                                                                             |
