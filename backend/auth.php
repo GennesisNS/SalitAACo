@@ -1,21 +1,27 @@
 <?php
+
 // Handles: signup, login, logout, check, get_profile, update_profile,
 //          upload_avatar, remove_avatar, avatar (GET), change_password,
 //          delete_account
-require "config.php";
+
+use Illuminate\Database\Capsule\Manager as DB;
+use SalitAACo\Models\User;
+
+require __DIR__ . "/config.php";
 
 $action = $_POST["action"] ?? $_GET["action"] ?? "";
 
 // ---------- avatar is a raw image response, not JSON ----------
 if ($action === "avatar") {
-    if (!isset($_SESSION["user_id"])) { http_response_code(401); exit; }
-    $stmt = $pdo->prepare("SELECT avatar_data, avatar_mime FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION["user_id"]]);
-    $row = $stmt->fetch();
-    if ($row && $row["avatar_data"]) {
-        header("Content-Type: " . $row["avatar_mime"]);
+    if (!isset($_SESSION["user_id"])) {
+        http_response_code(401);
+        exit;
+    }
+    $row = User::whereKey($_SESSION["user_id"])->first(["avatar_data", "avatar_mime"]);
+    if ($row && $row->avatar_data) {
+        header("Content-Type: " . $row->avatar_mime);
         header("Cache-Control: private, max-age=86400");
-        echo $row["avatar_data"];
+        echo $row->avatar_data;
     } else {
         http_response_code(404);
     }
@@ -34,18 +40,18 @@ if ($action === "signup") {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    if ($stmt->fetch()) {
+    if (User::where("username", $username)->exists()) {
         echo json_encode(["ok" => false, "error" => "Ginagamit na ang username na ito."]);
         exit;
     }
 
-    $hash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, display_name) VALUES (?, ?, ?)");
-    $stmt->execute([$username, $hash, $displayName]);
+    $user = User::create([
+        "username" => $username,
+        "password_hash" => password_hash($password, PASSWORD_DEFAULT),
+        "display_name" => $displayName,
+    ]);
 
-    $_SESSION["user_id"] = $pdo->lastInsertId();
+    $_SESSION["user_id"] = $user->id;
     $_SESSION["username"] = $username;
     $_SESSION["display_name"] = $displayName;
 
@@ -57,24 +63,22 @@ if ($action === "login") {
     $username = trim($_POST["username"] ?? "");
     $password = $_POST["password"] ?? "";
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    $u = $stmt->fetch();
+    $u = User::where("username", $username)
+        ->first(["id", "username", "password_hash", "display_name", "is_admin"]);
 
-    if (!$u || !password_verify($password, $u["password_hash"])) {
+    if (!$u || !password_verify($password, $u->password_hash)) {
         echo json_encode(["ok" => false, "error" => "Maling username o password."]);
         exit;
     }
 
-    $_SESSION["user_id"] = $u["id"];
-    $_SESSION["username"] = $u["username"];
-    $_SESSION["display_name"] = $u["display_name"];
-    $_SESSION["is_admin"] = (bool) $u["is_admin"];
+    $_SESSION["user_id"] = $u->id;
+    $_SESSION["username"] = $u->username;
+    $_SESSION["display_name"] = $u->display_name;
+    $_SESSION["is_admin"] = (bool) $u->is_admin;
 
-    $stmt = $pdo->prepare("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?");
-    $stmt->execute([$u["id"]]);
+    User::whereKey($u->id)->update(["last_login" => DB::raw("CURRENT_TIMESTAMP")]);
 
-    echo json_encode(["ok" => true, "user" => ["username" => $u["username"], "displayName" => $u["display_name"]]]);
+    echo json_encode(["ok" => true, "user" => ["username" => $u->username, "displayName" => $u->display_name]]);
     exit;
 }
 
@@ -90,7 +94,7 @@ if ($action === "check") {
         echo json_encode([
             "ok" => true,
             "loggedIn" => true,
-            "user" => ["username" => $_SESSION["username"], "displayName" => $_SESSION["display_name"]]
+            "user" => ["username" => $_SESSION["username"], "displayName" => $_SESSION["display_name"]],
         ]);
     } else {
         echo json_encode(["ok" => true, "loggedIn" => false]);
@@ -106,9 +110,10 @@ if (!isset($_SESSION["user_id"])) {
 $userId = $_SESSION["user_id"];
 
 if ($action === "get_profile") {
-    $stmt = $pdo->prepare("SELECT username, display_name, age, (avatar_data IS NOT NULL) AS has_avatar FROM users WHERE id = ?");
-    $stmt->execute([$userId]);
-    $u = $stmt->fetch();
+    $u = User::whereKey($userId)
+        ->select(["username", "display_name", "age"])
+        ->selectRaw("(avatar_data IS NOT NULL) AS has_avatar")
+        ->first();
     if (!$u) {
         echo json_encode(["ok" => false, "error" => "Hindi mahanap ang account."]);
         exit;
@@ -116,11 +121,11 @@ if ($action === "get_profile") {
     echo json_encode([
         "ok" => true,
         "profile" => [
-            "username" => $u["username"],
-            "displayName" => $u["display_name"],
-            "age" => $u["age"],
-            "hasAvatar" => (bool) $u["has_avatar"],
-        ]
+            "username" => $u->username,
+            "displayName" => $u->display_name,
+            "age" => $u->age,
+            "hasAvatar" => (bool) $u->has_avatar,
+        ],
     ]);
     exit;
 }
@@ -136,15 +141,14 @@ if ($action === "update_profile") {
 
     $age = null;
     if ($ageRaw !== "") {
-        if (!ctype_digit($ageRaw) || (int)$ageRaw < 0 || (int)$ageRaw > 150) {
+        if (!ctype_digit($ageRaw) || (int) $ageRaw < 0 || (int) $ageRaw > 150) {
             echo json_encode(["ok" => false, "error" => "Hindi tama ang edad."]);
             exit;
         }
         $age = (int) $ageRaw;
     }
 
-    $stmt = $pdo->prepare("UPDATE users SET display_name = ?, age = ? WHERE id = ?");
-    $stmt->execute([$displayName, $age, $userId]);
+    User::whereKey($userId)->update(["display_name" => $displayName, "age" => $age]);
     $_SESSION["display_name"] = $displayName;
 
     echo json_encode(["ok" => true]);
@@ -167,15 +171,13 @@ if ($action === "upload_avatar") {
         exit;
     }
     $data = file_get_contents($_FILES["avatar"]["tmp_name"]);
-    $stmt = $pdo->prepare("UPDATE users SET avatar_data = ?, avatar_mime = ? WHERE id = ?");
-    $stmt->execute([$data, $mime, $userId]);
+    User::whereKey($userId)->update(["avatar_data" => $data, "avatar_mime" => $mime]);
     echo json_encode(["ok" => true]);
     exit;
 }
 
 if ($action === "remove_avatar") {
-    $stmt = $pdo->prepare("UPDATE users SET avatar_data = NULL, avatar_mime = NULL WHERE id = ?");
-    $stmt->execute([$userId]);
+    User::whereKey($userId)->update(["avatar_data" => null, "avatar_mime" => null]);
     echo json_encode(["ok" => true]);
     exit;
 }
@@ -194,17 +196,13 @@ if ($action === "change_password") {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
-    $stmt->execute([$userId]);
-    $u = $stmt->fetch();
-    if (!$u || !password_verify($current, $u["password_hash"])) {
+    $hash = User::whereKey($userId)->value("password_hash");
+    if (!$hash || !password_verify($current, $hash)) {
         echo json_encode(["ok" => false, "error" => "Maling kasalukuyang password."]);
         exit;
     }
 
-    $hash = password_hash($new, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-    $stmt->execute([$hash, $userId]);
+    User::whereKey($userId)->update(["password_hash" => password_hash($new, PASSWORD_DEFAULT)]);
 
     echo json_encode(["ok" => true]);
     exit;
@@ -213,17 +211,14 @@ if ($action === "change_password") {
 if ($action === "delete_account") {
     $password = $_POST["password"] ?? "";
 
-    $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
-    $stmt->execute([$userId]);
-    $u = $stmt->fetch();
-    if (!$u || !password_verify($password, $u["password_hash"])) {
+    $hash = User::whereKey($userId)->value("password_hash");
+    if (!$hash || !password_verify($password, $hash)) {
         echo json_encode(["ok" => false, "error" => "Maling password."]);
         exit;
     }
 
-    // customizations and word_usage rows cascade-delete via FOREIGN KEY ... ON DELETE CASCADE
-    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-    $stmt->execute([$userId]);
+    // customizations, word_usage and ratings rows cascade-delete via FOREIGN KEY ... ON DELETE CASCADE
+    User::whereKey($userId)->delete();
 
     $_SESSION = [];
     session_destroy();

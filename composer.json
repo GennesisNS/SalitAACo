@@ -1,0 +1,21 @@
+{
+    "name": "zetcor/salitaaco",
+    "description": "SalitAACo - a Filipino AAC (augmentative and alternative communication) web app.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "illuminate/database": "^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SalitAACo\\Models\\": "backend/Models/"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.2.12"
+        },
+        "sort-packages": true
+    }
+}

@@ -1,7 +1,7 @@
 -- ============================================================
 -- SalitAACo - Filipino AAC
 -- Import this file in phpMyAdmin: Import tab -> choose file -> Go
--- Or run: mysql -u root -p < database.sql
+-- Or run: mysql -u root -p < database/database.sql
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS salitaaco_db
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS ratings (
 --
 -- UPDATE users SET is_admin = 1 WHERE username = 'your_username_here';
 --
--- Admins can open admin.php to view the analytics dashboard. This flag
+-- Admins can open /admin to view the analytics dashboard. This flag
 -- cannot be set from inside the app itself, on purpose - only someone
 -- with direct database access can grant it.
 -- ============================================================

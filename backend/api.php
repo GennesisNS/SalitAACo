@@ -1,8 +1,15 @@
 <?php
+
 // Handles: save_image, save_sound, reset, list, image, sound,
-//          increment_usage, frequent_list
+//          increment_usage, frequent_list, submit_rating, get_my_rating
 // All actions require an active login session.
-require "config.php";
+
+use Illuminate\Database\Capsule\Manager as DB;
+use SalitAACo\Models\Customization;
+use SalitAACo\Models\Rating;
+use SalitAACo\Models\WordUsage;
+
+require __DIR__ . "/config.php";
 
 if (!isset($_SESSION["user_id"])) {
     header("Content-Type: application/json");
@@ -12,14 +19,6 @@ if (!isset($_SESSION["user_id"])) {
 
 $userId = $_SESSION["user_id"];
 $action = $_POST["action"] ?? $_GET["action"] ?? "";
-
-function salitaaco_upsert(PDO $pdo, $userId, $word) {
-    $stmt = $pdo->prepare("SELECT id FROM customizations WHERE user_id = ? AND word = ?");
-    $stmt->execute([$userId, $word]);
-    if ($stmt->fetch()) return;
-    $stmt = $pdo->prepare("INSERT INTO customizations (user_id, word) VALUES (?, ?)");
-    $stmt->execute([$userId, $word]);
-}
 
 // ---------- Save an uploaded / replaced image for a word ----------
 if ($action === "save_image") {
@@ -32,9 +31,12 @@ if ($action === "save_image") {
     $data = file_get_contents($_FILES["image"]["tmp_name"]);
     $mime = $_FILES["image"]["type"] ?: "image/png";
 
-    salitaaco_upsert($pdo, $userId, $word);
-    $stmt = $pdo->prepare("UPDATE customizations SET image_data = ?, image_mime = ? WHERE user_id = ? AND word = ?");
-    $stmt->execute([$data, $mime, $userId, $word]);
+    // Insert the (user_id, word) row, or only replace its image if it already exists.
+    Customization::upsert(
+        [["user_id" => $userId, "word" => $word, "image_data" => $data, "image_mime" => $mime]],
+        ["user_id", "word"],
+        ["image_data", "image_mime"],
+    );
 
     echo json_encode(["ok" => true]);
     exit;
@@ -51,9 +53,12 @@ if ($action === "save_sound") {
     $data = file_get_contents($_FILES["sound"]["tmp_name"]);
     $mime = $_FILES["sound"]["type"] ?: "audio/webm";
 
-    salitaaco_upsert($pdo, $userId, $word);
-    $stmt = $pdo->prepare("UPDATE customizations SET sound_data = ?, sound_mime = ? WHERE user_id = ? AND word = ?");
-    $stmt->execute([$data, $mime, $userId, $word]);
+    // Insert the (user_id, word) row, or only replace its sound if it already exists.
+    Customization::upsert(
+        [["user_id" => $userId, "word" => $word, "sound_data" => $data, "sound_mime" => $mime]],
+        ["user_id", "word"],
+        ["sound_data", "sound_mime"],
+    );
 
     echo json_encode(["ok" => true]);
     exit;
@@ -63,8 +68,7 @@ if ($action === "save_sound") {
 if ($action === "reset") {
     header("Content-Type: application/json");
     $word = trim($_POST["word"] ?? "");
-    $stmt = $pdo->prepare("DELETE FROM customizations WHERE user_id = ? AND word = ?");
-    $stmt->execute([$userId, $word]);
+    Customization::where("user_id", $userId)->where("word", $word)->delete();
     echo json_encode(["ok" => true]);
     exit;
 }
@@ -72,25 +76,25 @@ if ($action === "reset") {
 // ---------- List which words have a custom image/sound for this user ----------
 if ($action === "list") {
     header("Content-Type: application/json");
-    $stmt = $pdo->prepare(
-        "SELECT word, (image_data IS NOT NULL) AS has_image, (sound_data IS NOT NULL) AS has_sound
-         FROM customizations WHERE user_id = ?"
-    );
-    $stmt->execute([$userId]);
-    echo json_encode(["ok" => true, "items" => $stmt->fetchAll()]);
+    $items = Customization::where("user_id", $userId)
+        ->select("word")
+        ->selectRaw("(image_data IS NOT NULL) AS has_image")
+        ->selectRaw("(sound_data IS NOT NULL) AS has_sound")
+        ->get();
+    echo json_encode(["ok" => true, "items" => $items]);
     exit;
 }
 
 // ---------- Serve the stored image binary for a word ----------
 if ($action === "image") {
     $word = $_GET["word"] ?? "";
-    $stmt = $pdo->prepare("SELECT image_data, image_mime FROM customizations WHERE user_id = ? AND word = ?");
-    $stmt->execute([$userId, $word]);
-    $row = $stmt->fetch();
-    if ($row && $row["image_data"]) {
-        header("Content-Type: " . $row["image_mime"]);
+    $row = Customization::where("user_id", $userId)
+        ->where("word", $word)
+        ->first(["image_data", "image_mime"]);
+    if ($row && $row->image_data) {
+        header("Content-Type: " . $row->image_mime);
         header("Cache-Control: private, max-age=86400");
-        echo $row["image_data"];
+        echo $row->image_data;
     } else {
         http_response_code(404);
     }
@@ -100,13 +104,13 @@ if ($action === "image") {
 // ---------- Serve the stored sound binary for a word ----------
 if ($action === "sound") {
     $word = $_GET["word"] ?? "";
-    $stmt = $pdo->prepare("SELECT sound_data, sound_mime FROM customizations WHERE user_id = ? AND word = ?");
-    $stmt->execute([$userId, $word]);
-    $row = $stmt->fetch();
-    if ($row && $row["sound_data"]) {
-        header("Content-Type: " . $row["sound_mime"]);
+    $row = Customization::where("user_id", $userId)
+        ->where("word", $word)
+        ->first(["sound_data", "sound_mime"]);
+    if ($row && $row->sound_data) {
+        header("Content-Type: " . $row->sound_mime);
         header("Cache-Control: private, max-age=86400");
-        echo $row["sound_data"];
+        echo $row->sound_data;
     } else {
         http_response_code(404);
     }
@@ -121,15 +125,16 @@ if ($action === "increment_usage") {
         echo json_encode(["ok" => false, "error" => "Walang word."]);
         exit;
     }
-    $stmt = $pdo->prepare("SELECT id FROM word_usage WHERE user_id = ? AND word = ?");
-    $stmt->execute([$userId, $word]);
-    if ($stmt->fetch()) {
-        $stmt = $pdo->prepare("UPDATE word_usage SET use_count = use_count + 1, last_used = CURRENT_TIMESTAMP WHERE user_id = ? AND word = ?");
-        $stmt->execute([$userId, $word]);
-    } else {
-        $stmt = $pdo->prepare("INSERT INTO word_usage (user_id, word, use_count) VALUES (?, ?, 1)");
-        $stmt->execute([$userId, $word]);
+
+    // Bump the existing count, or start the (user_id, word) row at 1. Not an upsert:
+    // this runs on every tap, and an upsert would use up an auto-increment id each time.
+    $bumped = WordUsage::where("user_id", $userId)
+        ->where("word", $word)
+        ->increment("use_count", 1, ["last_used" => DB::raw("CURRENT_TIMESTAMP")]);
+    if (!$bumped) {
+        WordUsage::insert(["user_id" => $userId, "word" => $word, "use_count" => 1]);
     }
+
     echo json_encode(["ok" => true]);
     exit;
 }
@@ -138,21 +143,29 @@ if ($action === "increment_usage") {
 if ($action === "frequent_list") {
     header("Content-Type: application/json");
     $limit = (int) ($_GET["limit"] ?? 40);
-    if ($limit < 1) $limit = 1;
-    if ($limit > 200) $limit = 200;
+    if ($limit < 1) {
+        $limit = 1;
+    }
+    if ($limit > 200) {
+        $limit = 200;
+    }
 
-    $stmt = $pdo->prepare(
-        "SELECT wu.word, wu.use_count, wu.last_used,
-                (c.image_data IS NOT NULL) AS has_image,
-                (c.sound_data IS NOT NULL) AS has_sound
-         FROM word_usage wu
-         LEFT JOIN customizations c ON c.user_id = wu.user_id AND c.word = wu.word
-         WHERE wu.user_id = ?
-         ORDER BY wu.use_count DESC, wu.last_used DESC
-         LIMIT $limit"
-    );
-    $stmt->execute([$userId]);
-    echo json_encode(["ok" => true, "items" => $stmt->fetchAll()]);
+    $items = WordUsage::from("word_usage AS wu")
+        ->leftJoin("customizations AS c", function ($join) {
+            $join->on("c.user_id", "=", "wu.user_id")->on("c.word", "=", "wu.word");
+        })
+        ->where("wu.user_id", $userId)
+        ->orderByDesc("wu.use_count")
+        ->orderByDesc("wu.last_used")
+        ->limit($limit)
+        ->get([
+            "wu.word",
+            "wu.use_count",
+            "wu.last_used",
+            DB::raw("(c.image_data IS NOT NULL) AS has_image"),
+            DB::raw("(c.sound_data IS NOT NULL) AS has_sound"),
+        ]);
+    echo json_encode(["ok" => true, "items" => $items]);
     exit;
 }
 
@@ -167,11 +180,11 @@ if ($action === "submit_rating") {
     }
     $comment = $comment === "" ? null : mb_substr($comment, 0, 1000);
 
-    $stmt = $pdo->prepare(
-        "INSERT INTO ratings (user_id, rating, comment) VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE rating = VALUES(rating), comment = VALUES(comment)"
+    Rating::upsert(
+        [["user_id" => $userId, "rating" => $rating, "comment" => $comment]],
+        ["user_id"],
+        ["rating", "comment"],
     );
-    $stmt->execute([$userId, $rating, $comment]);
 
     echo json_encode(["ok" => true]);
     exit;
@@ -180,10 +193,12 @@ if ($action === "submit_rating") {
 // ---------- Get this user's own rating (to prefill the stars) ----------
 if ($action === "get_my_rating") {
     header("Content-Type: application/json");
-    $stmt = $pdo->prepare("SELECT rating, comment FROM ratings WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $row = $stmt->fetch();
-    echo json_encode(["ok" => true, "rating" => $row ? (int)$row["rating"] : null, "comment" => $row["comment"] ?? ""]);
+    $row = Rating::where("user_id", $userId)->first(["rating", "comment"]);
+    echo json_encode([
+        "ok" => true,
+        "rating" => $row ? (int) $row->rating : null,
+        "comment" => $row->comment ?? "",
+    ]);
     exit;
 }
 
