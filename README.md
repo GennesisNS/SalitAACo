@@ -34,6 +34,24 @@ Open <http://localhost:8000/>. Use `localhost`, not an IP address: recording a s
 
 `.env` holds the settings for your machine. The defaults work for development. Every setting is listed in [`.env.example`](.env.example).
 
+### Activating the virtual environment automatically (VS Code)
+
+The virtual environment must be active in every terminal that runs `python manage.py ...`. In VS Code this happens by itself: [`.vscode/settings.json`](.vscode/settings.json) points VS Code at `.venv` and tells it to activate it in each new terminal. It needs the Python extension (`ms-python.python`).
+
+1. Create `.venv` first (the `python -m venv .venv` step above).
+2. Close any open terminals in VS Code, then open a new one with **Ctrl+`**. The prompt should start with `(.venv)`.
+
+If the prompt does not show `(.venv)`:
+
+| What you see | What to do |
+| --- | --- |
+| No `(.venv)`, no error | VS Code is remembering another interpreter. Press **Ctrl+Shift+P**, run **Python: Select Interpreter**, pick the entry showing `.venv`, then open a new terminal. |
+| `running scripts is disabled on this system` | PowerShell is blocking the activation script. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then open a new terminal. |
+
+This only covers terminals inside VS Code. In a PowerShell or Command Prompt window opened elsewhere, run `.venv\Scripts\activate` yourself.
+
+The path in the settings file is the Windows one. On macOS and Linux, choose the interpreter once with **Python: Select Interpreter** instead.
+
 ### Make yourself an admin
 
 The admin dashboard is only for accounts in the `Administrator` group. Sign up in the app first, then run:
@@ -119,6 +137,7 @@ static/
 
 media/                  Uploaded pictures and recordings (not in Git)
 docs/feature-map.md     Which PHP route became which Django view
+.vscode/settings.json   Makes VS Code activate .venv in new terminals
 legacy/                 The PHP application
 ```
 
