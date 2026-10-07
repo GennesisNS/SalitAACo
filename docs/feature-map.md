@@ -69,9 +69,10 @@ Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python
 | Tile pictures and recordings accepted without checks | Pictures must be JPEG, PNG, WebP or GIF up to 5 MB (the avatar rule); recordings must be audio up to 5 MB | The stored content type is sent back to the browser |
 | A picture's type is whatever the browser claims | The type is read from the file itself | Same |
 | Uploads stored in the database | Uploads stored as files with random names, served only to their owner | MYO stores uploads under `media/` |
+| Tapping a tile played its recording at once | Tapping only adds the word. The **▶ Patugtugin** button plays the sentence in order: each word's recording if it has one, otherwise the device's Filipino voice | Requested after the conversion |
 | A replaced tile picture could stay cached for a day | The picture's address changes when it is replaced | Bug in the PHP application |
 | Emptying the sentence one word at a time raised a JavaScript error | Fixed | Bug in the PHP application |
-| The dark theme toggle is forgotten on reload | The choice is remembered in the browser | Pages reload more often now |
+| The dark theme toggle is in the board's header and is forgotten on reload | The toggle is on the Settings page, and the choice is remembered in the browser | Pages reload more often now; moved to Settings on request |
 | No request forgery protection | Django's CSRF protection on every form and `fetch` | |
 | `/` returns 404 | `/` goes to the board or the login page | |
 | `last_login` is empty until the first log in after sign-up | Signing up counts as a login | Django records it when the session starts |

@@ -307,3 +307,13 @@ textarea {
   color: #fff;
   font-weight: 600;
 }
+
+/* ---------- Board: playing the sentence ---------- */
+.iconbtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.tag.playing {
+  outline: 3px solid var(--ink);
+  outline-offset: 1px;
+}

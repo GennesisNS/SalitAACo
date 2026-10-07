@@ -210,7 +210,7 @@ function renderGrid() {
       c.appendChild(editRow);
     } else {
       c.type = "button";
-      c.onclick = () => addWord(label, custom.has_sound ? custom.sound_url : null);
+      c.onclick = () => addWord(label);
     }
     gridEl.appendChild(c);
   });
@@ -301,39 +301,93 @@ function resetTile(word) {
 /* ============================================================
    SENTENCE BUILDER
 ============================================================ */
-function addWord(w, customSoundUrl) {
+// Tapping a tile only adds its word; the sentence is heard with the play button.
+function addWord(w) {
   words.push(w);
-  renderSentence();
+  stopPlayback();
   incrementUsage(w);
-  if (customSoundUrl) {
-    const a = new Audio(customSoundUrl);
-    a.play().catch(() => {});
-  }
 }
 // Held here because emptying the sentence removes the placeholder from the page.
 const sentencePlaceholder = document.getElementById("placeholder");
+const playBtn = document.getElementById("playBtn");
 function renderSentence() {
   const s = document.getElementById("sentence");
   s.innerHTML = "";
+  playBtn.disabled = words.length === 0;
+  playBtn.textContent = playingIndex >= 0 ? "■ Itigil" : "▶ Patugtugin";
   if (words.length === 0) {
     s.appendChild(sentencePlaceholder);
     return;
   }
   words.forEach((w, i) => {
     const t = document.createElement("span");
-    t.className = "tag";
+    t.className = i === playingIndex ? "tag playing" : "tag";
     t.textContent = w;
     t.onclick = () => {
       words.splice(i, 1);
-      renderSentence();
+      stopPlayback();
     };
     s.appendChild(t);
   });
 }
 document.getElementById("clearBtn").onclick = () => {
   words = [];
-  renderSentence();
+  stopPlayback();
 };
+
+/* ---- play the sentence: one word after another, each with its own recording
+        if it has one, otherwise spoken by the device's Filipino voice ---- */
+// One audio element for every recording: browsers that only allow sound after
+// a tap keep allowing it for an element that tap already started.
+const sentenceAudio = new Audio();
+let playingIndex = -1; // which word of the sentence is sounding; -1 when silent
+let playRun = 0; // goes up whenever playback starts or stops, so an older run knows to give up
+let finishWord = null; // ends the wait for the word that is sounding
+
+function playRecording(url) {
+  return new Promise((resolve) => {
+    finishWord = resolve;
+    sentenceAudio.onended = sentenceAudio.onerror = resolve;
+    sentenceAudio.src = url;
+    sentenceAudio.play().catch(resolve);
+  });
+}
+function speakWord(word) {
+  return new Promise((resolve) => {
+    if (!window.speechSynthesis) return resolve();
+    finishWord = resolve;
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = "fil-PH";
+    const voice = speechSynthesis.getVoices().find((v) => /^(fil|tl)([-_]|$)/i.test(v.lang));
+    if (voice) utterance.voice = voice;
+    utterance.onend = utterance.onerror = resolve;
+    speechSynthesis.speak(utterance);
+  });
+}
+async function playSentence() {
+  const run = ++playRun;
+  const queue = [...words];
+  for (let i = 0; i < queue.length; i++) {
+    playingIndex = i;
+    renderSentence();
+    const custom = customList[queue[i]];
+    await (custom && custom.has_sound ? playRecording(custom.sound_url) : speakWord(queue[i]));
+    if (run !== playRun) return; // stopped, or the sentence changed
+  }
+  stopPlayback();
+}
+function stopPlayback() {
+  playRun++;
+  playingIndex = -1;
+  sentenceAudio.pause();
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  if (finishWord) finishWord();
+  finishWord = null;
+  renderSentence();
+}
+playBtn.onclick = () => (playingIndex >= 0 ? stopPlayback() : playSentence());
+// Browsers load their list of voices in the background; asking now has it ready by the first play.
+if (window.speechSynthesis) speechSynthesis.getVoices();
 
 /* ============================================================
    RATE THE APP
@@ -368,6 +422,7 @@ document.getElementById("rateForm").onsubmit = (e) => {
    START
 ============================================================ */
 paintStars(selectedStars);
+renderSentence();
 buildTabs();
 setEditMode(editMode);
 render();
