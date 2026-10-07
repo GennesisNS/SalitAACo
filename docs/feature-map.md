@@ -45,12 +45,13 @@ URL names are given with their path. Paths without a leading slash are under `/d
 | `app: get_my_rating` | part of `view_board` (prefills the form) | | | | Done |
 | `app: submit_rating` | `view_board` (`rating_form`) | `board` | `SubmitRatingForm` | modal on the board | Done |
 | `auth: get_profile` | part of `account.manage_account` | | | | Done |
-| `auth: update_profile` | `manage_account` (`profile_form`) | `account` `account/` | `ProfileInformationForm` | `dashboard/account/account.html` | Done |
-| `auth: upload_avatar` | `manage_account` (`avatar_form`) | `account` | `UploadAvatarForm` | | Done |
-| `auth: remove_avatar` | `account.remove_avatar` | `remove_avatar` `account/avatar/remove/` | | | Done |
-| `auth: avatar` | `account.view_avatar` | `view_avatar` `account/avatar/` | | | Done |
-| `auth: change_password` | `manage_account` (`password_form`) | `account` | `ChangePasswordForm` | | Done |
-| `auth: delete_account` | `manage_account` (`delete_account_form`) | `account` | `DeleteAccountForm` | modal on the settings page | Done |
+| `auth: update_profile` | `manage_account` (`profile_form`) | `profile` `profile/` | `ProfileInformationForm` | `dashboard/account/account.html` | Done |
+| `auth: upload_avatar` | `manage_account` (`avatar_form`) | `profile` | `UploadAvatarForm` | | Done |
+| `auth: remove_avatar` | `account.remove_avatar` | `remove_avatar` `profile/avatar/remove/` | | | Done |
+| `auth: avatar` | `account.view_avatar` | `view_avatar` `profile/avatar/` | | | Done |
+| `auth: change_password` | `manage_account` (`password_form`) | `profile` | `ChangePasswordForm` | | Done |
+| `auth: delete_account` | `manage_account` (`delete_account_form`) | `profile` | `DeleteAccountForm` | modal on the profile page | Done |
+| Settings modal, "Mga Tile" tab | `settings.view_settings` | `settings` `settings/` | | `dashboard/settings/settings.html` | Done |
 | `/admin` | `analytics.view_analytics` | `analytics` `analytics/` | `SearchUserForm` | `dashboard/analytics/analytics.html` | Done |
 | `admin: overview`, `signups_by_day`, `rating_distribution`, `top_words` | functions in `utils/analytics.py`, called by `view_analytics` | | | rendered by the server | Done |
 | `admin: users`, `admin: ratings` | queries in `view_analytics` | | | rendered by the server, ten rows per page | Done |
@@ -62,7 +63,7 @@ Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python
 | PHP application | Django project | Why |
 | --- | --- | --- |
 | One page; settings and rating saved in the background | Saving reloads the page and shows a toast; the sentence being built is cleared | Full MYO page flow was chosen |
-| Settings in a modal over the board | Settings on their own page, `/dashboard/account/` | Same |
+| Settings in a modal over the board, with "Mga Tile" and "Account" tabs | Two pages: Settings (`/dashboard/settings/`: tile editing, theme) and Profile (`/dashboard/profile/`: account details, password, delete account) | Same; split into two pages on request |
 | Admin dashboard shows its own login box, and an "Access denied" screen to non-admins | Anonymous visitors go to `/login/`; non-admins are sent to the board with the message "Naka-log in ka pero hindi admin ang account na ito." | MYO's `multi_user_test` behaviour |
 | Admin rights apply from the next login | Admin rights apply at once | The group is checked on every request |
 | Users and feedback tables list every row | Ten rows per page; the users table can be searched and sorted | MYO listing convention |

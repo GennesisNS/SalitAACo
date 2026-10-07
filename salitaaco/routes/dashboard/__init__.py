@@ -6,6 +6,7 @@ import salitaaco.routes.analytics.analytics as analytics
 import salitaaco.routes.board.board as board
 import salitaaco.routes.board.customizations as customizations
 import salitaaco.routes.board.usage as usage
+import salitaaco.routes.settings.settings as settings
 
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='board'), name='dashboard'),
@@ -17,9 +18,11 @@ urlpatterns = [
     path('board/usage/increment/', usage.increment_word_usage, name='increment_word_usage'),
     path('board/usage/frequent/', usage.list_frequent_words, name='list_frequent_words'),
 
-    path('account/', account.manage_account, name='account'),
-    path('account/avatar/', account.view_avatar, name='view_avatar'),
-    path('account/avatar/remove/', account.remove_avatar, name='remove_avatar'),
+    path('profile/', account.manage_account, name='profile'),
+    path('profile/avatar/', account.view_avatar, name='view_avatar'),
+    path('profile/avatar/remove/', account.remove_avatar, name='remove_avatar'),
+
+    path('settings/', settings.view_settings, name='settings'),
 
     path('analytics/', analytics.view_analytics, name='analytics'),
 ]

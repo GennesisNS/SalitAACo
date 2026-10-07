@@ -15,9 +15,16 @@ dashboard_items = [
                 "roles": ["*"],
             },
             {
+                "name": "Profile",
+                "id": "profile",
+                "route": "profile",
+                "icon": "👤",
+                "roles": ["*"],
+            },
+            {
                 "name": "Settings",
-                "id": "account",
-                "route": "account",
+                "id": "settings",
+                "route": "settings",
                 "icon": "⚙️",
                 "roles": ["*"],
             },

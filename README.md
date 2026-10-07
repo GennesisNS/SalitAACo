@@ -68,7 +68,8 @@ It takes effect on the next page load. `python manage.py make_admin your_usernam
 | ----------------------- | ------------------------------------------------------------- | --------------- |
 | `/login/`, `/register/` | Log in and sign up                                            | Everyone        |
 | `/dashboard/board/`     | The app: tiles, sentence builder, edit mode, rating           | Logged-in users |
-| `/dashboard/account/`   | Settings: name, age, profile picture, password, delete account | Logged-in users |
+| `/dashboard/profile/`   | Profile: name, age, profile picture, password, delete account  | Logged-in users |
+| `/dashboard/settings/`  | Settings: tile editing, dark theme                             | Logged-in users |
 | `/dashboard/analytics/` | Admin dashboard                                               | Administrators  |
 
 `/` goes to the board, or to the login page when nobody is logged in. The PHP application's `/home` address redirects to the board.
@@ -108,7 +109,7 @@ salitaaco/
   urls.py               Login, sign-up, logout, old-address redirects
   routes/               The views, one folder per feature
     dashboard/__init__.py   Every address under /dashboard/
-    auth.py  board/  account/  analytics/  error_handler.py
+    auth.py  board/  account/  settings/  analytics/  error_handler.py
   models/               One model per file
   forms/                One form per file, one folder per feature
     validators.py       Reusable validation rules
@@ -133,7 +134,7 @@ static/
   css/dashboard.css     Sidebar, toast messages, form fields, pagination
   js/main.js            Loaded on every page: toasts, sidebar, modals, theme
   js/board.js           The board
-  js/account.js         The settings page
+  js/account.js         The profile page
 
 media/                  Uploaded pictures and recordings (not in Git)
 docs/feature-map.md     Which PHP route became which Django view
