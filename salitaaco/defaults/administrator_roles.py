@@ -1,0 +1,5 @@
+ADMINISTRATOR = "Administrator"
+
+ADMINISTRATOR_ROLES = [
+    ADMINISTRATOR,
+]

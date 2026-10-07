@@ -1,0 +1,115 @@
+# The words on the board. Each tile has a word ("w") and a default emoji ("e").
+# Verbs also carry their three aspects; the board shows the one that is selected.
+
+FREQUENT_CATEGORY = "🔁 Madalas Gamitin"
+VERB_CATEGORY = "Pandiwa"
+
+VERBS = [
+    {"w": "kain", "e": "🍚", "past": "kumain", "present": "kumakain", "future": "kakain"},
+    {"w": "inom", "e": "🥤", "past": "uminom", "present": "umiinom", "future": "iinom"},
+    {"w": "laro", "e": "⚽", "past": "naglaro", "present": "naglalaro", "future": "maglalaro"},
+    {"w": "tulog", "e": "😴", "past": "natulog", "present": "natutulog", "future": "matutulog"},
+    {"w": "ligo", "e": "🚿", "past": "naligo", "present": "naliligo", "future": "maliligo"},
+    {"w": "punta", "e": "🚶", "past": "pumunta", "present": "pumupunta", "future": "pupunta"},
+    {"w": "kuha", "e": "🤲", "past": "kumuha", "present": "kumukuha", "future": "kukuha"},
+    {"w": "bili", "e": "🛍️", "past": "bumili", "present": "bumibili", "future": "bibili"},
+    {"w": "sulat", "e": "✏️", "past": "sumulat", "present": "sumusulat", "future": "susulat"},
+    {"w": "basa", "e": "📖", "past": "nagbasa", "present": "nagbabasa", "future": "magbabasa"},
+    {"w": "tawag", "e": "📞", "past": "tumawag", "present": "tumatawag", "future": "tatawag"},
+    {"w": "hingi", "e": "🙏", "past": "humingi", "present": "humihingi", "future": "hihingi"},
+    {"w": "tigil", "e": "✋", "past": "tumigil", "present": "tumitigil", "future": "titigil"},
+    {"w": "lakad", "e": "🚶‍♂️", "past": "lumakad", "present": "lumalakad", "future": "lalakad"},
+    {"w": "takbo", "e": "🏃", "past": "tumakbo", "present": "tumatakbo", "future": "tatakbo"},
+]
+
+CATEGORIES = [
+    {
+        "name": "Tao",
+        "items": [
+            {"w": "ako", "e": "🙋"},
+            {"w": "ko", "e": "✋"},
+            {"w": "ikaw", "e": "👉"},
+            {"w": "ka", "e": "🫵"},
+            {"w": "siya", "e": "🧍"},
+            {"w": "tayo", "e": "👨‍👩‍👧"},
+            {"w": "sila", "e": "👥"},
+            {"w": "mama", "e": "👩"},
+            {"w": "papa", "e": "👨"},
+            {"w": "ate", "e": "👧"},
+            {"w": "kuya", "e": "👦"},
+            {"w": "lola", "e": "👵"},
+            {"w": "lolo", "e": "👴"},
+            {"w": "tita", "e": "🧑‍🦰"},
+            {"w": "tito", "e": "🧔"},
+        ],
+    },
+    {
+        "name": "Bagay",
+        "items": [
+            {"w": "pera", "e": "💵"},
+            {"w": "sukli", "e": "🪙"},
+            {"w": "gamot", "e": "💊"},
+            {"w": "doktor", "e": "🩺"},
+            {"w": "magkano", "e": "❓"},
+            {"w": "tulad nito", "e": "👆"},
+            {"w": "jeep", "e": "🚙"},
+            {"w": "para", "e": "🛑"},
+            {"w": "tawagan si Nanay", "e": "📱"},
+            {"w": "tawagan si Tatay", "e": "📱"},
+            {"w": "oo", "e": "✅"},
+            {"w": "hindi", "e": "❌"},
+            {"w": "po", "e": "🙇"},
+            {"w": "opo", "e": "🙇"},
+            {"w": "ay", "e": "✨"},
+            {"w": "na", "e": "⏳"},
+            {"w": "gusto ko", "e": "❤️"},
+            {"w": "ayaw ko", "e": "🚫"},
+            {"w": "salamat", "e": "🙏"},
+            {"w": "pasensya na", "e": "😔"},
+            {"w": "tulong", "e": "🆘"},
+            {"w": "sakit", "e": "🚨"},
+            {"w": "masakit dito", "e": "👇"},
+        ],
+    },
+    {
+        "name": "Pagkain",
+        "items": [
+            {"w": "bigas", "e": "🍚"},
+            {"w": "isda", "e": "🐟"},
+            {"w": "gulay", "e": "🥬"},
+            {"w": "prutas", "e": "🍌"},
+        ],
+    },
+    {
+        "name": "Lugar",
+        "items": [
+            {"w": "bahay", "e": "🏠"},
+            {"w": "sala", "e": "🛋️"},
+            {"w": "kwarto", "e": "🚪"},
+            {"w": "banyo", "e": "🚽"},
+            {"w": "kusina", "e": "🍳"},
+            {"w": "paaralan", "e": "🏫"},
+            {"w": "labas", "e": "🌳"},
+            {"w": "loob", "e": "🏡"},
+        ],
+    },
+    {
+        "name": VERB_CATEGORY,
+        "items": [{"w": verb["w"], "e": verb["e"], "verb": verb} for verb in VERBS],
+    },
+    {
+        "name": "Pakiramdam",
+        "items": [
+            {"w": "masaya", "e": "😄"},
+            {"w": "malungkot", "e": "😢"},
+            {"w": "galit", "e": "😠"},
+            {"w": "takot", "e": "😨"},
+            {"w": "gutom", "e": "🍽️"},
+            {"w": "uhaw", "e": "💧"},
+            {"w": "pagod", "e": "😩"},
+            {"w": "masakit", "e": "🤕"},
+            {"w": "mainit", "e": "🥵"},
+            {"w": "malamig", "e": "🥶"},
+        ],
+    },
+]

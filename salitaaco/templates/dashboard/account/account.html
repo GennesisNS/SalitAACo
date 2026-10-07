@@ -1,0 +1,147 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Settings - SalitAACo{% endblock %}
+
+{% block main %}
+<!-- ============== TILES ============== -->
+<div class="pageCard">
+  <div class="settingsHeader">
+    <h2>🧩 Mga Tile</h2>
+  </div>
+  <div class="settingsBody">
+    <h3>Pag-edit ng mga Tile / Cell</h3>
+    <p class="desc">
+      Dito matatagpuan ang toggle para mag-edit ng mga tile. Kapag naka-on, lalabas sa bawat tile ang mga button
+      para: magpalit ng larawan (🖼️), mag-record ng tunog (🎙️), o ibalik sa default (↺).
+    </p>
+    <div class="tilesCard">
+      <a class="iconbtn" href="{% url 'board' %}?edit=1" style="display: block; text-align: center; padding: 12px; font-weight: 600; text-decoration: none">
+        ✏️ Buksan ang Edit Mode
+      </a>
+      <p style="margin: 10px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5">
+        💡 Tips: <br />
+        • 🖼️ <b>Larawan</b> – Mag-upload ng litrato para sa salita (hal. totoong larawan ng "Nanay").<br />
+        • 🎙️ <b>Tunog</b> – Mag-record ng sariling boses para sa salita (awto-ni-play kapag pinindot ang tile).<br />
+        • ↺ <b>I-reset</b> – Ibalik ang default na emoji at gamitin ang boses ng TTS.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============== ACCOUNT ============== -->
+<div class="pageCard">
+  <div class="settingsHeader">
+    <h2>👤 Account</h2>
+  </div>
+  <div class="settingsBody">
+    <h3>Impormasyon ng Account</h3>
+    <p class="desc">Baguhin ang pangalan, edad, at larawan ng profile na nakikita sa menu.</p>
+
+    <div class="avatarRow">
+      <div class="avatarPrev">
+        {% if profile.has_avatar %}
+        <img src="{% url 'view_avatar' %}?v={{ profile.updated_at|date:'U' }}" alt="avatar" />
+        {% else %}👤{% endif %}
+      </div>
+      <div class="avatarActions">
+        <form id="avatarForm" class="inlineForm" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="avatar_form" value="1" />
+          {{ avatar_form.avatar }}
+          <button class="secondaryBtn" id="avatarPickBtn" type="button">📸 Mag-upload ng larawan</button>
+        </form>
+        <form class="inlineForm" method="post" action="{% url 'remove_avatar' %}">
+          {% csrf_token %}
+          <button class="secondaryBtn" type="submit" style="color: var(--danger); border-color: #f2c1bc">
+            🗑️ Alisin ang larawan
+          </button>
+        </form>
+      </div>
+    </div>
+    <small class="fieldError">{{ avatar_form.avatar.errors }}</small>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <label for="{{ profile_form.display_name.id_for_label }}">{{ profile_form.display_name.label }}</label>
+      {{ profile_form.display_name }}
+      <small class="fieldError">{{ profile_form.display_name.errors }}</small>
+
+      <div class="row">
+        <div>
+          <label for="accountUsername">Username</label>
+          <input class="input" type="text" id="accountUsername" value="{{ request.user.username }}" disabled style="opacity: 0.7; cursor: not-allowed" />
+        </div>
+        <div>
+          <label for="{{ profile_form.age.id_for_label }}">{{ profile_form.age.label }}</label>
+          {{ profile_form.age }}
+          <small class="fieldError">{{ profile_form.age.errors }}</small>
+        </div>
+      </div>
+
+      <button class="primaryBtn" type="submit" name="profile_form" style="margin-top: 14px">💾 I-save ang profile</button>
+    </form>
+
+    <hr class="sectionDivider" />
+
+    <h3>Palitan ang Password</h3>
+    <p class="desc">Para sa kaligtasan, kailangang ilagay ang kasalukuyang password bago magpalit.</p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <label for="{{ password_form.current_password.id_for_label }}">{{ password_form.current_password.label }}</label>
+      {{ password_form.current_password }}
+      <small class="fieldError">{{ password_form.current_password.errors }}</small>
+
+      <div class="row">
+        <div>
+          <label for="{{ password_form.new_password.id_for_label }}">{{ password_form.new_password.label }}</label>
+          {{ password_form.new_password }}
+          <small class="fieldError">{{ password_form.new_password.errors }}</small>
+        </div>
+        <div>
+          <label for="{{ password_form.confirm_password.id_for_label }}">{{ password_form.confirm_password.label }}</label>
+          {{ password_form.confirm_password }}
+          <small class="fieldError">{{ password_form.confirm_password.errors }}</small>
+        </div>
+      </div>
+
+      <button class="primaryBtn" type="submit" name="password_form" style="margin-top: 14px">
+        🔑 I-save ang bagong password
+      </button>
+    </form>
+
+    <hr class="sectionDivider" />
+
+    <h3 style="color: var(--danger)">Burahin ang Account</h3>
+    <p class="desc">
+      Permanenteng mabubura ang account, lahat ng custom na larawan, at mga recording. Hindi na ito mababalik.
+    </p>
+    <button class="dangerBtn" type="button" data-open-modal="delete-account">
+      ⚠️ Permanente nang burahin ang account na ito
+    </button>
+  </div>
+</div>
+
+<!-- ============== DELETE CONFIRM DIALOG ============== -->
+<div class="confirmBackdrop hidden" data-modal="delete-account" data-open="{{ show_delete_account_modal|yesno:'true,false' }}">
+  <form class="confirmBox" method="post" role="dialog" aria-modal="true" novalidate>
+    {% csrf_token %}
+    <h3>⚠️ Sigurado ka na ba?</h3>
+    <p>
+      Ang lahat ng datos ng account (mga larawan, recording, at mismong account) ay mabubura na <b>permanente</b> at
+      hindi na maibabalik. I-type ang password para kumpirmahin:
+    </p>
+    {{ delete_account_form.password }}
+    <small class="fieldError">{{ delete_account_form.password.errors }}</small>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-account">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit" name="delete_account_form">Oo, burahin na</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/account.js' %}" defer></script>
+{% endblock %}

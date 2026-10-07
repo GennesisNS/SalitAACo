@@ -1,0 +1,10 @@
+{% load static %}
+<script>
+  // Apply the remembered theme before the page paints.
+  try {
+    var savedTheme = localStorage.getItem("salitaaco-theme");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+<script src="{% static 'js/main.js' %}" defer></script>

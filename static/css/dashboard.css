@@ -1,0 +1,309 @@
+/* Shared shell for every page: sidebar, toasts, form fields, pagination.
+   Loaded after the page stylesheet (index.css or admin.css) and built on the
+   colour variables both of them define. */
+
+a {
+  color: var(--accent);
+}
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* ---------- Layout ---------- */
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+}
+.dashboardContent {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+}
+.sidebarBrand {
+  margin: 0 8px 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.sidebarBrand small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--sub);
+}
+.sidebarSection {
+  margin: 18px 8px 6px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sub);
+}
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.sidebarItem:hover {
+  background: var(--bg);
+}
+.sidebarItem.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.sidebarUser {
+  margin-top: auto;
+  padding: 12px 8px 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--sub);
+}
+.sidebarUser .name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.sidebarUser form {
+  margin: 0;
+}
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: underline;
+}
+.sidebarAvatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 14px;
+}
+.sidebarAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mobileTopbar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+}
+.menuBtn {
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 18px;
+  color: var(--ink);
+}
+.sidebarBackdrop {
+  display: none;
+}
+@media (max-width: 800px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+  }
+  .sidebar.open {
+    transform: none;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  }
+  .sidebar.open + .sidebarBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(0, 0, 0, 0.45);
+  }
+  .mobileTopbar {
+    display: flex;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}
+
+/* ---------- Toast messages ---------- */
+.toasts {
+  position: fixed;
+  bottom: 14px;
+  right: 14px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 28px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+}
+.toast.success {
+  border-left-color: #27ae60;
+}
+.toast.error {
+  border-left-color: var(--danger);
+}
+.toast p {
+  flex: 1;
+  margin: 0;
+}
+.toast button {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--sub);
+}
+
+/* ---------- Form fields ---------- */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+}
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.required-mark {
+  color: var(--danger);
+}
+.errorlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fieldError {
+  display: block;
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 13px;
+}
+.inlineForm {
+  margin: 0;
+}
+
+/* ---------- Pages inside the shell ---------- */
+.pageCard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  margin: 0 auto 20px;
+  max-width: 640px;
+}
+.searchBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.searchBar > div {
+  flex: 1;
+  min-width: 160px;
+}
+.searchBar label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--sub);
+}
+.searchBar .input,
+.searchBar .select {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.searchBar button {
+  min-height: 36px;
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+}
+.pagination a {
+  min-width: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+}
+.pagination a.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
