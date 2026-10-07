@@ -63,7 +63,7 @@ Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python
 | PHP application | Django project | Why |
 | --- | --- | --- |
 | One page; settings and rating saved in the background | Saving reloads the page and shows a toast; the sentence being built is cleared | Full MYO page flow was chosen |
-| Settings in a modal over the board, with "Mga Tile" and "Account" tabs | Two pages: Settings (`/dashboard/settings/`: tile editing, theme) and Profile (`/dashboard/profile/`: account details, password, delete account) | Same; split into two pages on request |
+| Settings in a modal over the board, with "Mga Tile" and "Account" tabs | Two pages: Settings (`/dashboard/settings/`: tile editing, theme) and Profile (`/dashboard/profile/`: account details, password, delete account; opened from the avatar at the bottom of the sidebar) | Same; split into two pages on request |
 | Admin dashboard shows its own login box, and an "Access denied" screen to non-admins | Anonymous visitors go to `/login/`; non-admins are sent to the board with the message "Naka-log in ka pero hindi admin ang account na ito." | MYO's `multi_user_test` behaviour |
 | Admin rights apply from the next login | Admin rights apply at once | The group is checked on every request |
 | Users and feedback tables list every row | Ten rows per page; the users table can be searched and sorted | MYO listing convention |

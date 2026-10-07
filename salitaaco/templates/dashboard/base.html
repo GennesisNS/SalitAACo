@@ -26,13 +26,15 @@
           {% endfor %}
           {% endfor %}
         </nav>
-
+        
         <div class="sidebarUser">
-          <span class="sidebarAvatar">
-            {% if current_profile.has_avatar %}
-            <img src="{% url 'view_avatar' %}?v={{ current_profile.updated_at|date:'U' }}" alt="avatar" />
-            {% else %}👤{% endif %}
-          </span>
+          <a href="{% url 'profile' %}" class="sidebarUserLink" title="Profile" aria-label="Profile">
+            <span class="sidebarAvatar">
+              {% if current_profile.has_avatar %}
+              <img src="{% url 'view_avatar' %}?v={{ current_profile.updated_at|date:'U' }}" alt="avatar" />
+              {% else %}👤{% endif %}
+            </span>
+          </a>
           <span class="name">{{ current_profile.display_name }}</span>
           <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}

@@ -32,14 +32,23 @@ class SettingsAndProfileAreSeparatePagesTest(UserBase):
         self.assertNotContains(response, "Pag-edit ng mga Tile / Cell")
         self.assertNotContains(response, 'id="darkToggle"')
 
-    def test_sidebar_lists_both_and_highlights_the_open_one(self):
+    def sidebar_items(self, route):
+        return {
+            item["id"]: item
+            for category in self.client.get(reverse(route)).context["navigation_items"]
+            for item in category["items"]
+        }
+
+    def test_sidebar_lists_settings_and_highlights_it_when_open(self):
         self.login_as("miguel")
-        for route, other in [("profile", "settings"), ("settings", "profile")]:
-            items = {
-                item["id"]: item
-                for category in self.client.get(reverse(route)).context["navigation_items"]
-                for item in category["items"]
-            }
-            self.assertEqual(items[route]["name"], route.title())
-            self.assertTrue(items[route]["active"])
-            self.assertFalse(items[other]["active"])
+        self.assertTrue(self.sidebar_items("settings")["settings"]["active"])
+        self.assertFalse(self.sidebar_items("board")["settings"]["active"])
+
+    def test_profile_is_reached_from_the_avatar_not_from_a_sidebar_tab(self):
+        self.login_as("miguel")
+        self.assertNotIn("profile", self.sidebar_items("board"))
+
+        # The avatar link is in the shell, so it is on every dashboard page.
+        for route in ["board", "settings", "profile"]:
+            response = self.client.get(reverse(route))
+            self.assertContains(response, f'<a href="{reverse("profile")}" class="sidebarUserLink"')
