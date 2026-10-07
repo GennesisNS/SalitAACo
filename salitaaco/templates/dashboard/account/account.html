@@ -1,52 +1,13 @@
 {% extends "dashboard/base.html" %}
 {% load static %}
 
-{% block title %}Settings - SalitAACo{% endblock %}
+{% block title %}Profile - SalitAACo{% endblock %}
 
 {% block main %}
-<!-- ============== TILES ============== -->
+<!-- ============== PROFILE ============== -->
 <div class="pageCard">
   <div class="settingsHeader">
-    <h2>🧩 Mga Tile</h2>
-  </div>
-  <div class="settingsBody">
-    <h3>Pag-edit ng mga Tile / Cell</h3>
-    <p class="desc">
-      Dito matatagpuan ang toggle para mag-edit ng mga tile. Kapag naka-on, lalabas sa bawat tile ang mga button
-      para: magpalit ng larawan (🖼️), mag-record ng tunog (🎙️), o ibalik sa default (↺).
-    </p>
-    <div class="tilesCard">
-      <a class="iconbtn" href="{% url 'board' %}?edit=1" style="display: block; text-align: center; padding: 12px; font-weight: 600; text-decoration: none">
-        ✏️ Buksan ang Edit Mode
-      </a>
-      <p style="margin: 10px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5">
-        💡 Tips: <br />
-        • 🖼️ <b>Larawan</b> – Mag-upload ng litrato para sa salita (hal. totoong larawan ng "Nanay").<br />
-        • 🎙️ <b>Tunog</b> – Mag-record ng sariling boses para sa salita (maririnig kapag pinindot ang ▶ Patugtugin).<br />
-        • ↺ <b>I-reset</b> – Ibalik ang default na emoji at gamitin ang boses ng TTS.
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- ============== APPEARANCE ============== -->
-<div class="pageCard">
-  <div class="settingsHeader">
-    <h2>🎨 Hitsura</h2>
-  </div>
-  <div class="settingsBody">
-    <h3>Tema</h3>
-    <p class="desc">Piliin kung maliwanag o madilim ang kulay ng app. Tatandaan ito sa browser na ito.</p>
-    <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; color: var(--ink); cursor: pointer">
-      <input type="checkbox" id="darkToggle" style="width: 20px; height: 20px" /> Madilim na tema
-    </label>
-  </div>
-</div>
-
-<!-- ============== ACCOUNT ============== -->
-<div class="pageCard">
-  <div class="settingsHeader">
-    <h2>👤 Account</h2>
+    <h2>👤 Profile</h2>
   </div>
   <div class="settingsBody">
     <h3>Impormasyon ng Account</h3>

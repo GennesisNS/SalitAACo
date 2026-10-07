@@ -16,7 +16,7 @@ from salitaaco.utils.profile import get_user_profile
 from salitaaco.utils.uploads import random_upload_name
 
 
-@active_nav("account")
+@active_nav("profile")
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
 def manage_account(request):
@@ -38,7 +38,7 @@ def manage_account(request):
                 profile.age = profile_form.cleaned_data['age']
                 profile.save()
                 messages.success(request, "Naka-save na ang profile.")
-                return redirect('account')
+                return redirect('profile')
 
         if "avatar_form" in request.POST:
             avatar_form = UploadAvatarForm(request.POST, request.FILES)
@@ -46,7 +46,7 @@ def manage_account(request):
                 avatar = avatar_form.cleaned_data['avatar']
                 profile.set_avatar(random_upload_name(avatar.content_type), avatar, avatar.content_type)
                 messages.success(request, "Nai-save na ang larawan.")
-                return redirect('account')
+                return redirect('profile')
 
         if "password_form" in request.POST:
             password_form = ChangePasswordForm(request.POST, user=request.user)
@@ -56,7 +56,7 @@ def manage_account(request):
                 # Changing the password must not log the user out.
                 update_session_auth_hash(request, request.user)
                 messages.success(request, "Nabago na ang password.")
-                return redirect('account')
+                return redirect('profile')
 
         if "delete_account_form" in request.POST:
             delete_account_form = DeleteAccountForm(request.POST, user=request.user)
@@ -95,4 +95,4 @@ def view_avatar(request):
 def remove_avatar(request):
     get_user_profile(request.user).remove_avatar()
     messages.success(request, "Naalis na ang larawan.")
-    return redirect('account')
+    return redirect('profile')

@@ -18,7 +18,7 @@ def messages_of(response):
 
 class AccountAccessTest(UserBase):
     def test_anonymous_is_sent_to_login(self):
-        for route in [reverse("account"), reverse("view_avatar")]:
+        for route in [reverse("profile"), reverse("view_avatar")]:
             response = self.client.get(route)
             self.assertEqual(response.status_code, 302, route)
             self.assertTrue(response.url.startswith("/login/"), route)
@@ -29,7 +29,7 @@ class AccountAccessTest(UserBase):
     def test_every_role_sees_the_page(self):
         for username in ["miguel", "developer"]:
             self.login_as(username)
-            response = self.client.get(reverse("account"))
+            response = self.client.get(reverse("profile"))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, "Impormasyon ng Account")
 
@@ -37,16 +37,16 @@ class AccountAccessTest(UserBase):
         User.objects.create_user(username="walangprofile", password="abcd")
         self.client.login(username="walangprofile", password="abcd")
 
-        self.assertEqual(self.client.get(reverse("account")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("profile")).status_code, 200)
         self.assertEqual(Profile.objects.get(user__username="walangprofile").display_name, "walangprofile")
 
 
 class ProfileTest(UserBase):
     def test_update_profile(self):
         self.login_as("miguel")
-        response = self.client.post(reverse("account"), {"profile_form": "", "display_name": "Migs", "age": ""})
+        response = self.client.post(reverse("profile"), {"profile_form": "", "display_name": "Migs", "age": ""})
 
-        self.assertRedirects(response, reverse("account"))
+        self.assertRedirects(response, reverse("profile"))
         self.assertEqual(messages_of(response), ["Naka-save na ang profile."])
         profile = Profile.objects.get(user=self.miguel)
         self.assertEqual(profile.display_name, "Migs")
@@ -54,7 +54,7 @@ class ProfileTest(UserBase):
 
     def test_invalid_profile_shows_the_error_next_to_the_field(self):
         self.login_as("miguel")
-        response = self.client.post(reverse("account"), {"profile_form": "", "display_name": "Migs", "age": "200"})
+        response = self.client.post(reverse("profile"), {"profile_form": "", "display_name": "Migs", "age": "200"})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Hindi tama ang edad.")
@@ -64,8 +64,8 @@ class ProfileTest(UserBase):
         self.login_as("miguel")
         self.assertEqual(self.client.get(reverse("view_avatar")).status_code, 404)
 
-        response = self.client.post(reverse("account"), {"avatar_form": "1", "avatar": image_upload()})
-        self.assertRedirects(response, reverse("account"))
+        response = self.client.post(reverse("profile"), {"avatar_form": "1", "avatar": image_upload()})
+        self.assertRedirects(response, reverse("profile"))
         self.assertEqual(messages_of(response), ["Nai-save na ang larawan."])
 
         profile = Profile.objects.get(user=self.miguel)
@@ -79,14 +79,14 @@ class ProfileTest(UserBase):
 
         self.assertEqual(self.client.get(reverse("remove_avatar")).status_code, 405)
         response = self.client.post(reverse("remove_avatar"))
-        self.assertRedirects(response, reverse("account"))
+        self.assertRedirects(response, reverse("profile"))
         self.assertFalse(Profile.objects.get(user=self.miguel).has_avatar)
         self.assertFalse(os.path.exists(path))
 
     def test_rejected_avatar_shows_the_error(self):
         self.login_as("miguel")
         bitmap = image_upload(name="a.bmp", image_format="BMP", content_type="image/bmp")
-        response = self.client.post(reverse("account"), {"avatar_form": "1", "avatar": bitmap})
+        response = self.client.post(reverse("profile"), {"avatar_form": "1", "avatar": bitmap})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Hindi suportadong file type ng larawan.")
@@ -95,18 +95,18 @@ class ProfileTest(UserBase):
 class PasswordTest(UserBase):
     def test_change_password_keeps_the_user_logged_in(self):
         self.login_as("miguel")
-        response = self.client.post(reverse("account"), {
+        response = self.client.post(reverse("profile"), {
             "password_form": "", "current_password": "lihim1234", "new_password": "bago1", "confirm_password": "bago1",
         })
 
-        self.assertRedirects(response, reverse("account"))
+        self.assertRedirects(response, reverse("profile"))
         self.assertEqual(messages_of(response), ["Nabago na ang password."])
         self.assertTrue(User.objects.get(pk=self.miguel.pk).check_password("bago1"))
         self.assertEqual(self.client.get(reverse("board")).status_code, 200)
 
     def test_wrong_current_password_changes_nothing(self):
         self.login_as("miguel")
-        response = self.client.post(reverse("account"), {
+        response = self.client.post(reverse("profile"), {
             "password_form": "", "current_password": "mali", "new_password": "bago1", "confirm_password": "bago1",
         })
 
@@ -117,7 +117,7 @@ class PasswordTest(UserBase):
 class DeleteAccountTest(UserBase):
     def test_wrong_password_reopens_the_dialog_and_deletes_nothing(self):
         self.login_as("miguel")
-        response = self.client.post(reverse("account"), {"delete_account_form": "", "password": "mali"})
+        response = self.client.post(reverse("profile"), {"delete_account_form": "", "password": "mali"})
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["show_delete_account_modal"])
@@ -138,7 +138,7 @@ class DeleteAccountTest(UserBase):
         ana_customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
 
         self.login_as("miguel")
-        response = self.client.post(reverse("account"), {"delete_account_form": "", "password": "lihim1234"})
+        response = self.client.post(reverse("profile"), {"delete_account_form": "", "password": "lihim1234"})
 
         self.assertRedirects(response, reverse("login"))
         self.assertFalse(User.objects.filter(username="miguel").exists())
