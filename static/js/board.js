@@ -337,6 +337,13 @@ document.getElementById("clearBtn").onclick = () => {
 
 /* ---- play the sentence: one word after another, each with its own recording
         if it has one, otherwise spoken by the device's Filipino voice ---- */
+// Silence between one word and the next, in milliseconds (1000 = one second).
+// 0 starts each word the moment the one before it ends.
+const PAUSE_BETWEEN_WORDS_MS = 0;
+// How fast the device's voice speaks words that have no recording: 1 is normal,
+// 0.5 is half speed, 2 is double. Recordings always play at their own speed.
+const SPEECH_RATE = 1;
+
 // One audio element for every recording: browsers that only allow sound after
 // a tap keep allowing it for an element that tap already started.
 const sentenceAudio = new Audio();
@@ -358,10 +365,17 @@ function speakWord(word) {
     finishWord = resolve;
     const utterance = new SpeechSynthesisUtterance(word);
     utterance.lang = "fil-PH";
+    utterance.rate = SPEECH_RATE;
     const voice = speechSynthesis.getVoices().find((v) => /^(fil|tl)([-_]|$)/i.test(v.lang));
     if (voice) utterance.voice = voice;
     utterance.onend = utterance.onerror = resolve;
     speechSynthesis.speak(utterance);
+  });
+}
+function pauseBetweenWords() {
+  return new Promise((resolve) => {
+    finishWord = resolve; // so that stopping does not wait out the pause
+    setTimeout(resolve, PAUSE_BETWEEN_WORDS_MS);
   });
 }
 async function playSentence() {
@@ -373,6 +387,10 @@ async function playSentence() {
     const custom = customList[queue[i]];
     await (custom && custom.has_sound ? playRecording(custom.sound_url) : speakWord(queue[i]));
     if (run !== playRun) return; // stopped, or the sentence changed
+    if (PAUSE_BETWEEN_WORDS_MS > 0 && i < queue.length - 1) {
+      await pauseBetweenWords();
+      if (run !== playRun) return;
+    }
   }
   stopPlayback();
 }
