@@ -37,6 +37,7 @@ class BoardAccessTest(UserBase):
             response = self.client.get(reverse("board"))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, "Pindutin ang mga salita...")
+            self.assertContains(response, "▶ Patugtugin")
 
     def test_board_carries_the_vocabulary_and_the_users_data(self):
         self.login_as("miguel")

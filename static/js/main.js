@@ -46,7 +46,7 @@ document.addEventListener("keydown", (e) => {
   document.querySelectorAll("[data-modal]:not(.hidden)").forEach((modal) => close_modal(modal.dataset.modal));
 });
 
-/* ---------- Dark theme toggle (remembered across page loads) ---------- */
+/* ---------- Dark theme toggle on the Settings page (remembered across page loads) ---------- */
 const darkToggle = document.getElementById("darkToggle");
 if (darkToggle) {
   // Ticked whenever the page is showing dark colours: because the user chose
