@@ -72,6 +72,7 @@
         <div>
           <label for="{{ password_form.new_password.id_for_label }}">{{ password_form.new_password.label }}</label>
           {{ password_form.new_password }}
+          <small class="fieldHelp" id="{{ password_form.new_password.id_for_label }}_helptext">{{ password_form.new_password.help_text }}</small>
           <small class="fieldError">{{ password_form.new_password.errors }}</small>
         </div>
         <div>

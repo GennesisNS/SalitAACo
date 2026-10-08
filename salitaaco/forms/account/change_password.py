@@ -16,18 +16,14 @@ class ChangePasswordForm(BaseForm):
         required=True,
         strip=False,
         min_length=MIN_PASSWORD_LENGTH,
-        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password", "placeholder": "min. 4 characters"}),
-        error_messages={
-            "required": "Ang bagong password ay dapat may hindi bababa sa 4 na character.",
-            "min_length": "Ang bagong password ay dapat may hindi bababa sa 4 na character.",
-        },
-        label="Bagong Password (min. 4)",
+        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
+        label="Bagong Password",
+        help_text="Hindi bababa sa 8 character, may malaki at maliit na titik, numero, at espesyal na character (hal. ! @ # $).",
     )
     confirm_password = forms.CharField(
         required=True,
         strip=False,
-        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password", "placeholder": "ulitin ang bago"}),
-        error_messages={"required": "Hindi magkatugma ang bagong password at kumpirmasyon."},
+        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
         label="Kumpirmahin ang Bagong Password",
     )
 

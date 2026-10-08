@@ -17,7 +17,12 @@
 
   <label for="{{ register_form.password.id_for_label }}">{{ register_form.password.label }}</label>
   {{ register_form.password }}
+  <small class="fieldHelp" id="{{ register_form.password.id_for_label }}_helptext">{{ register_form.password.help_text }}</small>
   <small class="fieldError">{{ register_form.password.errors }}</small>
+
+  <label for="{{ register_form.confirm_password.id_for_label }}">{{ register_form.confirm_password.label }}</label>
+  {{ register_form.confirm_password }}
+  <small class="fieldError">{{ register_form.confirm_password.errors }}</small>
 
   <button class="go" type="submit">Gumawa ng account</button>
 </form>

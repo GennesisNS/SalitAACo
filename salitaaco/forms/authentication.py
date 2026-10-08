@@ -1,7 +1,7 @@
 from django import forms
 
 from .helpers import BaseForm
-from .validators import username_exists
+from .validators import name_validator, username_exists, validate_password_strength
 
 MIN_PASSWORD_LENGTH = 4
 
@@ -30,6 +30,7 @@ class RegisterForm(BaseForm):
         widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. Miguel"}),
         error_messages={"required": "Ilagay ang pangalan ng bata / user."},
         label="Pangalan ng bata / user",
+        validators=[name_validator]
     )
     username = forms.CharField(
         required=True,
@@ -42,11 +43,15 @@ class RegisterForm(BaseForm):
     password = forms.CharField(
         required=True,
         strip=False,
-        min_length=MIN_PASSWORD_LENGTH,
-        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password", "placeholder": "min. 4 characters"}),
-        error_messages={
-            "required": "Ang password ay dapat may hindi bababa sa 4 na character.",
-            "min_length": "Ang password ay dapat may hindi bababa sa 4 na character.",
-        },
+        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
         label="Password",
+        help_text="Hindi bababa sa 8 character, may malaki at maliit na titik, numero, at espesyal na character (hal. ! @ # $).",
+        validators=[validate_password_strength],
+    )
+    confirm_password = forms.CharField(
+        required=True,
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
+        error_messages={"required": "Hindi magkatugma ang bagong password at kumpirmasyon."},
+        label="Kumpirmahin ang Password",
     )
