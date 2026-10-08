@@ -96,18 +96,18 @@ class PasswordTest(UserBase):
     def test_change_password_keeps_the_user_logged_in(self):
         self.login_as("miguel")
         response = self.client.post(reverse("profile"), {
-            "password_form": "", "current_password": "lihim1234", "new_password": "bago1", "confirm_password": "bago1",
+            "password_form": "", "current_password": "lihim1234", "new_password": "Bagong#123", "confirm_password": "Bagong#123",
         })
 
         self.assertRedirects(response, reverse("profile"))
         self.assertEqual(messages_of(response), ["Nabago na ang password."])
-        self.assertTrue(User.objects.get(pk=self.miguel.pk).check_password("bago1"))
+        self.assertTrue(User.objects.get(pk=self.miguel.pk).check_password("Bagong#123"))
         self.assertEqual(self.client.get(reverse("board")).status_code, 200)
 
     def test_wrong_current_password_changes_nothing(self):
         self.login_as("miguel")
         response = self.client.post(reverse("profile"), {
-            "password_form": "", "current_password": "mali", "new_password": "bago1", "confirm_password": "bago1",
+            "password_form": "", "current_password": "mali", "new_password": "Bagong#123", "confirm_password": "Bagong#123",
         })
 
         self.assertContains(response, "Maling kasalukuyang password.")

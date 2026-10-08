@@ -3,8 +3,6 @@ from django import forms
 from .helpers import BaseForm
 from .validators import name_validator, username_exists, validate_password_strength
 
-MIN_PASSWORD_LENGTH = 4
-
 
 class LoginForm(BaseForm):
     username = forms.CharField(

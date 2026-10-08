@@ -1,7 +1,7 @@
 from django import forms
 
-from ..authentication import MIN_PASSWORD_LENGTH
 from ..helpers import BaseForm
+from ..validators import validate_password_strength
 
 
 class ChangePasswordForm(BaseForm):
@@ -15,10 +15,10 @@ class ChangePasswordForm(BaseForm):
     new_password = forms.CharField(
         required=True,
         strip=False,
-        min_length=MIN_PASSWORD_LENGTH,
         widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
         label="Bagong Password",
         help_text="Hindi bababa sa 8 character, may malaki at maliit na titik, numero, at espesyal na character (hal. ! @ # $).",
+        validators=[validate_password_strength],
     )
     confirm_password = forms.CharField(
         required=True,
