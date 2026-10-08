@@ -48,7 +48,7 @@ class UploadAvatarFormTest(UserBase):
 
 class ChangePasswordFormTest(UserBase):
     def form(self, **changes):
-        data = {"current_password": "lihim1234", "new_password": "bago1", "confirm_password": "bago1", **changes}
+        data = {"current_password": "lihim1234", "new_password": "Bagong#123", "confirm_password": "Bagong#123", **changes}
         return ChangePasswordForm(data, user=self.miguel)
 
     def test_valid(self):
@@ -59,10 +59,10 @@ class ChangePasswordFormTest(UserBase):
         self.assertFalse(form.is_valid())
         self.assertEqual(form.errors["current_password"], ["Maling kasalukuyang password."])
 
-    def test_new_password_needs_four_characters(self):
-        form = self.form(new_password="abc", confirm_password="abc")
+    def test_new_password_must_be_strong(self):
+        form = self.form(new_password="Bago#12", confirm_password="Bago#12")
         self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors["new_password"], ["Ang bagong password ay dapat may hindi bababa sa 4 na character."])
+        self.assertEqual(form.errors["new_password"], ["Password must be at least 8 characters long."])
 
     def test_confirmation_must_match(self):
         form = self.form(confirm_password="iba")

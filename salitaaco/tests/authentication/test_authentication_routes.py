@@ -63,12 +63,12 @@ class RegisterRouteTest(UserBase):
     def test_register_creates_the_account_and_logs_in(self):
         response = self.client.post(
             reverse("register"),
-            {"display_name": "Bagong Bata", "username": "bago", "password": "abcd"},
+            {"display_name": "Bagong Bata", "username": "bago", "password": "Bagong#123", "confirm_password": "Bagong#123"},
         )
         self.assertRedirects(response, reverse("board"))
 
         user = User.objects.get(username="bago")
-        self.assertTrue(user.check_password("abcd"))
+        self.assertTrue(user.check_password("Bagong#123"))
         self.assertEqual(user.profile.display_name, "Bagong Bata")
         self.assertFalse(user.groups.exists())
         self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
@@ -76,7 +76,7 @@ class RegisterRouteTest(UserBase):
     def test_register_with_a_taken_username_shows_the_error(self):
         response = self.client.post(
             reverse("register"),
-            {"display_name": "Isa Pa", "username": "Miguel", "password": "abcd"},
+            {"display_name": "Isa Pa", "username": "Miguel", "password": "Bagong#123", "confirm_password": "Bagong#123"},
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Ginagamit na ang username na ito.")
