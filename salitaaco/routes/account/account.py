@@ -9,10 +9,10 @@ from salitaaco.forms.account.change_password import ChangePasswordForm
 from salitaaco.forms.account.delete_account import DeleteAccountForm
 from salitaaco.forms.account.profile_information import ProfileInformationForm
 from salitaaco.forms.account.upload_avatar import UploadAvatarForm
-from salitaaco.utils.account import delete_user_account
+from salitaaco.models.child_account import ChildAccount
+from salitaaco.utils.account import delete_user_account, get_user_account
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
-from salitaaco.utils.profile import get_user_profile
 from salitaaco.utils.uploads import random_upload_name
 
 
@@ -20,23 +20,26 @@ from salitaaco.utils.uploads import random_upload_name
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
 def manage_account(request):
-    profile = get_user_profile(request.user)
+    account = get_user_account(request.user)
+    # Only child accounts have an age, so only they are asked for one.
+    has_age = isinstance(account, ChildAccount)
 
-    profile_form = ProfileInformationForm(initial={
-        "display_name": profile.display_name,
-        "age": profile.age,
-    })
+    profile_form = ProfileInformationForm(
+        initial={"display_name": account.display_name, "age": account.age},
+        include_age=has_age,
+    )
     avatar_form = UploadAvatarForm()
     password_form = ChangePasswordForm(user=request.user)
     delete_account_form = DeleteAccountForm(user=request.user)
 
     if request.method == "POST":
         if "profile_form" in request.POST:
-            profile_form = ProfileInformationForm(request.POST)
+            profile_form = ProfileInformationForm(request.POST, include_age=has_age)
             if profile_form.is_valid():
-                profile.display_name = profile_form.cleaned_data['display_name']
-                profile.age = profile_form.cleaned_data['age']
-                profile.save()
+                account.display_name = profile_form.cleaned_data['display_name']
+                if has_age:
+                    account.age = profile_form.cleaned_data['age']
+                account.save()
                 messages.success(request, "Naka-save na ang profile.")
                 return redirect('profile')
 
@@ -44,7 +47,7 @@ def manage_account(request):
             avatar_form = UploadAvatarForm(request.POST, request.FILES)
             if avatar_form.is_valid():
                 avatar = avatar_form.cleaned_data['avatar']
-                profile.set_avatar(random_upload_name(avatar.content_type), avatar, avatar.content_type)
+                account.set_avatar(random_upload_name(avatar.content_type), avatar, avatar.content_type)
                 messages.success(request, "Nai-save na ang larawan.")
                 return redirect('profile')
 
@@ -68,7 +71,7 @@ def manage_account(request):
                 return redirect('login')
 
     context = {
-        "profile": profile,
+        "account": account,
         "profile_form": profile_form,
         "avatar_form": avatar_form,
         "password_form": password_form,
@@ -81,10 +84,10 @@ def manage_account(request):
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
 def view_avatar(request):
-    profile = get_user_profile(request.user)
-    if not profile.has_avatar:
+    account = get_user_account(request.user)
+    if not account.has_avatar:
         raise Http404()
-    response = FileResponse(profile.avatar.open('rb'), content_type=profile.avatar_mime or "application/octet-stream")
+    response = FileResponse(account.avatar.open('rb'), content_type=account.avatar_mime or "application/octet-stream")
     response["Cache-Control"] = "private, max-age=86400"
     return response
 
@@ -93,6 +96,6 @@ def view_avatar(request):
 @multi_user_test(is_app_user)
 @require_POST
 def remove_avatar(request):
-    get_user_profile(request.user).remove_avatar()
+    get_user_account(request.user).remove_avatar()
     messages.success(request, "Naalis na ang larawan.")
     return redirect('profile')

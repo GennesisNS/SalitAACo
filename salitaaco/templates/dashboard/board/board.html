@@ -3,6 +3,12 @@
 
 {% block page_header %}
 <header>
+  {% if managed_child %}
+  <div class="managedBanner">
+    <span>🧒 Inaayos mo ang mga tile ni <b>{{ managed_child.display_name }}</b>. Hindi nabibilang ang mga pindot mo rito.</span>
+    <a href="{% url 'manage_child' managed_child.uuid %}">← Bumalik kay {{ managed_child.display_name }}</a>
+  </div>
+  {% endif %}
   <div class="sentence-row">
     <div id="sentence"><span id="placeholder" style="color: var(--sub)">Pindutin ang mga salita...</span></div>
     <button class="iconbtn primary" id="playBtn" type="button" disabled>▶ Patugtugin</button>
@@ -12,9 +18,11 @@
     <button class="iconbtn" id="editModeBtn" type="button" style="padding: 6px 12px; min-height: auto">
       ✏️ I-edit ang mga cell
     </button>
+    {% if not managed_child %}
     <button class="iconbtn" type="button" data-open-modal="rating" style="padding: 6px 12px; min-height: auto">
       ⭐ I-rate ang app
     </button>
+    {% endif %}
   </div>
 </header>
 {% endblock %}

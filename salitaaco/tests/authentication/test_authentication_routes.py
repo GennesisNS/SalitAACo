@@ -8,7 +8,10 @@ from django.test import override_settings
 from django.urls import clear_url_caches, resolve, reverse
 
 from salitaaco import urls
+from salitaaco.models.admin_account import AdminAccount
+from salitaaco.models.child_account import ChildAccount
 from salitaaco.tests.users_base import UserBase
+from salitaaco.utils.account import find_user_account
 
 
 class LoginRouteTest(UserBase):
@@ -60,18 +63,29 @@ class LoginRouteTest(UserBase):
 
 
 class RegisterRouteTest(UserBase):
-    def test_register_creates_the_account_and_logs_in(self):
+    def test_register_creates_a_guardian_account_and_logs_in(self):
         response = self.client.post(
             reverse("register"),
-            {"display_name": "Bagong Bata", "username": "bago", "password": "Bagong#123", "confirm_password": "Bagong#123"},
+            {"display_name": "Bagong Magulang", "username": "bago", "password": "Bagong#123", "confirm_password": "Bagong#123"},
         )
-        self.assertRedirects(response, reverse("board"))
+        # A new guardian lands on the page where they add their children.
+        self.assertRedirects(response, reverse("children"))
 
         user = User.objects.get(username="bago")
         self.assertTrue(user.check_password("Bagong#123"))
-        self.assertEqual(user.profile.display_name, "Bagong Bata")
-        self.assertFalse(user.groups.exists())
+        self.assertEqual(user.guardian_account.display_name, "Bagong Magulang")
+        self.assertEqual(list(user.groups.values_list("name", flat=True)), ["Guardian"])
+        self.assertFalse(ChildAccount.objects.filter(user=user).exists())
         self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
+
+    def test_register_with_passwords_that_differ_shows_the_error(self):
+        response = self.client.post(
+            reverse("register"),
+            {"display_name": "Bagong Magulang", "username": "bago", "password": "Bagong#123", "confirm_password": "Iba#12345"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Hindi magkatugma ang password at kumpirmasyon.")
+        self.assertFalse(User.objects.filter(username="bago").exists())
 
     def test_register_with_a_taken_username_shows_the_error(self):
         response = self.client.post(
@@ -159,6 +173,22 @@ class MakeAdminCommandTest(UserBase):
 
         call_command("make_admin", "miguel", "--remove", stdout=StringIO())
         self.assertFalse(self.is_admin("miguel"))
+
+    def test_admin_account_is_added_beside_the_existing_one(self):
+        call_command("make_admin", "miguel", stdout=StringIO())
+        miguel = User.objects.get(username="miguel")
+        self.assertEqual(miguel.admin_account.display_name, "Miguel")
+        self.assertEqual(miguel.child_account.age, 7)
+        self.assertIsInstance(find_user_account(miguel), AdminAccount)
+
+        # Running it again changes nothing.
+        call_command("make_admin", "miguel", stdout=StringIO())
+        self.assertEqual(AdminAccount.objects.filter(user=miguel).count(), 1)
+
+        call_command("make_admin", "miguel", "--remove", stdout=StringIO())
+        miguel = User.objects.get(username="miguel")
+        self.assertFalse(AdminAccount.objects.filter(user=miguel).exists())
+        self.assertIsInstance(find_user_account(miguel), ChildAccount)
 
     def test_staff_flag_also_opens_the_django_admin_site(self):
         call_command("make_admin", "miguel", stdout=StringIO())

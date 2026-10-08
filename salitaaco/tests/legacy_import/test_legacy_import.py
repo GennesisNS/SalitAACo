@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.urls import reverse
 
+from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
@@ -34,14 +35,15 @@ def legacy_user(**changes):
 
 
 class ImportUserTest(UserBase):
-    def test_account_and_profile_are_copied(self):
+    def test_user_becomes_a_child_account_without_a_guardian(self):
         user = legacy_import.import_user(legacy_user())
 
         self.assertEqual(user.username, "luma")
-        self.assertEqual(user.profile.display_name, "Lumang User")
-        self.assertEqual(user.profile.age, 9)
-        self.assertFalse(user.profile.has_avatar)
-        self.assertFalse(user.groups.exists())
+        self.assertEqual(user.child_account.display_name, "Lumang User")
+        self.assertEqual(user.child_account.age, 9)
+        self.assertIsNone(user.child_account.guardian)
+        self.assertFalse(user.child_account.has_avatar)
+        self.assertEqual(list(user.groups.values_list("name", flat=True)), ["Child"])
         # The old wall-clock times are kept, read in the project's time zone (Asia/Manila, UTC+8).
         self.assertEqual(user.date_joined.isoformat(), "2026-09-01T00:30:00+00:00")
         self.assertEqual(user.last_login.isoformat(), "2026-09-30T10:45:00+00:00")
@@ -63,22 +65,29 @@ class ImportUserTest(UserBase):
         legacy_import.import_user(legacy_user(password_hash=PHP_HASH_ABCD))
         self.assertIsNotNone(authenticate(username="luma", password="abcd"))
 
-    def test_admin_flag_becomes_the_administrator_group(self):
+    def test_admin_flag_becomes_an_admin_account_in_the_administrator_group(self):
         user = legacy_import.import_user(legacy_user(is_admin=1))
-        self.assertTrue(user.groups.filter(name="Administrator").exists())
+
+        self.assertEqual(list(user.groups.values_list("name", flat=True)), ["Administrator"])
+        self.assertEqual(user.admin_account.display_name, "Lumang User")
+        self.assertFalse(ChildAccount.objects.filter(user=user).exists())
 
     def test_avatar_blob_becomes_a_file(self):
-        user = legacy_import.import_user(legacy_user(avatar_data=image_bytes("JPEG"), avatar_mime="image/jpeg"))
+        for is_admin, relation in [(0, "child_account"), (1, "admin_account")]:
+            user = legacy_import.import_user(legacy_user(
+                username=f"luma{is_admin}", is_admin=is_admin, avatar_data=image_bytes("JPEG"), avatar_mime="image/jpeg",
+            ))
+            account = getattr(user, relation)
 
-        self.assertEqual(user.profile.avatar_mime, "image/jpeg")
-        self.assertTrue(user.profile.avatar.name.endswith(".jpg"))
-        with user.profile.avatar.open("rb") as avatar:
-            self.assertEqual(avatar.read(), image_bytes("JPEG"))
+            self.assertEqual(account.avatar_mime, "image/jpeg")
+            self.assertTrue(account.avatar.name.endswith(".jpg"))
+            with account.avatar.open("rb") as avatar:
+                self.assertEqual(avatar.read(), image_bytes("JPEG"))
 
     def test_never_logged_in_and_no_age(self):
         user = legacy_import.import_user(legacy_user(last_login=None, age=None))
         self.assertIsNone(user.last_login)
-        self.assertIsNone(user.profile.age)
+        self.assertIsNone(user.child_account.age)
 
     def test_existing_username_is_skipped(self):
         self.assertIsNone(legacy_import.import_user(legacy_user(username="MIGUEL")))

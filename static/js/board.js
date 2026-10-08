@@ -44,7 +44,8 @@ function recall(key) {
 }
 const rememberedTab = recall(TAB_KEY);
 if (rememberedTab && (rememberedTab === FREQ_CAT || categories[rememberedTab])) currentCat = rememberedTab;
-editMode = recall(EDIT_KEY) === "1";
+// A guardian who opened a child's board is there to set up its tiles, so it starts in edit mode.
+editMode = boardData.managed || recall(EDIT_KEY) === "1";
 
 // The Settings page links here with ?edit=1 to open the board in edit mode.
 const pageUrl = new URL(location.href);
@@ -56,6 +57,8 @@ if (pageUrl.searchParams.get("edit") === "1") {
 }
 
 async function loadFrequent(limit = 40) {
+  // On a child's board opened by their guardian nothing is counted, so the list cannot have changed.
+  if (!boardData.frequent_words_url) return;
   try {
     const res = await fetch(`${boardData.frequent_words_url}?limit=${limit}`).then((r) => r.json());
     frequentItems = res.ok ? res.items || [] : [];
@@ -65,6 +68,8 @@ async function loadFrequent(limit = 40) {
 }
 
 function incrementUsage(word) {
+  // A guardian trying out a child's board is not the child talking: their taps are not counted.
+  if (!boardData.increment_usage_url) return;
   // Fire-and-forget: don't block the UI on accounting.
   try {
     fetch(boardData.increment_usage_url, {
@@ -221,7 +226,8 @@ document.getElementById("editModeBtn").onclick = () => {
 };
 function setEditMode(next) {
   editMode = next;
-  remember(EDIT_KEY, editMode ? "1" : "0");
+  // What a guardian does on a child's board must not change how their own board opens.
+  if (!boardData.managed) remember(EDIT_KEY, editMode ? "1" : "0");
   const barBtn = document.getElementById("editModeBtn");
   barBtn.classList.toggle("editing", editMode);
   barBtn.textContent = editMode ? "✓ Tapos na mag-edit" : "✏️ I-edit ang mga cell";

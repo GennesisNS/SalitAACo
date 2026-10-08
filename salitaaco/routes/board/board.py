@@ -2,13 +2,14 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from salitaaco.defaults.vocabulary import CATEGORIES, FREQUENT_CATEGORY, VERB_CATEGORY
 from salitaaco.forms.board.upload_tile_image import UploadTileImageForm
 from salitaaco.forms.board.upload_tile_sound import UploadTileSoundForm
 from salitaaco.forms.rating.submit_rating import SubmitRatingForm
+from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
 from salitaaco.utils.active_nav import active_nav
@@ -28,7 +29,18 @@ def first_form_error(form):
 @active_nav("board")
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
-def view_board(request):
+def view_board(request, child_uuid=None):
+    # The board shown is the user's own, unless a guardian opened the board of
+    # one of their children to set up its tiles. `owner` is whose tiles these are.
+    managed_child = None
+    owner = request.user
+    board_url = reverse('board')
+    if child_uuid is not None:
+        managed_child = get_object_or_404(ChildAccount, uuid=child_uuid, guardian__user=request.user)
+        owner = managed_child.user
+        board_url = reverse('child_board', args=[managed_child.uuid])
+        request.active_nav_ids = ("children",)
+
     user_rating = Rating.objects.filter(user=request.user).first()
 
     tile_image_form = UploadTileImageForm()
@@ -44,7 +56,7 @@ def view_board(request):
             if tile_image_form.is_valid():
                 image = tile_image_form.cleaned_data['image']
                 customization, _ = Customization.objects.get_or_create(
-                    user=request.user,
+                    user=owner,
                     word=tile_image_form.cleaned_data['word'],
                 )
                 customization.set_image(random_upload_name(image.content_type), image, image.content_type)
@@ -52,21 +64,21 @@ def view_board(request):
             else:
                 # The upload form has no visible fields, so its error is shown as a toast.
                 messages.error(request, first_form_error(tile_image_form))
-            return redirect('board')
+            return redirect(board_url)
 
         if "tile_sound_form" in request.POST:
             tile_sound_form = UploadTileSoundForm(request.POST, request.FILES)
             if tile_sound_form.is_valid():
                 sound = tile_sound_form.cleaned_data['sound']
                 customization, _ = Customization.objects.get_or_create(
-                    user=request.user,
+                    user=owner,
                     word=tile_sound_form.cleaned_data['word'],
                 )
                 customization.set_sound(random_upload_name(sound.content_type), sound, sound.content_type)
                 messages.success(request, "Nai-save na ang tunog ng tile.")
             else:
                 messages.error(request, first_form_error(tile_sound_form))
-            return redirect('board')
+            return redirect(board_url)
 
         if "rating_form" in request.POST:
             rating_form = SubmitRatingForm(request.POST)
@@ -79,7 +91,7 @@ def view_board(request):
                     },
                 )
                 messages.success(request, "Salamat sa iyong rating!")
-                return redirect('board')
+                return redirect(board_url)
 
     customizations = [
         {
@@ -91,10 +103,11 @@ def view_board(request):
             "sound_url": f"{reverse('view_customization_sound', args=[customization.uuid])}?v={customization.version}",
             "reset_url": reverse('reset_customization', args=[customization.uuid]),
         }
-        for customization in Customization.objects.filter(user=request.user)
+        for customization in Customization.objects.filter(user=owner)
     ]
 
     context = {
+        "managed_child": managed_child,
         "tile_image_form": tile_image_form,
         "tile_sound_form": tile_sound_form,
         "rating_form": rating_form,
@@ -104,9 +117,12 @@ def view_board(request):
             "frequent_category": FREQUENT_CATEGORY,
             "verb_category": VERB_CATEGORY,
             "customizations": customizations,
-            "frequent_words": frequent_words(request.user),
-            "increment_usage_url": reverse('increment_word_usage'),
-            "frequent_words_url": reverse('list_frequent_words'),
+            "frequent_words": frequent_words(owner),
+            # A guardian setting up a child's board is not the child talking,
+            # so their taps are not counted: the board gets no address to report them to.
+            "managed": managed_child is not None,
+            "increment_usage_url": None if managed_child else reverse('increment_word_usage'),
+            "frequent_words_url": None if managed_child else reverse('list_frequent_words'),
         },
     }
     return render(request, 'dashboard/board/board.html', context)

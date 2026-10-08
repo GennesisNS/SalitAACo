@@ -28,7 +28,12 @@ class RegisterFormTest(UserBase):
     def test_display_name_is_required(self):
         form = RegisterForm(self.valid_data(display_name="  "))
         self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors["display_name"], ["Ilagay ang pangalan ng bata / user."])
+        self.assertEqual(form.errors["display_name"], ["Ilagay ang pangalan mo."])
+
+    def test_passwords_must_match(self):
+        form = RegisterForm(self.valid_data(confirm_password="Iba#12345"))
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors["confirm_password"], ["Hindi magkatugma ang password at kumpirmasyon."])
 
     def test_password_must_be_strong(self):
         cases = [

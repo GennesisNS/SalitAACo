@@ -11,12 +11,15 @@
   </div>
   <div class="settingsBody">
     <h3>Impormasyon ng Account</h3>
-    <p class="desc">Baguhin ang pangalan, edad, at larawan ng profile na nakikita sa menu.</p>
+    <p class="desc">
+      Baguhin ang pangalan{% if profile_form.age %}, edad,{% endif %} at larawan ng profile na nakikita sa menu.
+      Uri ng account: <b>{{ account.ROLE_LABEL }}</b>.
+    </p>
 
     <div class="avatarRow">
       <div class="avatarPrev">
-        {% if profile.has_avatar %}
-        <img src="{% url 'view_avatar' %}?v={{ profile.updated_at|date:'U' }}" alt="avatar" />
+        {% if account.has_avatar %}
+        <img src="{% url 'view_avatar' %}?v={{ account.updated_at|date:'U' }}" alt="avatar" />
         {% else %}👤{% endif %}
       </div>
       <div class="avatarActions">
@@ -47,11 +50,13 @@
           <label for="accountUsername">Username</label>
           <input class="input" type="text" id="accountUsername" value="{{ request.user.username }}" disabled style="opacity: 0.7; cursor: not-allowed" />
         </div>
+        {% if profile_form.age %}
         <div>
           <label for="{{ profile_form.age.id_for_label }}">{{ profile_form.age.label }}</label>
           {{ profile_form.age }}
           <small class="fieldError">{{ profile_form.age.errors }}</small>
         </div>
+        {% endif %}
       </div>
 
       <button class="primaryBtn" type="submit" name="profile_form" style="margin-top: 14px">💾 I-save ang profile</button>
@@ -110,6 +115,7 @@
     </p>
     {{ delete_account_form.password }}
     <small class="fieldError">{{ delete_account_form.password.errors }}</small>
+    <small class="fieldError">{{ delete_account_form.non_field_errors }}</small>
     <div class="confirmRow">
       <button class="secondaryBtn" type="button" data-close-modal="delete-account">Huwag muna</button>
       <button class="dangerBtn solid" type="submit" name="delete_account_form">Oo, burahin na</button>

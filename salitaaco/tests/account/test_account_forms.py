@@ -2,7 +2,7 @@ from salitaaco.forms.account.change_password import ChangePasswordForm
 from salitaaco.forms.account.delete_account import DeleteAccountForm
 from salitaaco.forms.account.profile_information import ProfileInformationForm
 from salitaaco.forms.account.upload_avatar import UploadAvatarForm
-from salitaaco.tests.users_base import UserBase, image_upload
+from salitaaco.tests.users_base import GUARDIAN_PASSWORD, UserBase, image_upload, make_guardian
 from salitaaco.utils.uploads import MAX_UPLOAD_SIZE
 
 
@@ -15,6 +15,12 @@ class ProfileInformationFormTest(UserBase):
         form = ProfileInformationForm({"display_name": "Miguel", "age": ""})
         self.assertTrue(form.is_valid(), form.errors)
         self.assertIsNone(form.cleaned_data["age"])
+
+    def test_without_age_for_accounts_that_have_none(self):
+        form = ProfileInformationForm({"display_name": "Nanay Rosa", "age": "40"}, include_age=False)
+        self.assertNotIn("age", form.fields)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data, {"display_name": "Nanay Rosa"})
 
     def test_display_name_is_required(self):
         form = ProfileInformationForm({"display_name": "  ", "age": ""})
@@ -82,3 +88,14 @@ class DeleteAccountFormTest(UserBase):
         form = DeleteAccountForm({"password": "mali"}, user=self.miguel)
         self.assertFalse(form.is_valid())
         self.assertEqual(form.errors["password"], ["Maling password."])
+
+    def test_guardian_with_children_cannot_delete_their_account(self):
+        guardian = make_guardian("nanay", "Nanay Rosa", children=[self.miguel])
+        form = DeleteAccountForm({"password": GUARDIAN_PASSWORD}, user=guardian.user)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.non_field_errors(), [
+            "May mga account ng bata pa sa ilalim mo. Burahin muna ang mga iyon sa pahinang Mga Bata.",
+        ])
+
+        childless = make_guardian("tatay", "Tatay Ben")
+        self.assertTrue(DeleteAccountForm({"password": GUARDIAN_PASSWORD}, user=childless.user).is_valid())

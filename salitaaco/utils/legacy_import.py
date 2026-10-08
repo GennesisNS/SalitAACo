@@ -1,14 +1,17 @@
 import logging
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
 from salitaaco.defaults.administrator_roles import ADMINISTRATOR
+from salitaaco.defaults.user_roles import CHILD
+from salitaaco.models.admin_account import AdminAccount
+from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
-from salitaaco.models.profile import Profile
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
+from salitaaco.utils.account import add_to_group
 from salitaaco.utils.uploads import base_mime, random_upload_name
 
 logger = logging.getLogger(__name__)
@@ -42,8 +45,10 @@ def safe_mime(mime, family, default):
 
 def import_user(row):
     """
-    Create the account and profile for one row of the old `users` table.
-    Returns the new User, or None when the username is already taken here.
+    Create the user and account for one row of the old `users` table: an admin
+    account for an old admin, a child account (with no guardian yet) for
+    everyone else. Returns the new User, or None when the username is already
+    taken here.
     """
     if User.objects.filter(username__iexact=row["username"]).exists():
         logger.warning("Skipped user %s: the username already exists", row["username"])
@@ -51,8 +56,8 @@ def import_user(row):
 
     user = User(username=row["username"], password=legacy_password(row["password_hash"]))
     user.save()
-    # date_joined defaults to now and Profile's timestamps are automatic, so the
-    # original times are written with update(), which bypasses both.
+    # date_joined defaults to now and the account's timestamps are automatic, so
+    # the original times are written with update(), which bypasses both.
     User.objects.filter(pk=user.pk).update(
         date_joined=legacy_time(row["created_at"]) or timezone.now(),
         last_login=legacy_time(row.get("last_login")),
@@ -60,14 +65,16 @@ def import_user(row):
     user.refresh_from_db()
 
     if row.get("is_admin"):
-        group, _ = Group.objects.get_or_create(name=ADMINISTRATOR)
-        user.groups.add(group)
+        add_to_group(user, ADMINISTRATOR)
+        account = AdminAccount.objects.create(user=user, display_name=row["display_name"])
+    else:
+        add_to_group(user, CHILD)
+        account = ChildAccount.objects.create(user=user, display_name=row["display_name"], age=row.get("age"))
 
-    profile = Profile.objects.create(user=user, display_name=row["display_name"], age=row.get("age"))
     if row.get("avatar_data"):
         mime = safe_mime(row.get("avatar_mime"), "image", "application/octet-stream")
-        profile.set_avatar(random_upload_name(mime), ContentFile(bytes(row["avatar_data"])), mime)
-    Profile.objects.filter(pk=profile.pk).update(created_at=user.date_joined)
+        account.set_avatar(random_upload_name(mime), ContentFile(bytes(row["avatar_data"])), mime)
+    type(account).objects.filter(pk=account.pk).update(created_at=user.date_joined)
 
     return user
 

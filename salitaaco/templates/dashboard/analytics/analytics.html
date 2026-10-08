@@ -48,7 +48,7 @@
     <tbody>
       {% for rating in ratings %}
       <tr>
-        <td>{{ rating.user.profile.display_name }} <span class="badge">@{{ rating.user.username }}</span></td>
+        <td>{{ rating.user.account.display_name }} <span class="badge">@{{ rating.user.username }}</span></td>
         <td><span class="stars">{{ rating.stars }}</span></td>
         <td class="comment">{{ rating.comment|default:"—" }}</td>
         <td>{{ rating.updated_at|date:"Y-m-d H:i" }}</td>
@@ -97,7 +97,7 @@
         <th>Tunog</th>
         <th>Taps</th>
         <th>Rating</th>
-        <th>Admin</th>
+        <th>Uri</th>
         <th>Sign-up</th>
         <th>Huling login</th>
       </tr>
@@ -106,15 +106,15 @@
       {% for row in users %}
       <tr>
         <td>@{{ row.username }}</td>
-        <td>{{ row.profile.display_name }}</td>
-        <td>{{ row.profile.age|default_if_none:"—" }}</td>
+        <td>{{ row.account.display_name }}</td>
+        <td>{{ row.account.age|default_if_none:"—" }}</td>
         <td>{{ row.image_count }}</td>
         <td>{{ row.sound_count }}</td>
         <td>{{ row.total_taps }}</td>
         <td>
           {% if row.rating_stars %}<span class="stars">{{ row.rating_stars|stars }}</span>{% else %}—{% endif %}
         </td>
-        <td>{% if row.is_admin %}<span class="badge admin">admin</span>{% else %}—{% endif %}</td>
+        <td>{% if row.account %}<span class="{{ row.account.role_badge_class }}">{{ row.account.ROLE_LABEL }}</span>{% else %}—{% endif %}</td>
         <td>{{ row.date_joined|date:"Y-m-d H:i" }}</td>
         <td>{{ row.last_login|date:"Y-m-d H:i"|default:"—" }}</td>
       </tr>

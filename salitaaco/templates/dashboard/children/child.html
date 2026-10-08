@@ -1,0 +1,149 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{{ child.display_name }} - SalitAACo{% endblock %}
+
+{% block main %}
+<p class="backLink"><a href="{% url 'children' %}">← Mga Bata</a></p>
+
+<!-- ============== CHILD'S PROFILE ============== -->
+<div class="pageCard">
+  <div class="settingsHeader">
+    <h2>🧒 {{ child.display_name }}</h2>
+  </div>
+  <div class="settingsBody">
+    <h3>Impormasyon ng Bata</h3>
+    <p class="desc">Baguhin ang pangalan, edad, at larawan ng bata. Nagla-log in siya bilang <b>@{{ child.user.username }}</b>.</p>
+
+    <div class="avatarRow">
+      <div class="avatarPrev">
+        {% if child.has_avatar %}
+        <img src="{% url 'view_child_avatar' child.uuid %}?v={{ child.updated_at|date:'U' }}" alt="avatar" />
+        {% else %}🧒{% endif %}
+      </div>
+      <div class="avatarActions">
+        <form id="avatarForm" class="inlineForm" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="avatar_form" value="1" />
+          {{ avatar_form.avatar }}
+          <button class="secondaryBtn" id="avatarPickBtn" type="button">📸 Mag-upload ng larawan</button>
+        </form>
+        <form class="inlineForm" method="post" action="{% url 'remove_child_avatar' child.uuid %}">
+          {% csrf_token %}
+          <button class="secondaryBtn" type="submit" style="color: var(--danger); border-color: #f2c1bc">
+            🗑️ Alisin ang larawan
+          </button>
+        </form>
+      </div>
+    </div>
+    <small class="fieldError">{{ avatar_form.avatar.errors }}</small>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="row">
+        <div>
+          <label for="{{ child_form.display_name.id_for_label }}">{{ child_form.display_name.label }}</label>
+          {{ child_form.display_name }}
+          <small class="fieldError">{{ child_form.display_name.errors }}</small>
+        </div>
+        <div>
+          <label for="{{ child_form.age.id_for_label }}">{{ child_form.age.label }}</label>
+          {{ child_form.age }}
+          <small class="fieldError">{{ child_form.age.errors }}</small>
+        </div>
+      </div>
+
+      <button class="primaryBtn" type="submit" name="child_form" style="margin-top: 14px">💾 I-save ang profile</button>
+    </form>
+
+    <hr class="sectionDivider" />
+
+    <h3>Mga Tile ng Bata</h3>
+    <p class="desc">
+      Buksan ang mga tile ni {{ child.display_name }} para magpalit ng larawan o mag-record ng tunog para sa kanya.
+      Mayroon na siyang {{ image_count }} sariling larawan at {{ sound_count }} recording.
+    </p>
+    <a class="iconbtn" href="{% url 'child_board' child.uuid %}" style="display: block; text-align: center; padding: 12px; font-weight: 600; text-decoration: none">
+      ✏️ Ayusin ang mga tile ni {{ child.display_name }}
+    </a>
+
+    <hr class="sectionDivider" />
+
+    <h3>Mga Madalas Gamitin</h3>
+    <p class="desc">
+      Ang mga salitang pinakamadalas pindutin ni {{ child.display_name }}. Kabuuan: <b>{{ total_taps }}</b> pindot.
+    </p>
+    {% for item in usage %}
+    <div class="usageRow">
+      <span class="word">{{ item.word }}</span>
+      <span class="track"><span class="fill" style="width: {{ item.width }}%"></span></span>
+      <span class="count">{{ item.use_count }}</span>
+    </div>
+    {% empty %}
+    <p class="emptyState">Wala pa siyang napipindot na salita.</p>
+    {% endfor %}
+
+    <hr class="sectionDivider" />
+
+    <h3>Palitan ang Password ng Bata</h3>
+    <p class="desc">
+      Bigyan ng bagong password si {{ child.display_name }}, halimbawa kung nakalimutan niya ito. Kakailanganin niyang
+      mag-log in muli gamit ang bago.
+    </p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="row">
+        <div>
+          <label for="{{ password_form.new_password.id_for_label }}">{{ password_form.new_password.label }}</label>
+          {{ password_form.new_password }}
+          <small class="fieldHelp">{{ password_form.new_password.help_text }}</small>
+          <small class="fieldError">{{ password_form.new_password.errors }}</small>
+        </div>
+        <div>
+          <label for="{{ password_form.confirm_password.id_for_label }}">{{ password_form.confirm_password.label }}</label>
+          {{ password_form.confirm_password }}
+          <small class="fieldError">{{ password_form.confirm_password.errors }}</small>
+        </div>
+      </div>
+
+      <button class="primaryBtn" type="submit" name="password_form" style="margin-top: 14px">
+        🔑 I-save ang bagong password
+      </button>
+    </form>
+
+    <hr class="sectionDivider" />
+
+    <h3 style="color: var(--danger)">Burahin ang Account ng Bata</h3>
+    <p class="desc">
+      Permanenteng mabubura ang account ni {{ child.display_name }}, lahat ng custom na larawan, at mga recording niya.
+      Hindi na ito mababalik.
+    </p>
+    <button class="dangerBtn" type="button" data-open-modal="delete-child">
+      ⚠️ Permanente nang burahin ang account ni {{ child.display_name }}
+    </button>
+  </div>
+</div>
+
+<!-- ============== DELETE CONFIRM DIALOG ============== -->
+<div class="confirmBackdrop hidden" data-modal="delete-child" data-open="{{ show_delete_child_modal|yesno:'true,false' }}">
+  <form class="confirmBox" method="post" role="dialog" aria-modal="true" novalidate>
+    {% csrf_token %}
+    <h3>⚠️ Sigurado ka na ba?</h3>
+    <p>
+      Ang lahat ng datos ni {{ child.display_name }} (mga larawan, recording, at mismong account) ay mabubura na
+      <b>permanente</b> at hindi na maibabalik. I-type ang <b>password mo</b> para kumpirmahin:
+    </p>
+    {{ delete_child_form.password }}
+    <small class="fieldError">{{ delete_child_form.password.errors }}</small>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-child">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit" name="delete_child_form">Oo, burahin na</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/account.js' %}" defer></script>
+{% endblock %}

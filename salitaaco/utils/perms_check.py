@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import user_passes_test
 
 from salitaaco.defaults.administrator_roles import ADMINISTRATOR
+from salitaaco.defaults.user_roles import CHILD, GUARDIAN
 
 
 def multi_user_test(*tests):
@@ -11,6 +12,14 @@ def multi_user_test(*tests):
 
 def is_administrator(user):
     return user.groups.filter(name=ADMINISTRATOR).exists()
+
+
+def is_guardian(user):
+    return user.groups.filter(name=GUARDIAN).exists()
+
+
+def is_child(user):
+    return user.groups.filter(name=CHILD).exists()
 
 
 def is_app_user(user):

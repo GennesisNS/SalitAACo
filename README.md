@@ -52,6 +52,21 @@ This only covers terminals inside VS Code. In a PowerShell or Command Prompt win
 
 The path in the settings file is the Windows one. On macOS and Linux, choose the interpreter once with **Python: Select Interpreter** instead.
 
+### The three kinds of account
+
+| Account | Who it is for | How it is made | What it can do |
+| --- | --- | --- | --- |
+| Guardian | A parent or carer | Signing up on `/register/` | Create and manage their children's accounts, set up a child's tiles, see a child's most-used words, use the board themselves |
+| Child | The child who talks with the board | By their guardian, on the "Mga Bata" page | Log in with their own username and password and use their own board |
+| Admin | Whoever runs the app | `python manage.py make_admin` (below) | Open the admin dashboard, and use the board |
+
+Each kind has its own model (`GuardianAccount`, `ChildAccount`, `AdminAccount`) holding the name and picture, and its own group (`Guardian`, `Child`, `Administrator`) deciding which pages it may open.
+
+Things to know:
+
+- A guardian cannot delete their own account while they still have children; the children's accounts are deleted first.
+- Accounts that existed before guardians were introduced became child accounts with no guardian. They work as before.
+
 ### Make yourself an admin
 
 The admin dashboard is only for accounts in the `Administrator` group. Sign up in the app first, then run:
@@ -62,13 +77,16 @@ python manage.py make_admin your_username_here
 
 It takes effect on the next page load. `python manage.py make_admin your_username_here --remove` takes it away again.
 
+The command adds an admin account next to the one you signed up with, so a guardian who becomes an admin keeps their children.
+
 ## URLs
 
 | Address                 | What it is                                                    | Who can open it |
 | ----------------------- | ------------------------------------------------------------- | --------------- |
 | `/login/`, `/register/` | Log in and sign up                                            | Everyone        |
 | `/dashboard/board/`     | The app: tiles, sentence builder, edit mode, rating           | Logged-in users |
-| `/dashboard/profile/`   | Profile: name, age, profile picture, password, delete account  | Logged-in users |
+| `/dashboard/profile/`   | Profile: name, profile picture, password, delete account (and age, for a child) | Logged-in users |
+| `/dashboard/children/`  | Mga Bata: a guardian's children, and a page and a board for each | Guardians       |
 | `/dashboard/settings/`  | Settings: tile editing, dark theme                             | Logged-in users |
 | `/dashboard/analytics/` | Admin dashboard                                               | Administrators  |
 
@@ -109,8 +127,8 @@ salitaaco/
   urls.py               Login, sign-up, logout, old-address redirects
   routes/               The views, one folder per feature
     dashboard/__init__.py   Every address under /dashboard/
-    auth.py  board/  account/  settings/  analytics/  error_handler.py
-  models/               One model per file
+    auth.py  board/  account/  children/  settings/  analytics/  error_handler.py
+  models/               One model per file (account_base.py is shared by the three account models)
   forms/                One form per file, one folder per feature
     validators.py       Reusable validation rules
     helpers.py          The base form
@@ -168,7 +186,7 @@ GitHub Actions runs all four on every push and pull request to `main`.
 Things to know:
 
 - An account whose username already exists here is skipped, so the command can be run again safely.
-- Old admins (`is_admin = 1`) are added to the `Administrator` group.
+- Old admins (`is_admin = 1`) become admin accounts in the `Administrator` group. Everyone else becomes a child account with no guardian.
 - The old database stored local times. They are read as `TIME_ZONE` times (`Asia/Manila` by default), so set `TIME_ZONE` to the old server's time zone before importing.
 - The old database is only read, never changed.
 - To start over, delete `db.sqlite3` and the files inside the `media/` subfolders, then run `migrate` and the import again.
@@ -191,7 +209,7 @@ Development and production each have their own `.env`, so nothing is converted: 
    CREATE DATABASE salitaaco CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
 2. In the production `.env`, set `DB_ENGINE=mysql` and the `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT` values.
-3. Run `python manage.py migrate`. This creates every table and the `Administrator` group.
+3. Run `python manage.py migrate`. This creates every table and the `Administrator`, `Guardian` and `Child` groups.
 
 Production then starts empty. Sign up, and run `make_admin` for your account.
 

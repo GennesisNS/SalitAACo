@@ -25,9 +25,9 @@ class RegisterForm(BaseForm):
     display_name = forms.CharField(
         required=True,
         max_length=100,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. Miguel"}),
-        error_messages={"required": "Ilagay ang pangalan ng bata / user."},
-        label="Pangalan ng bata / user",
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. Maria Santos"}),
+        error_messages={"required": "Ilagay ang pangalan mo."},
+        label="Pangalan mo (magulang / tagapag-alaga)",
         validators=[name_validator]
     )
     username = forms.CharField(
@@ -53,3 +53,11 @@ class RegisterForm(BaseForm):
         error_messages={"required": "Hindi magkatugma ang bagong password at kumpirmasyon."},
         label="Kumpirmahin ang Password",
     )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+        if password and confirm_password and password != confirm_password:
+            self.add_error("confirm_password", "Hindi magkatugma ang password at kumpirmasyon.")
+        return cleaned_data

@@ -18,7 +18,7 @@ The record of what each route of the PHP application became. The PHP application
 
 | PHP table | Django model | Notes |
 | --- | --- | --- |
-| `users` | `auth.User` + `Profile` | `User` holds username, password, `date_joined` (was `created_at`), `last_login`. `Profile` holds display name, age, avatar. `is_admin` became the `Administrator` group |
+| `users` | `auth.User` + one of `ChildAccount`, `GuardianAccount`, `AdminAccount` | `User` holds username, password, `date_joined` (was `created_at`), `last_login`. The account holds display name and avatar; a child's also holds age and the link to their guardian. `is_admin` became an `AdminAccount` in the `Administrator` group; every other old user becomes a `ChildAccount` with no guardian. (A single `Profile` model did this job until migration 0005.) |
 | `customizations` | `Customization` | Blobs became files under `media/customization-images/` and `media/customization-sounds/` |
 | `word_usage` | `WordUsage` | |
 | `ratings` | `Rating` | The 1 to 5 check constraint is kept |
@@ -78,6 +78,27 @@ Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python
 | `/` returns 404 | `/` goes to the board or the login page | |
 | `last_login` is empty until the first log in after sign-up | Signing up counts as a login | Django records it when the session starts |
 | "Today" and "this week" follow the MySQL server's clock | They follow `TIME_ZONE` (`Asia/Manila`) | |
+
+## Added after the conversion: child, guardian and admin accounts
+
+The PHP application had one kind of user. The Django project now has three, each with its own model and group.
+
+| Feature | Django view | URL name and path | Form | Template |
+| --- | --- | --- | --- | --- |
+| Sign-up makes a guardian | `auth.register_view` | `register` `/register/` | `RegisterForm` | `auth/register.html` |
+| A guardian's children; create a child | `children.view_children` | `children` `children/` | `CreateChildForm` | `dashboard/children/children.html` |
+| A child's page: profile, usage, new password, delete | `children.manage_child` | `manage_child` `children/<uuid>/` | `ProfileInformationForm`, `UploadAvatarForm`, `ResetChildPasswordForm`, `DeleteChildForm` | `dashboard/children/child.html` |
+| A child's picture | `children.view_child_avatar`, `children.remove_child_avatar` | `view_child_avatar` `children/<uuid>/avatar/`, `remove_child_avatar` `children/<uuid>/avatar/remove/` | | |
+| A child's board, for the guardian to set up tiles | `board.view_board` | `child_board` `children/<uuid>/board/` | the board's tile forms | `dashboard/board/board.html` |
+
+Rules:
+
+- Only a child's own guardian reaches the child's page, board, pictures and recordings; anyone else gets 404.
+- Taps a guardian makes on a child's board are not counted as the child's.
+- A guardian confirms deleting a child with the guardian's own password.
+- A guardian cannot delete their own account while they have children.
+- A child keeps everything an account could do before: their board, edit mode, their profile and password.
+- `make_admin` adds an admin account beside the user's existing one.
 
 Kept from the PHP application against the MYO conventions, because behaviour wins:
 

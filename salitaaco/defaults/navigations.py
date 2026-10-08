@@ -1,4 +1,5 @@
 from .administrator_roles import ADMINISTRATOR
+from .user_roles import GUARDIAN
 
 # The dashboard sidebar. "route" is a URL name; the context processor resolves it.
 # "roles" lists the groups that may see the item ("*" for every logged-in user).
@@ -13,6 +14,13 @@ dashboard_items = [
                 "route": "board",
                 "icon": "🧩",
                 "roles": ["*"],
+            },
+            {
+                "name": "Mga Bata",
+                "id": "children",
+                "route": "children",
+                "icon": "🧒",
+                "roles": [GUARDIAN],
             },
             {
                 "name": "Settings",

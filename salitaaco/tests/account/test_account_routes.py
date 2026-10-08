@@ -4,11 +4,13 @@ from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.urls import reverse
 
+from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
-from salitaaco.models.profile import Profile
+from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
-from salitaaco.tests.users_base import UserBase, image_upload, sound_upload
+from salitaaco.tests.users_base import GUARDIAN_PASSWORD, UserBase, image_upload, make_guardian, sound_upload
+from salitaaco.utils.account import delete_user_account
 from salitaaco.utils.uploads import random_upload_name
 
 
@@ -33,12 +35,24 @@ class AccountAccessTest(UserBase):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, "Impormasyon ng Account")
 
-    def test_account_made_outside_the_app_gets_a_profile(self):
-        User.objects.create_user(username="walangprofile", password="abcd")
-        self.client.login(username="walangprofile", password="abcd")
+    def test_account_made_outside_the_app_becomes_a_guardian(self):
+        User.objects.create_user(username="walangaccount", password="abcd")
+        self.client.login(username="walangaccount", password="abcd")
 
         self.assertEqual(self.client.get(reverse("profile")).status_code, 200)
-        self.assertEqual(Profile.objects.get(user__username="walangprofile").display_name, "walangprofile")
+        user = User.objects.get(username="walangaccount")
+        self.assertEqual(user.guardian_account.display_name, "walangaccount")
+        self.assertTrue(user.groups.filter(name="Guardian").exists())
+
+    def test_staff_user_made_outside_the_app_becomes_an_admin(self):
+        User.objects.create_superuser(username="ugat", password="abcd")
+        self.client.login(username="ugat", password="abcd")
+
+        self.assertEqual(self.client.get(reverse("profile")).status_code, 200)
+        user = User.objects.get(username="ugat")
+        self.assertEqual(user.admin_account.display_name, "ugat")
+        self.assertTrue(user.groups.filter(name="Administrator").exists())
+        self.assertEqual(self.client.get(reverse("analytics")).status_code, 200)
 
 
 class ProfileTest(UserBase):
@@ -48,9 +62,9 @@ class ProfileTest(UserBase):
 
         self.assertRedirects(response, reverse("profile"))
         self.assertEqual(messages_of(response), ["Naka-save na ang profile."])
-        profile = Profile.objects.get(user=self.miguel)
-        self.assertEqual(profile.display_name, "Migs")
-        self.assertIsNone(profile.age)
+        account = ChildAccount.objects.get(user=self.miguel)
+        self.assertEqual(account.display_name, "Migs")
+        self.assertIsNone(account.age)
 
     def test_invalid_profile_shows_the_error_next_to_the_field(self):
         self.login_as("miguel")
@@ -58,7 +72,24 @@ class ProfileTest(UserBase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Hindi tama ang edad.")
-        self.assertEqual(Profile.objects.get(user=self.miguel).display_name, "Miguel")
+        self.assertEqual(ChildAccount.objects.get(user=self.miguel).display_name, "Miguel")
+
+    def test_only_children_are_asked_for_an_age(self):
+        make_guardian("nanay", "Nanay Rosa")
+        for username, has_age, role in [("miguel", True, "Bata"), ("nanay", False, "Tagapag-alaga"), ("developer", False, "Admin")]:
+            self.login_as(username)
+            response = self.client.get(reverse("profile"))
+            self.assertEqual("age" in response.context["profile_form"].fields, has_age, username)
+            self.assertContains(response, f"Uri ng account: <b>{role}</b>")
+
+    def test_guardian_and_admin_update_their_name(self):
+        make_guardian("nanay", "Nanay Rosa")
+        for username, relation in [("nanay", "guardian_account"), ("developer", "admin_account")]:
+            self.login_as(username)
+            # An age sent anyway is ignored: these accounts have none.
+            response = self.client.post(reverse("profile"), {"profile_form": "", "display_name": "Bagong Pangalan", "age": "40"})
+            self.assertRedirects(response, reverse("profile"))
+            self.assertEqual(getattr(User.objects.get(username=username), relation).display_name, "Bagong Pangalan")
 
     def test_avatar_upload_view_and_remove(self):
         self.login_as("miguel")
@@ -68,9 +99,9 @@ class ProfileTest(UserBase):
         self.assertRedirects(response, reverse("profile"))
         self.assertEqual(messages_of(response), ["Nai-save na ang larawan."])
 
-        profile = Profile.objects.get(user=self.miguel)
-        path = profile.avatar.path
-        self.assertEqual(profile.avatar_mime, "image/png")
+        account = ChildAccount.objects.get(user=self.miguel)
+        path = account.avatar.path
+        self.assertEqual(account.avatar_mime, "image/png")
 
         response = self.client.get(reverse("view_avatar"))
         self.assertEqual(response.status_code, 200)
@@ -80,7 +111,7 @@ class ProfileTest(UserBase):
         self.assertEqual(self.client.get(reverse("remove_avatar")).status_code, 405)
         response = self.client.post(reverse("remove_avatar"))
         self.assertRedirects(response, reverse("profile"))
-        self.assertFalse(Profile.objects.get(user=self.miguel).has_avatar)
+        self.assertFalse(ChildAccount.objects.get(user=self.miguel).has_avatar)
         self.assertFalse(os.path.exists(path))
 
     def test_rejected_avatar_shows_the_error(self):
@@ -124,8 +155,25 @@ class DeleteAccountTest(UserBase):
         self.assertContains(response, "Maling password.")
         self.assertTrue(User.objects.filter(pk=self.miguel.pk).exists())
 
+    def test_guardian_with_children_must_delete_them_first(self):
+        make_guardian("nanay", "Nanay Rosa", children=[self.miguel])
+        self.login_as("nanay")
+
+        response = self.client.post(reverse("profile"), {"delete_account_form": "", "password": GUARDIAN_PASSWORD})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["show_delete_account_modal"])
+        self.assertContains(response, "May mga account ng bata pa sa ilalim mo.")
+        self.assertTrue(User.objects.filter(username="nanay").exists())
+
+        # Once the child's account is gone, the guardian's can go too.
+        delete_user_account(User.objects.get(username="miguel"))
+        response = self.client.post(reverse("profile"), {"delete_account_form": "", "password": GUARDIAN_PASSWORD})
+        self.assertRedirects(response, reverse("login"))
+        self.assertFalse(User.objects.filter(username="nanay").exists())
+        self.assertFalse(GuardianAccount.objects.exists())
+
     def test_delete_removes_the_account_its_data_and_its_files(self):
-        profile = Profile.objects.get(user=self.miguel)
+        profile = ChildAccount.objects.get(user=self.miguel)
         profile.set_avatar(random_upload_name("image/png"), image_upload(), "image/png")
         customization = Customization.objects.create(user=self.miguel, word="mama")
         customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
@@ -142,7 +190,7 @@ class DeleteAccountTest(UserBase):
 
         self.assertRedirects(response, reverse("login"))
         self.assertFalse(User.objects.filter(username="miguel").exists())
-        self.assertFalse(Profile.objects.filter(user_id=self.miguel.pk).exists())
+        self.assertFalse(ChildAccount.objects.filter(user_id=self.miguel.pk).exists())
         self.assertFalse(Customization.objects.filter(user_id=self.miguel.pk).exists())
         self.assertFalse(WordUsage.objects.filter(user_id=self.miguel.pk).exists())
         self.assertFalse(Rating.objects.filter(user_id=self.miguel.pk).exists())

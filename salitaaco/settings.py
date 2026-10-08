@@ -81,7 +81,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'salitaaco.context_processors.dashboard_navigations.navigation_items',
-                'salitaaco.context_processors.current_profile.current_profile',
+                'salitaaco.context_processors.current_account.current_account',
             ],
         },
     },

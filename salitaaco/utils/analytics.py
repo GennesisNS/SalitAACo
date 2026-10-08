@@ -8,7 +8,7 @@ from django.db.models import Avg, Count, Sum
 from django.utils import timezone
 
 from salitaaco.models.customization import Customization
-from salitaaco.models.profile import Profile
+from salitaaco.models.account_base import AccountBase
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
 from salitaaco.templatetags.format_bytes import format_bytes
@@ -17,7 +17,7 @@ SIGNUP_CHART_DAYS = 14
 TOP_WORDS_LIMIT = 15
 
 UPLOAD_FOLDERS = [
-    Profile._meta.get_field("avatar").upload_to,
+    AccountBase._meta.get_field("avatar").upload_to,
     Customization._meta.get_field("image").upload_to,
     Customization._meta.get_field("sound").upload_to,
 ]

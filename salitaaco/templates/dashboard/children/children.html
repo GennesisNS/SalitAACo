@@ -1,0 +1,82 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Mga Bata - SalitAACo{% endblock %}
+
+{% block main %}
+<div class="pageCard">
+  <div class="settingsHeader">
+    <h2>🧒 Mga Bata</h2>
+    <button class="primaryBtn" type="button" data-open-modal="create-child">＋ Magdagdag ng bata</button>
+  </div>
+  <div class="settingsBody">
+    <p class="desc">
+      Dito mo ginagawa at inaasikaso ang mga account ng mga batang inaalagaan mo. May sariling username at password
+      ang bawat bata para makapag-log in sa sarili niyang mga tile.
+    </p>
+
+    {% for child in children %}
+    <a class="childRow" href="{% url 'manage_child' child.uuid %}">
+      <span class="childAvatar">
+        {% if child.has_avatar %}
+        <img src="{% url 'view_child_avatar' child.uuid %}?v={{ child.updated_at|date:'U' }}" alt="" />
+        {% else %}🧒{% endif %}
+      </span>
+      <span class="childName">
+        <b>{{ child.display_name }}</b>
+        <small>@{{ child.user.username }}{% if child.age is not None %} · {{ child.age }} taong gulang{% endif %}</small>
+      </span>
+      <span class="childTaps">{{ child.total_taps }} pindot</span>
+    </a>
+    {% empty %}
+    <p class="emptyState">
+      Wala ka pang naidadagdag na bata. Pindutin ang “Magdagdag ng bata” para gumawa ng account niya.
+    </p>
+    {% endfor %}
+
+    {% include "components/pagination.html" with page_obj=page_obj page_param="page" %}
+  </div>
+</div>
+
+<!-- ============== CREATE CHILD MODAL ============== -->
+<div class="settingsBackdrop hidden" data-modal="create-child" data-open="{{ show_create_child_modal|yesno:'true,false' }}">
+  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="createChildTitle">
+    <div class="settingsHeader">
+      <h2 id="createChildTitle">🧒 Magdagdag ng bata</h2>
+      <button class="closeBtn" type="button" data-close-modal="create-child" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" class="settingsBody" novalidate>
+      {% csrf_token %}
+      <label for="{{ create_child_form.display_name.id_for_label }}" style="margin-top: 0">{{ create_child_form.display_name.label }}</label>
+      {{ create_child_form.display_name }}
+      <small class="fieldError">{{ create_child_form.display_name.errors }}</small>
+
+      <div class="row">
+        <div>
+          <label for="{{ create_child_form.username.id_for_label }}">{{ create_child_form.username.label }}</label>
+          {{ create_child_form.username }}
+          <small class="fieldHelp">{{ create_child_form.username.help_text }}</small>
+          <small class="fieldError">{{ create_child_form.username.errors }}</small>
+        </div>
+        <div>
+          <label for="{{ create_child_form.age.id_for_label }}">{{ create_child_form.age.label }}</label>
+          {{ create_child_form.age }}
+          <small class="fieldError">{{ create_child_form.age.errors }}</small>
+        </div>
+      </div>
+
+      <label for="{{ create_child_form.password.id_for_label }}">{{ create_child_form.password.label }}</label>
+      {{ create_child_form.password }}
+      <small class="fieldHelp">{{ create_child_form.password.help_text }}</small>
+      <small class="fieldError">{{ create_child_form.password.errors }}</small>
+
+      <label for="{{ create_child_form.confirm_password.id_for_label }}">{{ create_child_form.confirm_password.label }}</label>
+      {{ create_child_form.confirm_password }}
+      <small class="fieldError">{{ create_child_form.confirm_password.errors }}</small>
+
+      <button class="primaryBtn" type="submit" name="create_child_form" style="margin-top: 14px; width: 100%">
+        💾 Gumawa ng account ng bata
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

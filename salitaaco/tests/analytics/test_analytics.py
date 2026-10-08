@@ -6,11 +6,11 @@ from django.urls import reverse
 from django.utils import timezone
 
 from salitaaco.forms.analytics.search_user import SearchUserForm
+from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
-from salitaaco.models.profile import Profile
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
-from salitaaco.tests.users_base import UserBase, image_upload, sound_upload
+from salitaaco.tests.users_base import UserBase, image_upload, make_guardian, sound_upload
 from salitaaco.utils import analytics
 from salitaaco.utils.pagination import paginate
 from salitaaco.utils.uploads import random_upload_name
@@ -127,12 +127,29 @@ class AnalyticsNumbersTest(UserBase):
 
         miguel = users["miguel"]
         self.assertEqual((miguel.image_count, miguel.sound_count, miguel.total_taps, miguel.rating_stars), (2, 1, 7, 5))
-        self.assertFalse(miguel.is_admin)
+        self.assertEqual((miguel.account.display_name, miguel.account.age, miguel.account.ROLE_LABEL), ("Miguel", 7, "Bata"))
 
         developer = users["developer"]
         self.assertEqual((developer.image_count, developer.sound_count, developer.total_taps), (0, 0, 0))
         self.assertIsNone(developer.rating_stars)
-        self.assertTrue(developer.is_admin)
+        self.assertEqual((developer.account.display_name, developer.account.age, developer.account.ROLE_LABEL), ("Developer", None, "Admin"))
+
+    def test_users_table_names_each_kind_of_account(self):
+        make_guardian("nanay", "Nanay Rosa", children=[self.miguel])
+        User.objects.create_user(username="walangaccount", password="abcd")
+        self.login_as("developer")
+        response = self.client.get(reverse("analytics"), {"order_by": "username_asc"})
+
+        kinds = {user.username: user.account.ROLE_LABEL if user.account else None for user in response.context["users"]}
+        self.assertEqual(kinds, {
+            "ana": "Bata", "developer": "Admin", "miguel": "Bata", "nanay": "Tagapag-alaga", "walangaccount": None,
+        })
+        self.assertContains(response, '<span class="badge admin">Admin</span>')
+        self.assertContains(response, '<span class="badge">Tagapag-alaga</span>')
+
+        # The guardian is found by their display name, which is on a different table from a child's.
+        found = self.client.get(reverse("analytics"), {"query": "rosa"}).context["users"]
+        self.assertEqual([user.username for user in found], ["nanay"])
 
     def test_users_are_newest_first_and_can_be_searched_and_sorted(self):
         self.login_as("developer")
@@ -157,7 +174,7 @@ class AnalyticsNumbersTest(UserBase):
     def test_users_table_is_paginated_ten_per_page(self):
         for number in range(12):
             user = User.objects.create_user(username=f"bata{number:02}", password="abcd")
-            Profile.objects.create(user=user, display_name=f"Bata {number}")
+            ChildAccount.objects.create(user=user, display_name=f"Bata {number}")
         self.login_as("developer")
 
         first_page = self.client.get(reverse("analytics"))

@@ -23,3 +23,9 @@ class ProfileInformationForm(BaseForm):
         },
         label="Edad (opsiyonal)",
     )
+
+    def __init__(self, *args, include_age=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only child accounts have an age; guardians and admins are not asked for one.
+        if not include_age:
+            del self.fields["age"]

@@ -2,24 +2,35 @@ from django.db import models
 import uuid
 
 
-class Profile(models.Model):
+class AccountBase(models.Model):
     """
-    Everything the app knows about an account beyond Django's own User:
-    the name shown on screen, the optional age and the profile picture.
+    What every kind of account has beyond Django's own User: the name shown on
+    screen and the profile picture. ChildAccount, GuardianAccount and
+    AdminAccount each add their own key, their link to the user, and whatever
+    only that kind of account needs.
     """
-    profile_id = models.AutoField(primary_key=True)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='profile')
     display_name = models.CharField(max_length=100)
-    age = models.PositiveIntegerField(blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True)
     avatar_mime = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Only children have an age. The other accounts answer None, so pages that
+    # list every kind of account can ask any of them.
+    age = None
+
+    class Meta:
+        abstract = True
+
     @property
     def has_avatar(self):
         return bool(self.avatar)
+
+    @property
+    def role_badge_class(self):
+        """CSS classes for the pill that names the kind of account."""
+        return "badge"
 
     def set_avatar(self, file_name, content, mime):
         """Replace the profile picture, removing the previous file from storage."""

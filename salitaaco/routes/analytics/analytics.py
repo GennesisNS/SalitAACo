@@ -1,16 +1,16 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models import Count, Exists, IntegerField, OuterRef, Q, Subquery, Sum
+from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import render
 
 from salitaaco.backends.Search import SearchModel
 from salitaaco.backends.Sort import QuerysetSorter
-from salitaaco.defaults.administrator_roles import ADMINISTRATOR
 from salitaaco.forms.analytics.search_user import SearchUserForm
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
 from salitaaco.utils import analytics
+from salitaaco.utils.account import ACCOUNT_RELATIONS, find_user_account
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.pagination import paginate
 from salitaaco.utils.perms_check import is_administrator, multi_user_test
@@ -23,10 +23,12 @@ def view_analytics(request):
     search_user_form = SearchUserForm(request.GET or None)
 
     users = SearchModel(
-        User, request.GET.get("query", ""), fields_to_look=["username", "profile__display_name"],
+        User,
+        request.GET.get("query", ""),
+        fields_to_look=["username"] + [f"{relation}__display_name" for relation in ACCOUNT_RELATIONS],
     ).search()
 
-    users = users.select_related("profile").annotate(
+    users = users.select_related(*ACCOUNT_RELATIONS).annotate(
         image_count=Count("customizations", filter=Q(customizations__image__gt=""), distinct=True),
         sound_count=Count("customizations", filter=Q(customizations__sound__gt=""), distinct=True),
         total_taps=Coalesce(
@@ -40,7 +42,6 @@ def view_analytics(request):
             output_field=IntegerField(),
         ),
         rating_stars=Subquery(Rating.objects.filter(user=OuterRef("pk")).values("rating")),
-        is_admin=Exists(User.groups.through.objects.filter(user_id=OuterRef("pk"), group__name=ADMINISTRATOR)),
     )
 
     users = QuerysetSorter(
@@ -52,8 +53,16 @@ def view_analytics(request):
 
     users_page = paginate(users, request.GET.get("users_page", 1))
 
-    ratings = Rating.objects.select_related("user__profile").order_by("-updated_at")
+    ratings = Rating.objects.select_related(
+        *[f"user__{relation}" for relation in ACCOUNT_RELATIONS]
+    ).order_by("-updated_at")
     ratings_page = paginate(ratings, request.GET.get("ratings_page", 1))
+
+    # The account behind each row tells the template its name, age and kind.
+    for user in users_page:
+        user.account = find_user_account(user)
+    for rating in ratings_page:
+        rating.user.account = find_user_account(rating.user)
 
     overview = analytics.overview()
 

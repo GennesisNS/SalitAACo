@@ -8,8 +8,10 @@ from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from salitaaco.defaults.user_roles import GUARDIAN
 from salitaaco.forms.authentication import LoginForm, RegisterForm
-from salitaaco.models.profile import Profile
+from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.utils.account import add_to_group
 
 logger = logging.getLogger(__name__)
 
@@ -62,18 +64,21 @@ def register_view(request):
     if request.method == "POST":
         register_form = RegisterForm(request.POST)
         if register_form.is_valid():
+            # Signing up makes a guardian account. Children's accounts are made
+            # by their guardian, on the "Mga Bata" page.
             with transaction.atomic():
                 user = User.objects.create_user(
                     username=register_form.cleaned_data['username'],
                     password=register_form.cleaned_data['password'],
                 )
-                Profile.objects.create(
+                GuardianAccount.objects.create(
                     user=user,
                     display_name=register_form.cleaned_data['display_name'],
                 )
-            logger.info("New account registered: %s", user.username)
+                add_to_group(user, GUARDIAN)
+            logger.info("New guardian account registered: %s", user.username)
             login(request, user, backend='salitaaco.authentication.custom_authentication.UsernameBackend')
-            return redirect('board')
+            return redirect('children')
 
     context = {
         "register_form": register_form,
