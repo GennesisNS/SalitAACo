@@ -1,0 +1,118 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Boses ng Pamilya - SalitAACo{% endblock %}
+
+{% block main %}
+<div class="pageCard">
+  <div class="settingsHeader">
+    <h2>🎙️ Boses ng Pamilya</h2>
+    {% if elevenlabs_is_set_up %}
+    <button class="primaryBtn" type="button" data-open-modal="add-family-voice">＋ Magdagdag ng boses</button>
+    {% endif %}
+  </div>
+  <div class="settingsBody">
+    <p class="desc">
+      Gawing boses ng pamilya ang boses ng mga tile. Mag-record ng isa o higit pang kasapi ng pamilya (hal. Nanay, Tatay,
+      Lola), at bibigkasin ng app ang bawat salita sa boses nila. Piliin sa pahina ng bawat bata kung kaninong boses
+      ang maririnig niya. Kapag may sariling recording ang isang tile, iyon pa rin ang maririnig.
+    </p>
+
+    {% if not elevenlabs_is_set_up %}
+    <p class="emptyState">Hindi pa naka-set up ang paggawa ng boses sa app na ito.</p>
+    {% endif %}
+
+    {% for item in voices %}
+    <div class="voiceRow" data-generate-url="{{ item.generate_url }}" data-done="{{ item.done }}" data-total="{{ item.total }}">
+      <div class="voiceInfo">
+        <b>{{ item.voice.name }}</b>
+        <small>
+          {% if item.children %}Naririnig ni {{ item.children|join:", " }}{% else %}Wala pang batang nakikinig dito{% endif %}
+          · Pumayag noong {{ item.voice.consent_at|date:"Y-m-d" }}
+        </small>
+        <div class="voiceProgress" aria-live="polite">
+          <span class="track"><span class="fill" style="width: {{ item.percent }}%"></span></span>
+          <span class="progressText">{{ item.done }} / {{ item.total }} salita</span>
+        </div>
+        <small class="fieldError voiceError"></small>
+      </div>
+      <div class="voiceActions">
+        <button class="secondaryBtn" type="button" data-preview="{{ item.preview_url }}" {% if not item.has_preview %}disabled{% endif %}>▶ Subukan</button>
+        <button class="secondaryBtn" type="button" data-open-modal="delete-voice-{{ item.voice.uuid }}" style="color: var(--danger); border-color: #f2c1bc">🗑️ Burahin</button>
+      </div>
+    </div>
+
+    <!-- Delete confirmation for this voice -->
+    <div class="confirmBackdrop hidden" data-modal="delete-voice-{{ item.voice.uuid }}">
+      <form class="confirmBox" method="post" action="{% url 'remove_family_voice' item.voice.uuid %}" role="dialog" aria-modal="true">
+        {% csrf_token %}
+        <h3>⚠️ Burahin ang boses ni {{ item.voice.name }}?</h3>
+        <p>
+          Buburahin ang kopya ng boses sa ElevenLabs at ang lahat ng salitang nagawa rito. Ang mga batang nakikinig dito ay
+          babalik sa karaniwang boses ng app. Hindi na ito maibabalik.
+        </p>
+        <div class="confirmRow">
+          <button class="secondaryBtn" type="button" data-close-modal="delete-voice-{{ item.voice.uuid }}">Huwag muna</button>
+          <button class="dangerBtn solid" type="submit">Oo, burahin na</button>
+        </div>
+      </form>
+    </div>
+    {% empty %}
+    {% if elevenlabs_is_set_up %}
+    <p class="emptyState">Wala pang boses ng pamilya. Pindutin ang “Magdagdag ng boses” para magsimula.</p>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+{% if elevenlabs_is_set_up %}
+<!-- ============== ADD A FAMILY VOICE ============== -->
+<div class="settingsBackdrop hidden" data-modal="add-family-voice" data-open="{{ show_add_family_voice_modal|yesno:'true,false' }}">
+  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="addVoiceTitle" style="max-width: 620px">
+    <div class="settingsHeader">
+      <h2 id="addVoiceTitle">🎙️ Magdagdag ng boses</h2>
+      <button class="closeBtn" type="button" data-close-modal="add-family-voice" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="settingsBody" id="addVoiceForm" novalidate>
+      {% csrf_token %}
+      <div class="err">{{ add_family_voice_form.non_field_errors }}</div>
+
+      <label for="{{ add_family_voice_form.name.id_for_label }}" style="margin-top: 0">{{ add_family_voice_form.name.label }}</label>
+      {{ add_family_voice_form.name }}
+      <small class="fieldError">{{ add_family_voice_form.name.errors }}</small>
+
+      <label>{{ add_family_voice_form.sample.label }}</label>
+      <p class="desc" style="margin-bottom: 8px">
+        Sa tahimik na lugar, basahin nang malakas at natural ang talata sa ibaba (mga isang minuto). Isang tao lang ang
+        dapat nagsasalita.
+      </p>
+      <blockquote class="readingParagraph">{{ reading_paragraph }}</blockquote>
+
+      <div class="recorder">
+        <button class="primaryBtn" type="button" id="recordVoiceBtn">⏺ Simulan ang pag-record</button>
+        <span id="recordTimer" class="recordTimer" aria-live="polite"></span>
+      </div>
+      <audio id="recordPreview" controls class="hidden"></audio>
+      <p class="desc" style="margin: 10px 0 4px">O mag-upload ng audio file:</p>
+      {{ add_family_voice_form.sample }}
+      <small class="fieldError">{{ add_family_voice_form.sample.errors }}</small>
+
+      {% include "components/family_voice_terms.html" %}
+
+      <label class="consentCheck" for="{{ add_family_voice_form.consent.id_for_label }}">
+        {{ add_family_voice_form.consent }} {{ add_family_voice_form.consent.label }}
+      </label>
+      <small class="fieldError">{{ add_family_voice_form.consent.errors }}</small>
+
+      <button class="primaryBtn" type="submit" id="addVoiceSubmit" style="margin-top: 14px; width: 100%">
+        🎙️ Gawin ang boses
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/family_voices.js' %}" defer></script>
+{% endblock %}
