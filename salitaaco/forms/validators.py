@@ -31,6 +31,12 @@ def validate_sound_size(file):
         raise ValidationError("Masyadong malaki ang tunog (max 5MB).")
 
 
+def validate_voice_sample_size(file):
+    # A minute or two of speech; an uncompressed WAV of that length is about 10 MB.
+    if file.size > 2 * MAX_UPLOAD_SIZE:
+        raise ValidationError("Masyadong malaki ang recording (max 10MB).")
+
+
 def name_validator(value):
     # only allow a-z, A-Z, dash, and space
     if not re.match(r'^[a-zA-Z\s-]+$', value):

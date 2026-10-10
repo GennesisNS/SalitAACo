@@ -21,3 +21,11 @@ class ChildAccount(AccountBase):
         null=True,
     )
     age = models.PositiveIntegerField(blank=True, null=True)
+    # The family member's voice this child hears on tiles nobody recorded by hand.
+    family_voice = models.ForeignKey(
+        'FamilyVoice',
+        on_delete=models.SET_NULL,
+        related_name='children',
+        blank=True,
+        null=True,
+    )

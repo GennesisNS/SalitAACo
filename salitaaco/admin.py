@@ -3,6 +3,7 @@ from django.contrib import admin
 from salitaaco.models.admin_account import AdminAccount
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
+from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
@@ -15,6 +16,13 @@ from salitaaco.models.word_usage import WordUsage
 class ChildAccountAdmin(admin.ModelAdmin):
     list_display = ("display_name", "user", "guardian", "age", "created_at")
     search_fields = ("display_name", "user__username", "guardian__display_name")
+
+
+@admin.register(FamilyVoice)
+class FamilyVoiceAdmin(admin.ModelAdmin):
+    list_display = ("name", "guardian", "consent_at", "consent_version", "created_at")
+    search_fields = ("name", "guardian__display_name", "guardian__user__username")
+    readonly_fields = ("elevenlabs_voice_id", "consent_at", "consent_version")
 
 
 @admin.register(GuardianAccount)
