@@ -12,6 +12,7 @@ from salitaaco.forms.rating.submit_rating import SubmitRatingForm
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
+from salitaaco.utils.account import get_user_account
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.uploads import random_upload_name
@@ -108,6 +109,8 @@ def view_board(request, child_uuid=None):
 
     context = {
         "managed_child": managed_child,
+        # Drawn at the size its owner chose in Settings, so a guardian sees a child's board as the child does.
+        "tile_size": (managed_child or get_user_account(request.user)).tile_size,
         "tile_image_form": tile_image_form,
         "tile_sound_form": tile_sound_form,
         "rating_form": rating_form,

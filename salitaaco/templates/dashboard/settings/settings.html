@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load static %}
 
 {% block title %}Settings - SalitAACo{% endblock %}
 
@@ -39,6 +40,40 @@
     <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; color: var(--ink); cursor: pointer">
       <input type="checkbox" id="darkToggle" style="width: 20px; height: 20px" /> Madilim na tema
     </label>
+
+    <hr class="sectionDivider" />
+
+    <h3>Laki ng Tile</h3>
+    <p class="desc">
+      Piliin kung gaano kalaki ang mga tile sa iyong board. Ipinapakita ng halimbawa sa ibaba ang magiging hitsura.
+      Nakatali ito sa account mo, kaya pareho ito saanmang device ka mag-log in.
+    </p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="tileSizeOptions" id="tileSizeOptions" role="radiogroup" aria-label="Laki ng tile">
+        {% for radio in tile_size_form.tile_size %}
+        <label class="tileSizeOption" for="{{ radio.id_for_label }}">{{ radio.tag }} {{ radio.choice_label }}</label>
+        {% endfor %}
+      </div>
+      <small class="fieldError">{{ tile_size_form.tile_size.errors }}</small>
+
+      <!-- The demo uses the same classes as the board, so it is drawn exactly as the board will be. -->
+      <div class="tileDemo">
+        <div class="grid tiles-{{ tile_size }}" id="tileDemoGrid" aria-hidden="true">
+          <div class="cell"><span class="emoji">🙋</span><span>ako</span></div>
+          <div class="cell"><span class="emoji">❤️</span><span>gusto ko</span></div>
+          <div class="cell"><span class="emoji">🍚</span><span>kain</span></div>
+          <div class="cell"><span class="emoji">😄</span><span>masaya</span></div>
+        </div>
+      </div>
+
+      <button class="primaryBtn" type="submit" name="tile_size_form" style="margin-top: 14px">💾 I-save ang laki ng tile</button>
+    </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/settings.js' %}" defer></script>
 {% endblock %}

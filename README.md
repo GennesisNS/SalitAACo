@@ -87,7 +87,7 @@ The command adds an admin account next to the one you signed up with, so a guard
 | `/dashboard/board/`     | The app: tiles, sentence builder, edit mode, rating           | Logged-in users |
 | `/dashboard/profile/`   | Profile: name, profile picture, password, delete account (and age, for a child) | Logged-in users |
 | `/dashboard/children/`  | Mga Bata: a guardian's children, and a page and a board for each | Guardians       |
-| `/dashboard/settings/`  | Settings: tile editing, dark theme                             | Logged-in users |
+| `/dashboard/settings/`  | Settings: tile editing, dark theme, tile size                  | Logged-in users |
 | `/dashboard/analytics/` | Admin dashboard                                               | Administrators  |
 
 `/` goes to the board, or to the login page when nobody is logged in. The PHP application's `/home` address redirects to the board.

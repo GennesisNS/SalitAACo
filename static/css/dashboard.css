@@ -446,6 +446,98 @@ textarea {
   font-size: 13px;
 }
 
+/* ---------- Tile sizes ----------
+   Chosen in Settings and applied as a class on the board's grid. "Medium" is
+   the board as index.css draws it, so only small and large are spelled out. */
+.grid.tiles-small {
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+.grid.tiles-small .cell {
+  min-height: 72px;
+  padding: 8px 3px 6px;
+  font-size: 12px;
+}
+.grid.tiles-small .cell .emoji {
+  font-size: 22px;
+}
+.grid.tiles-small .cell img.customimg {
+  width: 28px;
+  height: 28px;
+}
+.grid.tiles-small .cell .editRow button {
+  padding: 2px 4px;
+  font-size: 12px;
+}
+/* The use-count and recording marks sit in the corners; on a small tile they are shrunk to stay clear of the emoji. */
+.grid.tiles-small .cell .usecount {
+  top: 2px;
+  left: 3px;
+  padding: 0 4px;
+  font-size: 9px;
+}
+.grid.tiles-small .cell .soundmark {
+  top: 2px;
+  right: 3px;
+  font-size: 9px;
+}
+.grid.tiles-large {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+.grid.tiles-large .cell {
+  min-height: 130px;
+  padding: 14px 6px 12px;
+  gap: 6px;
+  font-size: 17px;
+}
+.grid.tiles-large .cell .emoji {
+  font-size: 46px;
+}
+.grid.tiles-large .cell img.customimg {
+  width: 64px;
+  height: 64px;
+}
+
+/* The size picker and its demo on the Settings page */
+.tileSizeOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settingsBody .tileSizeOption {
+  flex: 1;
+  min-width: 120px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+  cursor: pointer;
+}
+.settingsBody .tileSizeOption:has(input:checked) {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.tileSizeOption input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.tileDemo {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
 /* ---------- Board: playing the sentence ---------- */
 .iconbtn:disabled {
   opacity: 0.55;

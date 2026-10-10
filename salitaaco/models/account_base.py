@@ -9,10 +9,18 @@ class AccountBase(models.Model):
     AdminAccount each add their own key, their link to the user, and whatever
     only that kind of account needs.
     """
+    TILE_SIZE_CHOICES = [
+        ("small", "Maliit"),
+        ("medium", "Katamtaman"),
+        ("large", "Malaki"),
+    ]
+
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     display_name = models.CharField(max_length=100)
     avatar = models.ImageField(upload_to='avatars/', blank=True)
     avatar_mime = models.CharField(max_length=50, blank=True)
+    # How big the tiles on this account's board are drawn.
+    tile_size = models.CharField(max_length=10, choices=TILE_SIZE_CHOICES, default="medium")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
