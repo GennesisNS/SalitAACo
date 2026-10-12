@@ -87,6 +87,7 @@ The command adds an admin account next to the one you signed up with, so a guard
 | `/dashboard/board/`     | The app: tiles, sentence builder, edit mode, rating           | Logged-in users |
 | `/dashboard/profile/`   | Profile: name, profile picture, password, delete account (and age, for a child) | Logged-in users |
 | `/dashboard/children/`  | Mga Bata: a guardian's children, and a page and a board for each | Guardians       |
+| `/dashboard/family-voices/` | Boses ng Pamilya: family members' cloned voices for the tiles | Guardians   |
 | `/dashboard/settings/`  | Settings: tile editing, dark theme, tile size                  | Logged-in users |
 | `/dashboard/analytics/` | Admin dashboard                                               | Administrators  |
 
@@ -137,12 +138,13 @@ salitaaco/
     dashboard/          base.html (sidebar) and one folder per feature
     components/         Pieces shared between pages
   backends/             SearchModel and QuerysetSorter, for list pages
+    text_to_speech/     The ElevenLabs client: speech and voice cloning
   utils/                Permission checks, pagination, analytics numbers, import helpers
   defaults/             The tile vocabulary, the sidebar, the role names
   context_processors/   Values every template receives
   authentication/       Log in by username, ignoring letter case
   templatetags/         Template filters
-  management/commands/  make_admin, import_php_data
+  management/commands/  make_admin, import_php_data, generate_tile_audio
   migrations/
   tests/
 
@@ -172,6 +174,46 @@ python manage.py makemigrations --check
 ```
 
 GitHub Actions runs all four on every push and pull request to `main`.
+
+## Voices for the tiles (ElevenLabs)
+
+A tile with no recording of its own can still speak. For each word the board plays the first of these that exists:
+
+1. The family's own recording of that tile (edit mode on the board).
+2. The child's **family voice**: a family member's voice cloned with ElevenLabs.
+3. The app's **shared Filipino voice**, generated once with ElevenLabs.
+4. The browser's own voice.
+
+Both voices need an ElevenLabs API key in `.env` as `ELEVENLABS_API_KEY`. `ELEVENLABS_MODEL` defaults to `eleven_multilingual_v2`, a model that lists Filipino. Cloning voices needs an ElevenLabs plan that includes voice cloning.
+
+### The shared Filipino voice
+
+1. Pick a Filipino voice in ElevenLabs' voice library and put its ID in `.env` as `ELEVENLABS_VOICE_ID`.
+2. Try a few words and listen to the files in `static/audio/text-to-speech/`:
+   ```
+   python manage.py generate_tile_audio --words kumain "gusto ko" "tawagan si Nanay" opo
+   ```
+3. When it sounds right, voice all 105 tile words (all three forms of each verb included); words that already have a file are skipped:
+   ```
+   python manage.py generate_tile_audio
+   ```
+4. Commit the MP3s. The app never calls ElevenLabs for them while it runs. To change the voice, set the new ID and run the command again with `--overwrite`. After adding a word to `defaults/vocabulary.py`, run it again to voice the new word.
+
+### Family voices
+
+Guardians add them on the **Boses ng Pamilya** page: one or several family members (Nanay, Tatay, Lola…).
+
+1. The guardian names the family member, who reads a provided Filipino paragraph for about a minute. It is recorded in the browser or uploaded as an audio file.
+2. The guardian accepts the **Paalala at Kasunduan**, the notice and consent terms in `templates/components/family_voice_terms.html`. A voice cannot be made without it. The date and the terms version (`TERMS_VERSION` in `defaults/family_voice.py`) are saved with the voice; change the version whenever the wording changes.
+3. ElevenLabs clones the voice. The recording is sent to ElevenLabs once and is not kept by the app.
+4. While the page is open, the 105 tile words are generated in the voice, a few at a time, with a progress bar. If it stops, reopening the page carries on.
+5. Which family voice a child hears can be chosen by the guardian, on the child's page under Mga Bata, or by the child, on their Settings page under Hitsura, where ▶ plays each voice first. Whoever changes it last wins. A new voice is given to the children who do not have one yet.
+
+Deleting a voice deletes it at ElevenLabs as well, with its generated words. Deleting a guardian's account deletes all their voices. The generated words are private uploads under `media/family-voices/`, heard only by that guardian and their children.
+
+The terms are a plain-language notice, not legal advice. Have them reviewed against the Philippine Data Privacy Act before real families use the feature.
+
+The ElevenLabs client is in `salitaaco/backends/text_to_speech/elevenlabs.py`.
 
 ## Importing data from the PHP application
 

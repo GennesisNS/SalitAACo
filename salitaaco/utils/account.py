@@ -8,7 +8,9 @@ from salitaaco.defaults.administrator_roles import ADMINISTRATOR
 from salitaaco.defaults.user_roles import GUARDIAN
 from salitaaco.models.admin_account import AdminAccount
 from salitaaco.models.customization import Customization
+from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.utils.family_voice import delete_family_voice
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +55,14 @@ def get_user_account(user):
 def delete_user_account(user):
     """
     Permanently delete an account with everything it owns: its admin, guardian
-    or child account, custom pictures and recordings, usage counts and rating.
-    The rows go through the database cascade; the uploaded files are removed
-    from storage afterwards.
+    or child account, custom pictures and recordings, usage counts and rating,
+    and a guardian's family voices (at ElevenLabs too). The rows go through the
+    database cascade; the uploaded files are removed from storage afterwards.
     """
+    # The account is going regardless, so an ElevenLabs refusal is logged, not raised.
+    for voice in FamilyVoice.objects.filter(guardian__user=user):
+        delete_family_voice(voice, strict=False)
+
     file_names = []
     for customization in Customization.objects.filter(user=user):
         file_names += [customization.image.name, customization.sound.name]

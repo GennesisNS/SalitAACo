@@ -14,7 +14,9 @@ from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
 from salitaaco.utils.account import get_user_account
 from salitaaco.utils.active_nav import active_nav
+from salitaaco.utils.family_voice import family_voice_urls
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
+from salitaaco.utils.tile_audio import tile_audio_urls
 from salitaaco.utils.uploads import random_upload_name
 from salitaaco.utils.word_usage import frequent_words
 
@@ -107,6 +109,13 @@ def view_board(request, child_uuid=None):
         for customization in Customization.objects.filter(user=owner)
     ]
 
+    # The voice for tiles nobody recorded by hand: the child's family voice where it
+    # already has the word, otherwise the app's shared voice.
+    owner_child = managed_child or ChildAccount.objects.filter(user=owner).select_related("family_voice").first()
+    tile_audio = tile_audio_urls()
+    if owner_child and owner_child.family_voice:
+        tile_audio.update(family_voice_urls(owner_child.family_voice))
+
     context = {
         "managed_child": managed_child,
         # Drawn at the size its owner chose in Settings, so a guardian sees a child's board as the child does.
@@ -120,6 +129,7 @@ def view_board(request, child_uuid=None):
             "frequent_category": FREQUENT_CATEGORY,
             "verb_category": VERB_CATEGORY,
             "customizations": customizations,
+            "tile_audio": tile_audio,
             "frequent_words": frequent_words(owner),
             # A guardian setting up a child's board is not the child talking,
             # so their taps are not counted: the board gets no address to report them to.

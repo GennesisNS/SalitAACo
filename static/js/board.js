@@ -341,8 +341,10 @@ document.getElementById("clearBtn").onclick = () => {
   stopPlayback();
 };
 
-/* ---- play the sentence: one word after another, each with its own recording
-        if it has one, otherwise spoken by the device's Filipino voice ---- */
+/* ---- play the sentence: one word after another. Each word plays, the first
+        that exists: the family's own recording of the tile, the word in the
+        child's family voice or the app's shared voice (boardData.tile_audio),
+        and only failing those the device's own Filipino voice ---- */
 // Silence between one word and the next, in milliseconds (1000 = one second).
 // 0 starts each word the moment the one before it ends.
 const PAUSE_BETWEEN_WORDS_MS = 0;
@@ -391,7 +393,8 @@ async function playSentence() {
     playingIndex = i;
     renderSentence();
     const custom = customList[queue[i]];
-    await (custom && custom.has_sound ? playRecording(custom.sound_url) : speakWord(queue[i]));
+    const audioUrl = custom && custom.has_sound ? custom.sound_url : boardData.tile_audio[queue[i]];
+    await (audioUrl ? playRecording(audioUrl) : speakWord(queue[i]));
     if (run !== playRun) return; // stopped, or the sentence changed
     if (PAUSE_BETWEEN_WORDS_MS > 0 && i < queue.length - 1) {
       await pauseBetweenWords();

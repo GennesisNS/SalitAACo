@@ -432,6 +432,132 @@ textarea {
   color: var(--sub);
 }
 
+/* ---------- Family voices ---------- */
+.voiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.voiceInfo {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+}
+.voiceInfo small {
+  font-size: 12px;
+  color: var(--sub);
+}
+.voiceProgress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--sub);
+}
+.voiceProgress .track {
+  flex: 1;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+.voiceProgress .fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+.voiceActions {
+  display: flex;
+  gap: 8px;
+}
+/* A child's choice of voice on the Settings page: each option with its ▶ button */
+.voiceOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.voiceOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voiceOption .secondaryBtn {
+  min-width: 44px;
+  min-height: 44px;
+}
+/* A ▶ with nothing to play yet. */
+.secondaryBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.readingParagraph {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.recorder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.recordTimer {
+  font-variant-numeric: tabular-nums;
+  color: var(--sub);
+}
+#recordPreview {
+  width: 100%;
+  margin-top: 10px;
+}
+.termsBox {
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sub);
+}
+.termsBox h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.termsBox p {
+  margin: 0 0 8px;
+}
+.settingsBody .consentCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.consentCheck input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
 /* ---------- Board opened by a guardian for a child ---------- */
 .managedBanner {
   display: flex;

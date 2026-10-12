@@ -70,6 +70,31 @@
 
       <button class="primaryBtn" type="submit" name="tile_size_form" style="margin-top: 14px">💾 I-save ang laki ng tile</button>
     </form>
+
+    {% if voice_form %}
+    <hr class="sectionDivider" />
+
+    <h3>Boses ng mga Tile</h3>
+    <p class="desc">
+      Piliin kung kaninong boses ang bibigkas ng iyong mga tile. Pindutin ang ▶ para marinig muna. Kapag may sariling
+      recording ang isang tile, iyon pa rin ang maririnig.
+    </p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="voiceOptions" role="radiogroup" aria-label="Boses ng mga tile">
+        {% for radio, preview_url in voice_choices %}
+        <div class="voiceOption">
+          <label class="tileSizeOption" for="{{ radio.id_for_label }}">{{ radio.tag }} {{ radio.choice_label }}</label>
+          <button class="secondaryBtn" type="button" data-preview="{{ preview_url|default:'' }}" aria-label="Pakinggan ang {{ radio.choice_label }}" {% if not preview_url %}disabled{% endif %}>▶</button>
+        </div>
+        {% endfor %}
+      </div>
+      <small class="fieldError">{{ voice_form.family_voice.errors }}</small>
+
+      <button class="primaryBtn" type="submit" name="voice_form" style="margin-top: 14px">💾 I-save ang boses</button>
+    </form>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

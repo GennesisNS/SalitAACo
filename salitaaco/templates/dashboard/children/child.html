@@ -69,6 +69,21 @@
 
     <hr class="sectionDivider" />
 
+    <h3>Boses na Maririnig</h3>
+    <p class="desc">
+      Kaninong boses ang bibigkas ng mga tile ni {{ child.display_name }} na walang sariling recording?
+      Magdagdag ng boses ng pamilya sa pahinang <a href="{% url 'family_voices' %}">Boses ng Pamilya</a>.
+    </p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <label for="{{ voice_form.family_voice.id_for_label }}" style="margin-top: 0">{{ voice_form.family_voice.label }}</label>
+      {{ voice_form.family_voice }}
+      <small class="fieldError">{{ voice_form.family_voice.errors }}</small>
+      <button class="primaryBtn" type="submit" name="voice_form" style="margin-top: 14px">💾 I-save ang boses</button>
+    </form>
+
+    <hr class="sectionDivider" />
+
     <h3>Mga Madalas Gamitin</h3>
     <p class="desc">
       Ang mga salitang pinakamadalas pindutin ni {{ child.display_name }}. Kabuuan: <b>{{ total_taps }}</b> pindot.

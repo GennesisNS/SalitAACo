@@ -126,6 +126,14 @@ LEGACY_DATABASE = {
 }
 
 
+# Text to speech and voice cloning with ElevenLabs.
+# ELEVENLABS_VOICE_ID is the shared Filipino voice that `manage.py generate_tile_audio`
+# voices the tile words in. Family voices are cloned from the guardians' recordings.
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
+
+
 # Authentication
 
 AUTHENTICATION_BACKENDS = ['salitaaco.authentication.custom_authentication.UsernameBackend']

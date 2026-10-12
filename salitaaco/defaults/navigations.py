@@ -23,6 +23,13 @@ dashboard_items = [
                 "roles": [GUARDIAN],
             },
             {
+                "name": "Boses ng Pamilya",
+                "id": "family_voices",
+                "route": "family_voices",
+                "icon": "🎙️",
+                "roles": [GUARDIAN],
+            },
+            {
                 "name": "Settings",
                 "id": "settings",
                 "route": "settings",

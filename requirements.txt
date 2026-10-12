@@ -1,10 +1,15 @@
 asgiref==3.12.1
 bcrypt==4.3.0
+certifi==2026.7.22
+charset-normalizer==3.5.2
 Django==5.2.18
 gunicorn==26.2.0
+idna==3.20
 mysqlclient==2.3.0
 pillow==12.3.0
 python-dotenv==1.2.4
+requests==2.34.2
 ruff==0.16.10
 sqlparse==0.6.0
 tzdata==2026.5
+urllib3==2.8.0

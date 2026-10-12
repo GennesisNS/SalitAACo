@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 from salitaaco.defaults.user_roles import CHILD
 from salitaaco.forms.account.profile_information import ProfileInformationForm
 from salitaaco.forms.account.upload_avatar import UploadAvatarForm
+from salitaaco.forms.children.choose_family_voice import SHARED_VOICE, ChooseFamilyVoiceForm
 from salitaaco.forms.children.create_child import CreateChildForm
 from salitaaco.forms.children.delete_child import DeleteChildForm
 from salitaaco.forms.children.reset_child_password import ResetChildPasswordForm
@@ -87,8 +88,21 @@ def manage_child(request, child_uuid):
     avatar_form = UploadAvatarForm()
     password_form = ResetChildPasswordForm()
     delete_child_form = DeleteChildForm(guardian_user=request.user)
+    voice_form = ChooseFamilyVoiceForm(
+        initial={"family_voice": str(child.family_voice.uuid) if child.family_voice else SHARED_VOICE},
+        guardian=child.guardian,
+    )
 
     if request.method == "POST":
+        if "voice_form" in request.POST:
+            voice_form = ChooseFamilyVoiceForm(request.POST, guardian=child.guardian)
+            if voice_form.is_valid():
+                chosen = voice_form.cleaned_data['family_voice']
+                child.family_voice = child.guardian.family_voices.get(uuid=chosen) if chosen else None
+                child.save()
+                messages.success(request, f"Naka-save na ang boses na maririnig ni {child.display_name}.")
+                return redirect('manage_child', child_uuid=child.uuid)
+
         if "child_form" in request.POST:
             child_form = ProfileInformationForm(request.POST)
             if child_form.is_valid():
@@ -137,6 +151,7 @@ def manage_child(request, child_uuid):
         "password_form": password_form,
         "delete_child_form": delete_child_form,
         "show_delete_child_modal": bool(delete_child_form.errors),
+        "voice_form": voice_form,
         "usage": usage,
         "total_taps": child.user.word_usages.aggregate(total=Sum("use_count"))["total"] or 0,
         "image_count": customizations.exclude(image="").count(),
