@@ -318,13 +318,16 @@ class ChildChoosesVoiceInSettingsTest(FamilyVoiceBase):
         (family_voice_directory(nanay) / tile_audio_file_name(PREVIEW_WORD)).write_bytes(b"ID3")  # Lola has not got it yet
         self.make_voice(guardian=self.tatay, name="Hindi kanya")
         self.login_as("miguel")
+        shared = {PREVIEW_WORD: f"/static/audio/text-to-speech/{tile_audio_file_name(PREVIEW_WORD)}?v=1"}
 
-        response = self.client.get(reverse("settings"))
+        # Not the real folder: whether the shared voice has been generated differs from one checkout to the next.
+        with mock.patch("salitaaco.routes.settings.settings.tile_audio_urls", return_value=shared):
+            response = self.client.get(reverse("settings"))
 
         self.assertContains(response, "Boses ng mga Tile")
         choices = [(radio.data["value"], radio.choice_label, preview) for radio, preview in response.context["voice_choices"]]
         self.assertEqual(choices, [
-            ("", "Karaniwang boses ng app", None),
+            ("", "Karaniwang boses ng app", shared[PREVIEW_WORD]),
             (str(lola.uuid), "Lola", None),
             (str(nanay.uuid), "Nanay", reverse("play_family_voice_word", args=[nanay.uuid, tile_word_slug(PREVIEW_WORD)])),
         ])
