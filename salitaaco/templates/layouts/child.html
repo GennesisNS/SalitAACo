@@ -1,0 +1,58 @@
+{% load static %}
+{% comment %}
+  The layout of a child's pages, and of the board whoever opens it: the bar
+  with the app's name, and the navigation along the bottom. A guardian or an
+  admin on the board gets the way back to their dashboard where a child has
+  their name, and only the board's own screens along the bottom.
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="tl" data-palette="ocean">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{% block title %}SalitAACo - Filipino AAC{% endblock %}</title>
+    {% include "components/head_scripts.html" %}
+    <link rel="stylesheet" href="{% static 'css/child.css' %}" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    {% include "components/toasts.html" %}
+
+    <div class="kidApp hasBottomNav">
+      <header class="kidTop">
+        <a class="brand" href="{% url 'board' %}#home">Salit<span>AAC</span>o</a>
+        {% if is_child %}
+        <a href="{% url 'profile' %}" class="accountLink" title="Profile" aria-label="Profile">
+          <span class="accountAvatar">
+            {% if current_account.has_avatar %}
+            <img src="{% url 'view_avatar' %}?v={{ current_account.updated_at|date:'U' }}" alt="" />
+            {% else %}🙂{% endif %}
+          </span>
+          <span class="name">{{ current_account.display_name }}</span>
+        </a>
+        {% else %}
+        <a class="kidBack" href="{{ home_url }}">← Bumalik sa dashboard</a>
+        {% endif %}
+      </header>
+
+      {% block page_header %}{% endblock %}
+      <main class="kidMain">
+        {% block main %}{% endblock %}
+      </main>
+
+      <nav class="bottomNav" aria-label="Menu">
+        {% block bottom_nav %}
+        {% for category in navigation_items %}
+        {% for item in category.items %}
+        <a class="{% if item.active %}active{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>
+          <span class="emoji" aria-hidden="true">{{ item.icon }}</span> {{ item.name }}
+        </a>
+        {% endfor %}
+        {% endfor %}
+        {% endblock %}
+      </nav>
+    </div>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

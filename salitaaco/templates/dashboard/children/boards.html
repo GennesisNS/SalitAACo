@@ -1,0 +1,64 @@
+{% extends "layouts/dashboard.html" %}
+{% load static %}
+
+{% block title %}Mga Board ni {{ child.display_name }} - SalitAACo{% endblock %}
+
+{% block heading %}Mga Board{% endblock %}
+
+{% block main %}
+{% include "components/children/selected_child.html" with child=child %}
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>Mga board na nakikita ni {{ child.display_name }}</h2>
+    <form class="inlineForm" method="post">
+      {% csrf_token %}
+      <button class="secondaryBtn" type="submit" name="restore_boards_form">I-on muli ang lahat</button>
+    </form>
+  </div>
+  <p class="desc">
+    I-off ang board na hindi kailangan ni {{ child.display_name }} para mas kaunti ang pagpipilian niya. Ang naka-off na
+    board ay hindi lalabas sa “Mga Board” niya. Kailangang may kahit isang board na naka-on.
+  </p>
+
+  <form method="post" id="boardsForm" novalidate>
+    {% csrf_token %}
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ipakita</th>
+            <th>Board</th>
+            <th>Mga salita</th>
+            <th class="boardPreviewHead">Silip</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>
+              <label class="switch">
+                {{ row.switch.tag }}
+                <span class="slider"></span>
+              </label>
+            </td>
+            <td><label class="boardName" for="{{ row.switch.id_for_label }}">{{ row.board.icon }} {{ row.board.name }}</label></td>
+            <td>{{ row.word_count }}</td>
+            <td class="boardPreview" aria-hidden="true">{{ row.preview|join:" " }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <small class="fieldError" id="boardsError" role="alert">{{ boards_form.boards.errors }}</small>
+
+    <button class="primaryBtn formActions" type="submit" name="boards_form">I-save ang mga board</button>
+  </form>
+
+  <p class="note">Ang mga salita sa bawat board ay inaasikaso ng mga nagpapatakbo ng SalitAACo, kaya pareho ito sa lahat ng bata.</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/child_boards.js' %}" defer></script>
+{% endblock %}

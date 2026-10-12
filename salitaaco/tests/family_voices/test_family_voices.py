@@ -283,7 +283,7 @@ class ChooseChildsVoiceTest(FamilyVoiceBase):
         self.make_voice(guardian=self.tatay, name="Hindi kanya")
         self.login_as("nanay")
         child = ChildAccount.objects.get(user=self.miguel)
-        url = reverse("manage_child", args=[child.uuid])
+        url = reverse("child_voice", args=[child.uuid])
 
         choices = self.client.get(url).context["voice_form"].fields["family_voice"].choices
         self.assertEqual(choices, [("", "Karaniwang boses ng app"), (str(lola.uuid), "Lola")])
@@ -300,7 +300,7 @@ class ChooseChildsVoiceTest(FamilyVoiceBase):
         self.login_as("nanay")
         child = ChildAccount.objects.get(user=self.miguel)
 
-        response = self.client.post(reverse("manage_child", args=[child.uuid]), {"voice_form": "", "family_voice": str(other.uuid)})
+        response = self.client.post(reverse("child_voice", args=[child.uuid]), {"voice_form": "", "family_voice": str(other.uuid)})
 
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(ChildAccount.objects.get(pk=child.pk).family_voice)
@@ -349,7 +349,7 @@ class ChildChoosesVoiceInSettingsTest(FamilyVoiceBase):
         self.assertIsNone(ChildAccount.objects.get(user=self.ana).family_voice)
         # The guardian's page shows what the child picked.
         self.login_as("nanay")
-        child_page = self.client.get(reverse("manage_child", args=[ChildAccount.objects.get(user=self.miguel).uuid]))
+        child_page = self.client.get(reverse("child_voice", args=[ChildAccount.objects.get(user=self.miguel).uuid]))
         self.assertEqual(child_page.context["voice_form"]["family_voice"].value(), str(lola.uuid))
 
         self.login_as("miguel")

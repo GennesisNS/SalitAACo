@@ -13,7 +13,7 @@ from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.tile_audio import tile_audio_urls
 
 
-@active_nav("settings")
+@active_nav("settings", "profile")
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
 def view_settings(request):

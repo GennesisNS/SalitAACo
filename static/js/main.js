@@ -1,4 +1,4 @@
-// Small helpers loaded on every page: toasts, the mobile sidebar, modals and the theme.
+// Small helpers loaded on every page: toasts, the sidebar, modals, voice samples and the theme.
 
 const THEME_KEY = "salitaaco-theme";
 
@@ -46,15 +46,30 @@ document.addEventListener("keydown", (e) => {
   document.querySelectorAll("[data-modal]:not(.hidden)").forEach((modal) => close_modal(modal.dataset.modal));
 });
 
+/* ---------- The sidebar's child picker: each choice is the address of that child's page ---------- */
+const childPicker = document.getElementById("childPicker");
+if (childPicker) {
+  childPicker.onchange = () => {
+    location.href = childPicker.value;
+  };
+}
+
+/* ---------- ▶ buttons that play a voice saying a word (data-preview is the sound's address) ---------- */
+const previewAudio = new Audio();
+document.querySelectorAll("[data-preview]").forEach((button) => {
+  button.addEventListener("click", () => {
+    previewAudio.src = button.dataset.preview;
+    previewAudio.play().catch(() => {});
+  });
+});
+
 /* ---------- Dark theme toggle on the Settings page (remembered across page loads) ---------- */
 const darkToggle = document.getElementById("darkToggle");
 if (darkToggle) {
-  // Ticked whenever the page is showing dark colours: because the user chose
-  // them here, or, with no choice made yet, because the device prefers dark.
-  const chosenTheme = document.documentElement.getAttribute("data-theme");
-  darkToggle.checked = chosenTheme
-    ? chosenTheme === "dark"
-    : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  // On whenever the page is showing dark colours: because the user chose them
+  // here, or, with no choice made yet, because the device prefers dark. Either
+  // way the page already carries the answer (see components/head_scripts.html).
+  darkToggle.checked = document.documentElement.getAttribute("data-theme") === "dark";
   darkToggle.onchange = (e) => {
     const theme = e.target.checked ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", theme);

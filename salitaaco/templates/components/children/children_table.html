@@ -1,0 +1,35 @@
+{% comment %}
+  A guardian's children as a table, on the overview and on the Mga Bata page.
+  children: ChildAccounts from utils.children.children_with_numbers, with board numbers added.
+{% endcomment %}
+<div class="tableWrap stackTable">
+  <table>
+    <thead>
+      <tr>
+        <th>Bata</th>
+        <th>Edad</th>
+        <th>Mga board</th>
+        <th>Boses</th>
+        <th>Pindot</th>
+        <th>Mga aksyon</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for child in children %}
+      <tr>
+        <td>{% include "components/children/child_cell.html" with child=child %}</td>
+        <td data-label="Edad">{% if child.age is not None %}{{ child.age }}{% else %}—{% endif %}</td>
+        <td data-label="Mga board"><a href="{% url 'child_boards' child.uuid %}">{{ child.shown_boards }} sa {{ child.total_boards }} naka-on</a></td>
+        <td data-label="Boses">{% if child.family_voice %}{{ child.family_voice.name }}{% else %}Karaniwang boses{% endif %}</td>
+        <td data-label="Pindot">{{ child.total_taps }}</td>
+        <td>
+          <span class="rowActions">
+            <a class="primaryBtn smallBtn" href="{% url 'child_board' child.uuid %}">Buksan ang board</a>
+            <a class="secondaryBtn smallBtn" href="{% url 'manage_child' child.uuid %}">I-edit</a>
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

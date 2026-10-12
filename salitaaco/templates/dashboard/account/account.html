@@ -1,9 +1,23 @@
-{% extends "dashboard/base.html" %}
+{% extends layout_template %}
 {% load static %}
 
 {% block title %}Profile - SalitAACo{% endblock %}
 
 {% block main %}
+{% if is_child %}
+<!-- ============== WHO THIS IS ============== -->
+<div class="pageCard profileHero">
+  <div class="avatarPrev">
+    {% if account.has_avatar %}
+    <img src="{% url 'view_avatar' %}?v={{ account.updated_at|date:'U' }}" alt="" />
+    {% else %}🙂{% endif %}
+  </div>
+  <h1>{{ account.display_name }}</h1>
+  <p>@{{ request.user.username }}{% if account.age is not None %} · {{ account.age }} taong gulang{% endif %}</p>
+  <a class="iconbtn" href="{% url 'settings' %}">⚙️ Settings: laki ng tile, tema at boses</a>
+</div>
+{% endif %}
+
 <!-- ============== PROFILE ============== -->
 <div class="pageCard">
   <div class="settingsHeader">
@@ -31,7 +45,7 @@
         </form>
         <form class="inlineForm" method="post" action="{% url 'remove_avatar' %}">
           {% csrf_token %}
-          <button class="secondaryBtn" type="submit" style="color: var(--danger); border-color: #f2c1bc">
+          <button class="secondaryBtn danger" type="submit">
             🗑️ Alisin ang larawan
           </button>
         </form>
@@ -48,7 +62,7 @@
       <div class="row">
         <div>
           <label for="accountUsername">Username</label>
-          <input class="input" type="text" id="accountUsername" value="{{ request.user.username }}" disabled style="opacity: 0.7; cursor: not-allowed" />
+          <input class="input" type="text" id="accountUsername" value="{{ request.user.username }}" disabled />
         </div>
         {% if profile_form.age %}
         <div>
@@ -59,7 +73,7 @@
         {% endif %}
       </div>
 
-      <button class="primaryBtn" type="submit" name="profile_form" style="margin-top: 14px">💾 I-save ang profile</button>
+      <button class="primaryBtn formActions" type="submit" name="profile_form">💾 I-save ang profile</button>
     </form>
 
     <hr class="sectionDivider" />
@@ -87,14 +101,14 @@
         </div>
       </div>
 
-      <button class="primaryBtn" type="submit" name="password_form" style="margin-top: 14px">
+      <button class="primaryBtn formActions" type="submit" name="password_form">
         🔑 I-save ang bagong password
       </button>
     </form>
 
     <hr class="sectionDivider" />
 
-    <h3 style="color: var(--danger)">Burahin ang Account</h3>
+    <h3 class="dangerTitle">Burahin ang Account</h3>
     <p class="desc">
       Permanenteng mabubura ang account, lahat ng custom na larawan, at mga recording. Hindi na ito mababalik.
     </p>
@@ -103,6 +117,19 @@
     </button>
   </div>
 </div>
+
+{% if is_child %}
+<!-- ============== LOG OUT ==============
+     A guardian and an admin log out from the sidebar; the child layout has none. -->
+<div class="pageCard">
+  <form class="settingsBody" method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <h3>Mag-log out</h3>
+    <p class="desc">Lalabas ka sa account na ito sa device na ito. Kakailanganin ang username at password para makabalik.</p>
+    <button class="secondaryBtn" type="submit">Mag-log out</button>
+  </form>
+</div>
+{% endif %}
 
 <!-- ============== DELETE CONFIRM DIALOG ============== -->
 <div class="confirmBackdrop hidden" data-modal="delete-account" data-open="{{ show_delete_account_modal|yesno:'true,false' }}">

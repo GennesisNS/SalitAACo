@@ -2,10 +2,11 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from salitaaco.defaults.vocabulary import CATEGORIES, FREQUENT_CATEGORY, VERB_CATEGORY
+from salitaaco.defaults.board import FEELINGS_BOARD
+from salitaaco.defaults.vocabulary import VERB_CATEGORY
 from salitaaco.forms.board.upload_tile_image import UploadTileImageForm
 from salitaaco.forms.board.upload_tile_sound import UploadTileSoundForm
 from salitaaco.forms.rating.submit_rating import SubmitRatingForm
@@ -14,6 +15,8 @@ from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
 from salitaaco.utils.account import get_user_account
 from salitaaco.utils.active_nav import active_nav
+from salitaaco.utils.board import boards, extra_board_data, quick_words
+from salitaaco.utils.children import guardian_child_or_404
 from salitaaco.utils.family_voice import family_voice_urls
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.tile_audio import tile_audio_urls
@@ -29,7 +32,7 @@ def first_form_error(form):
     return ""
 
 
-@active_nav("board")
+@active_nav("board", "home")
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
 def view_board(request, child_uuid=None):
@@ -39,7 +42,7 @@ def view_board(request, child_uuid=None):
     owner = request.user
     board_url = reverse('board')
     if child_uuid is not None:
-        managed_child = get_object_or_404(ChildAccount, uuid=child_uuid, guardian__user=request.user)
+        managed_child = guardian_child_or_404(request, child_uuid)
         owner = managed_child.user
         board_url = reverse('child_board', args=[managed_child.uuid])
         request.active_nav_ids = ("children",)
@@ -125,9 +128,12 @@ def view_board(request, child_uuid=None):
         "rating_form": rating_form,
         "show_rating_modal": bool(rating_form.errors),
         "board_data": {
-            "categories": CATEGORIES,
-            "frequent_category": FREQUENT_CATEGORY,
+            # A child's boards are the ones their guardian left on.
+            "categories": boards(owner_child),
             "verb_category": VERB_CATEGORY,
+            # The Home screen: the quick words, then the board of feelings.
+            "quick_words": quick_words(),
+            "feelings_board": FEELINGS_BOARD,
             "customizations": customizations,
             "tile_audio": tile_audio,
             "frequent_words": frequent_words(owner),
@@ -135,7 +141,9 @@ def view_board(request, child_uuid=None):
             # so their taps are not counted: the board gets no address to report them to.
             "managed": managed_child is not None,
             "increment_usage_url": None if managed_child else reverse('increment_word_usage'),
+            "board_open_url": None if managed_child else reverse('record_board_open'),
             "frequent_words_url": None if managed_child else reverse('list_frequent_words'),
+            **extra_board_data(owner_child),
         },
     }
     return render(request, 'dashboard/board/board.html', context)

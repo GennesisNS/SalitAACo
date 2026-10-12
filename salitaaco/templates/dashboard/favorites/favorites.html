@@ -1,0 +1,44 @@
+{% extends "layouts/dashboard.html" %}
+{% comment %}This page may be removed: see routes/favorites/favorites.py.{% endcomment %}
+
+{% block title %}Mga Paborito ni {{ child.display_name }} - SalitAACo{% endblock %}
+
+{% block heading %}Mga Paborito{% endblock %}
+
+{% block main %}
+{% include "components/children/selected_child.html" with child=child %}
+
+<section class="section">
+  <h2>Mga paboritong salita ni {{ child.display_name }}</h2>
+  <p class="desc">
+    Ang mga salitang idadagdag mo rito ay lalabas sa unahan ng “Paborito” ni {{ child.display_name }}, bago ang mga
+    salitang pinakamadalas niyang gamitin. Para lang sa kanya ito at hindi kinokopya sa ibang bata.
+  </p>
+
+  {% if favorites %}
+  <ul class="chipList">
+    {% for favorite in favorites %}
+    <li>
+      <span>⭐ {{ favorite.word }}</span>
+      <form class="inlineForm" method="post" action="{% url 'remove_favorite' child.uuid favorite.uuid %}">
+        {% csrf_token %}
+        <button type="submit" aria-label="Alisin ang {{ favorite.word }}" title="Alisin">&times;</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="emptyState">Wala pang paboritong salita. Pumili ng una sa ibaba.</p>
+  {% endif %}
+
+  <hr class="sectionDivider" />
+
+  <form method="post" class="narrowForm settingsFields" novalidate>
+    {% csrf_token %}
+    <label for="{{ add_favorite_form.word.id_for_label }}">{{ add_favorite_form.word.label }}</label>
+    {{ add_favorite_form.word }}
+    <small class="fieldError">{{ add_favorite_form.word.errors }}</small>
+    <button class="primaryBtn formActions" type="submit" name="add_favorite_form">＋ Idagdag sa paborito</button>
+  </form>
+</section>
+{% endblock %}

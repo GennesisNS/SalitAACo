@@ -1,9 +1,7 @@
-{% extends "dashboard/base.html" %}
+{% extends "layouts/dashboard.html" %}
 {% load static star_rating %}
 
 {% block title %}SalitAACo - Admin Dashboard{% endblock %}
-
-{% block page_css %}<link rel="stylesheet" href="{% static 'css/admin.css' %}" />{% endblock %}
 
 {% block main %}
 <div class="statsGrid">
@@ -22,7 +20,7 @@
 <div class="section" id="ratings">
   <h2>⭐ Mga rating</h2>
   {% if overview.rating_count %}
-  <p style="margin: 0; font-size: 14px">
+  <p class="ratingSummary">
     <span class="stars">{{ overview.average_stars|stars }}</span>
     <b>{{ overview.average_rating }}</b> / 5 ({{ overview.rating_count }} na rating)
   </p>

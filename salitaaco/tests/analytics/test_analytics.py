@@ -28,7 +28,7 @@ class AnalyticsAccessTest(UserBase):
         self.assertRedirects(response, reverse("board"))
         self.assertEqual(
             [str(message) for message in get_messages(response.wsgi_request)],
-            ["Naka-log in ka pero hindi admin ang account na ito."],
+            ["Naka-log in ka pero walang pahintulot ang account na ito sa pahinang iyon."],
         )
 
     def test_administrator_sees_the_dashboard(self):

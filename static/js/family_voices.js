@@ -1,8 +1,30 @@
-// Boses ng Pamilya page: recording a family member's voice, trying a voice out,
+// Boses ng Pamilya page: agreeing to the terms, recording a family member's voice,
 // and generating the tile words of each voice while the page is open.
+// (▶ Subukan is main.js's doing: the buttons carry data-preview.)
 
 const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
 const MAX_RECORDING_SECONDS = 120;
+
+/* ---------- Consent first: the recording step opens only once the terms are agreed to ---------- */
+const consentBox = document.querySelector("#addVoiceForm input[name=consent]");
+const consentStep = document.getElementById("voiceConsentStep");
+const recordStep = document.getElementById("voiceRecordStep");
+const consentNext = document.getElementById("voiceConsentNext");
+
+function showVoiceStep(recording) {
+  consentStep.classList.toggle("hidden", recording);
+  recordStep.classList.toggle("hidden", !recording);
+}
+if (consentBox) {
+  consentNext.disabled = !consentBox.checked;
+  consentBox.onchange = () => {
+    consentNext.disabled = !consentBox.checked;
+  };
+  consentNext.onclick = () => showVoiceStep(true);
+  document.getElementById("voiceConsentBack").onclick = () => showVoiceStep(false);
+  // A form the server sent back with the consent given reopens where the guardian was.
+  showVoiceStep(consentBox.checked);
+}
 
 /* ---------- Recording the voice sample in the browser ---------- */
 const recordBtn = document.getElementById("recordVoiceBtn");
@@ -21,6 +43,8 @@ function showElapsed() {
 }
 
 async function startRecording() {
+  // Nothing is recorded without the consent, however this was reached.
+  if (!consentBox.checked) return showVoiceStep(false);
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -58,11 +82,6 @@ async function startRecording() {
 if (recordBtn) {
   recordBtn.onclick = () => (recorder && recorder.state === "recording" ? recorder.stop() : startRecording());
 }
-
-/* ---------- Trying a voice out ---------- */
-document.querySelectorAll("[data-preview]").forEach((button) => {
-  button.onclick = () => new Audio(button.dataset.preview).play().catch(() => {});
-});
 
 /* ---------- Generating the tile words of each voice ---------- */
 function showProgress(row, done, total) {

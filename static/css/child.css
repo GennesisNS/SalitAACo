@@ -1,0 +1,383 @@
+/* The child layout (templates/layouts/child.html): the bar with the app's name,
+   the navigation along the bottom, and the board. Big rounded shapes and big
+   touch targets: a tablet is the main device.
+   Loaded after tokens.css and base.css. */
+
+/* ---------- Layout ---------- */
+.kidApp {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Room for the navigation fixed along the bottom. */
+.kidApp.hasBottomNav {
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+}
+.kidTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--shell);
+  background:
+    radial-gradient(70% 160% at 100% 0%, color-mix(in srgb, var(--highlight) 40%, transparent), transparent 70%),
+    var(--shell);
+  color: var(--on-shell);
+}
+.kidTop .brand {
+  font-size: 26px;
+}
+.kidMain {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.kidMain .pageCard {
+  border-radius: var(--radius-xl);
+}
+
+/* The picture and name, which lead to the Profile page; for a guardian or an
+   admin, the way back to their dashboard. */
+.kidTop .accountLink,
+.kidBack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 55%;
+  min-height: 48px;
+  padding: 4px 16px 4px 5px;
+  border: 2px solid var(--shell-sub);
+  border-radius: 999px;
+  color: var(--on-shell);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.kidBack {
+  padding: 4px 16px;
+  font-size: 15px;
+}
+.kidTop .accountLink:hover,
+.kidTop .accountLink:focus-visible,
+.kidBack:hover,
+.kidBack:focus-visible {
+  border-color: var(--on-shell);
+}
+.kidTop .accountLink .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Navigation along the bottom ---------- */
+.bottomNav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  gap: 6px;
+  width: min(560px, calc(100% - 24px));
+  padding: 8px;
+  border: 3px solid var(--line);
+  border-radius: 28px;
+  background: var(--card);
+  box-shadow: var(--shadow-lift);
+  transform: translateX(-50%);
+}
+.bottomNav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 6px 4px;
+  border-radius: 20px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.bottomNav a .emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+.bottomNav a:hover {
+  background: var(--raised);
+}
+.bottomNav a.active {
+  background: var(--shell-active);
+  color: var(--on-shell-active);
+}
+
+/* ---------- Board: the sentence being built ----------
+   Stays at the top while the tiles scroll under it. */
+.boardBar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 4px 18px 18px;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: var(--shell);
+  color: var(--on-shell);
+}
+.sentence-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  max-width: 1068px;
+  margin: 0 auto;
+}
+#sentence {
+  flex: 1;
+  min-width: 180px;
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 3px solid var(--highlight);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 20px;
+}
+#placeholder {
+  color: var(--sub);
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tag.playing {
+  outline: 4px solid var(--cta);
+  outline-offset: 1px;
+}
+.boardBar .iconbtn {
+  min-height: 56px;
+  padding: 10px 20px;
+  border: 2px solid var(--shell-sub);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--on-shell);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+}
+.boardBar .iconbtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.boardBar .iconbtn.primary {
+  background: var(--cta);
+  border-color: var(--cta);
+  color: var(--on-cta);
+  font-size: 19px;
+}
+.boardBar .iconbtn.editing {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--on-danger);
+}
+/* Setting the board up and rating the app, under the tiles. */
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+.toggles .iconbtn {
+  border-radius: 999px;
+}
+/* A guardian setting up a child's tiles is told whose board this is. */
+.managedBanner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 14px;
+  max-width: 1068px;
+  margin: 0 auto 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+/* ---------- Board: the screen's title, its sections, and for verbs the three aspects ---------- */
+.screenHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 4px 0 14px;
+}
+.screenTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.screenHead .iconbtn {
+  min-height: 48px;
+  border-width: 2px;
+  border-radius: 999px;
+  font-size: 15px;
+}
+.screenHint {
+  margin: -6px 0 14px;
+  color: var(--sub);
+  font-size: 15px;
+}
+.sectionTitle {
+  margin: 22px 0 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+}
+.screenHead + .sectionTitle,
+.screenHint + .sectionTitle,
+.aspect + .sectionTitle {
+  margin-top: 0;
+}
+/* A screen with nothing on it yet. */
+.emptyBoard {
+  grid-column: 1 / -1;
+  padding: 40px 18px;
+  color: var(--sub);
+  font-size: 15px;
+  text-align: center;
+}
+.emptyBoard .emoji {
+  margin-bottom: 8px;
+  font-size: 48px;
+}
+.emptyBoard b {
+  color: var(--ink);
+  font-size: 18px;
+}
+.emptyBoard p {
+  margin: 6px 0 0;
+}
+.aspect {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.aspect button {
+  min-height: var(--touch);
+  padding: 8px 18px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+.aspect button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.boardFoot {
+  padding: 16px 14px 8px;
+  color: var(--sub);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ---------- A child's profile: who they are, before the forms ---------- */
+.profileHero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 22px;
+  text-align: center;
+}
+.profileHero .avatarPrev {
+  width: 120px;
+  height: 120px;
+  font-size: 56px;
+}
+.profileHero h1 {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+}
+.profileHero p {
+  margin: 0 0 12px;
+  color: var(--sub);
+  font-size: 16px;
+}
+.kidMain .backLink {
+  max-width: 720px;
+  margin: 0 auto 12px;
+}
+
+/* Upright tablets and phones: the sentence takes the full width and its buttons share the row under it. */
+@media (max-width: 820px) {
+  #sentence {
+    flex-basis: 100%;
+  }
+  .sentence-row .iconbtn {
+    flex: 1;
+  }
+  .sentence-row .iconbtn.primary {
+    flex: 1.5;
+  }
+}
+@media (max-width: 600px) {
+  .kidTop {
+    padding: 10px 14px;
+  }
+  .kidTop .brand {
+    font-size: 22px;
+  }
+  .boardBar {
+    padding: 4px 12px 12px;
+  }
+  #sentence {
+    min-height: 56px;
+    font-size: 17px;
+  }
+  .tag {
+    font-size: 16px;
+  }
+  .sentence-row .iconbtn {
+    min-height: 52px;
+    padding: 10px 8px;
+    font-size: 15px;
+  }
+  .sentence-row .iconbtn.primary {
+    font-size: 16px;
+  }
+  .screenTitle {
+    font-size: 23px;
+  }
+  .kidMain {
+    padding: 12px;
+  }
+}

@@ -4,8 +4,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import IntegerField, Sum
-from django.db.models.functions import Coalesce
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -13,7 +11,6 @@ from django.views.decorators.http import require_POST
 from salitaaco.defaults.user_roles import CHILD
 from salitaaco.forms.account.profile_information import ProfileInformationForm
 from salitaaco.forms.account.upload_avatar import UploadAvatarForm
-from salitaaco.forms.children.choose_family_voice import SHARED_VOICE, ChooseFamilyVoiceForm
 from salitaaco.forms.children.create_child import CreateChildForm
 from salitaaco.forms.children.delete_child import DeleteChildForm
 from salitaaco.forms.children.reset_child_password import ResetChildPasswordForm
@@ -22,15 +19,12 @@ from salitaaco.models.customization import Customization
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.utils.account import add_to_group, delete_user_account
 from salitaaco.utils.active_nav import active_nav
-from salitaaco.utils.analytics import bar_width
+from salitaaco.utils.children import add_board_numbers, children_with_numbers, guardian_child_or_404
 from salitaaco.utils.pagination import paginate
 from salitaaco.utils.perms_check import is_guardian, multi_user_test
 from salitaaco.utils.uploads import random_upload_name
-from salitaaco.utils.word_usage import frequent_words
 
 logger = logging.getLogger(__name__)
-
-CHILD_USAGE_WORDS = 20
 
 
 @active_nav("children")
@@ -60,15 +54,13 @@ def view_children(request):
             messages.success(request, f"Nagawa na ang account ni {child.display_name}.")
             return redirect('children')
 
-    children = guardian.children.select_related("user").annotate(
-        total_taps=Coalesce(Sum("user__word_usages__use_count"), 0, output_field=IntegerField()),
-    ).order_by("display_name")
-
-    page_obj = paginate(children, request.GET.get("page", 1))
+    page_obj = paginate(children_with_numbers(guardian.children.all()), request.GET.get("page", 1))
+    page_obj.object_list = add_board_numbers(list(page_obj.object_list))
 
     context = {
         "create_child_form": create_child_form,
-        "show_create_child_modal": bool(create_child_form.errors),
+        # ?add=1 is how the overview's "add a child" button opens the form straight away.
+        "show_create_child_modal": bool(create_child_form.errors) or "add" in request.GET,
         "children": page_obj,
         "page_obj": page_obj,
     }
@@ -79,7 +71,7 @@ def view_children(request):
 @login_required(login_url='/login/')
 @multi_user_test(is_guardian)
 def manage_child(request, child_uuid):
-    child = get_object_or_404(ChildAccount, uuid=child_uuid, guardian__user=request.user)
+    child = guardian_child_or_404(request, child_uuid)
 
     child_form = ProfileInformationForm(initial={
         "display_name": child.display_name,
@@ -88,21 +80,8 @@ def manage_child(request, child_uuid):
     avatar_form = UploadAvatarForm()
     password_form = ResetChildPasswordForm()
     delete_child_form = DeleteChildForm(guardian_user=request.user)
-    voice_form = ChooseFamilyVoiceForm(
-        initial={"family_voice": str(child.family_voice.uuid) if child.family_voice else SHARED_VOICE},
-        guardian=child.guardian,
-    )
 
     if request.method == "POST":
-        if "voice_form" in request.POST:
-            voice_form = ChooseFamilyVoiceForm(request.POST, guardian=child.guardian)
-            if voice_form.is_valid():
-                chosen = voice_form.cleaned_data['family_voice']
-                child.family_voice = child.guardian.family_voices.get(uuid=chosen) if chosen else None
-                child.save()
-                messages.success(request, f"Naka-save na ang boses na maririnig ni {child.display_name}.")
-                return redirect('manage_child', child_uuid=child.uuid)
-
         if "child_form" in request.POST:
             child_form = ProfileInformationForm(request.POST)
             if child_form.is_valid():
@@ -137,11 +116,6 @@ def manage_child(request, child_uuid):
                 messages.success(request, f"Permanente nang nabura ang account ni {display_name}.")
                 return redirect('children')
 
-    usage = frequent_words(child.user, CHILD_USAGE_WORDS)
-    highest = max((item["use_count"] for item in usage), default=0)
-    for item in usage:
-        item["width"] = bar_width(item["use_count"], highest)
-
     customizations = Customization.objects.filter(user=child.user)
 
     context = {
@@ -151,9 +125,6 @@ def manage_child(request, child_uuid):
         "password_form": password_form,
         "delete_child_form": delete_child_form,
         "show_delete_child_modal": bool(delete_child_form.errors),
-        "voice_form": voice_form,
-        "usage": usage,
-        "total_taps": child.user.word_usages.aggregate(total=Sum("use_count"))["total"] or 0,
         "image_count": customizations.exclude(image="").count(),
         "sound_count": customizations.exclude(sound="").count(),
     }

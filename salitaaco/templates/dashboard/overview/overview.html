@@ -1,0 +1,28 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Buod - SalitAACo{% endblock %}
+
+{% block main %}
+<p class="pageIntro">Narito ang buod ng mga batang inaalagaan mo.</p>
+
+<div class="statsGrid">
+  {% for card in stat_cards %}
+  {% include "components/analytics/stat_card.html" with label=card.label value=card.value sub=card.sub %}
+  {% endfor %}
+</div>
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>Mga bata</h2>
+    <a class="primaryBtn" href="{% url 'children' %}?add=1">＋ Magdagdag ng bata</a>
+  </div>
+
+  {% if children %}
+  {% include "components/children/children_table.html" with children=children %}
+  {% else %}
+  <p class="emptyState">
+    Wala ka pang naidadagdag na bata. Pindutin ang “Magdagdag ng bata” para gumawa ng account niya.
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

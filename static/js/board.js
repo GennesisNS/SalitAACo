@@ -1,18 +1,22 @@
-// The AAC board: tabs, tile grid, sentence builder, edit mode and the rating stars.
+// The AAC board: its screens, tile grids, sentence builder, edit mode and the rating stars.
 // The vocabulary and this user's data arrive in the page as JSON (#board-data).
 
 const boardData = JSON.parse(document.getElementById("board-data").textContent);
 const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 
-const FREQ_CAT = boardData.frequent_category;
-const VERB_CAT = boardData.verb_category;
-const TAB_KEY = "salitaaco-board-tab";
+const VERB_BOARD = boardData.verb_category;
+const FEELINGS_BOARD = boardData.feelings_board;
+const SCREEN_KEY = "salitaaco-board-screen";
+const RESTORE_KEY = "salitaaco-board-restore";
 const EDIT_KEY = "salitaaco-board-edit";
 
-const categories = {};
-boardData.categories.forEach((category) => {
-  categories[category.name] = category.items;
+const boards = {}; // { name: {name, icon, items} }
+boardData.categories.forEach((board) => {
+  boards[board.name] = board;
 });
+
+// Words the child's guardian put on the Paborito screen. The page may not send any.
+const favoriteWords = boardData.favorite_words || [];
 
 const customList = {}; // { word: {has_image, has_sound, image_url, sound_url, reset_url} }
 boardData.customizations.forEach((it) => {
@@ -22,14 +26,22 @@ boardData.customizations.forEach((it) => {
 /* ============================================================
    APP STATE
 ============================================================ */
-let currentCat = FREQ_CAT,
+// The board is one page with four screens. Which one shows is the part of the
+// address after the "#": "home", "boards", "boards/<board>" or "favorites".
+// The navigation along the bottom and the board tiles are plain links to those.
+const SECTION_SCREENS = ["home", "boards", "favorites"];
+const SCREEN_TITLES = {
+  home: "Ano ang gusto mong sabihin?",
+  boards: "Pumili ng board",
+  favorites: "Mga paborito kong salita",
+};
+let currentScreen = "home",
   currentAspect = "past",
   words = [];
 let editMode = false;
 let frequentItems = boardData.frequent_words; // [{word, use_count}, ...]
 let _frequentRefreshTimer = null;
 
-// Saving a tile reloads the page, so the open tab and edit mode are remembered.
 function remember(key, value) {
   try {
     sessionStorage.setItem(key, value);
@@ -42,8 +54,32 @@ function recall(key) {
     return null;
   }
 }
-const rememberedTab = recall(TAB_KEY);
-if (rememberedTab && (rememberedTab === FREQ_CAT || categories[rememberedTab])) currentCat = rememberedTab;
+
+function isScreen(name) {
+  if (!name) return false;
+  if (SECTION_SCREENS.includes(name)) return true;
+  return name.startsWith("boards/") && Boolean(boards[name.slice("boards/".length)]);
+}
+function screenInAddress() {
+  try {
+    const name = decodeURIComponent(location.hash.slice(1));
+    return isScreen(name) ? name : null;
+  } catch (e) {
+    return null;
+  }
+}
+// The board that is open, or null on the other screens.
+function openBoard() {
+  return currentScreen.startsWith("boards/") ? boards[currentScreen.slice("boards/".length)] : null;
+}
+// Saving a tile or a rating reloads the page at its plain address. The screen
+// that was open is put back then, and only then: any other arrival starts at Home.
+function keepScreenAcrossReload() {
+  remember(RESTORE_KEY, "1");
+}
+const screenBeforeReload = recall(RESTORE_KEY) === "1" ? recall(SCREEN_KEY) : null;
+remember(RESTORE_KEY, "0");
+
 // A guardian who opened a child's board is there to set up its tiles, so it starts in edit mode.
 editMode = boardData.managed || recall(EDIT_KEY) === "1";
 
@@ -67,6 +103,19 @@ async function loadFrequent(limit = 40) {
   }
 }
 
+// How often each board is opened is counted for the guardian's usage page.
+function recordBoardOpen(board) {
+  // A guardian looking at a child's board is not the child using it.
+  if (!boardData.board_open_url) return;
+  try {
+    fetch(boardData.board_open_url, {
+      method: "POST",
+      headers: { "X-CSRFToken": csrfToken },
+      body: new URLSearchParams({ board }),
+    }).catch(() => {});
+  } catch (e) {}
+}
+
 function incrementUsage(word) {
   // A guardian trying out a child's board is not the child talking: their taps are not counted.
   if (!boardData.increment_usage_url) return;
@@ -78,8 +127,8 @@ function incrementUsage(word) {
       body: new URLSearchParams({ word }),
     }).catch(() => {});
   } catch (e) {}
-  // If user is on the Frequent tab, refresh it soon so rankings stay current.
-  if (currentCat === FREQ_CAT) {
+  // On the favorites screen, refresh it soon so rankings stay current.
+  if (currentScreen === "favorites") {
     if (_frequentRefreshTimer) clearTimeout(_frequentRefreshTimer);
     _frequentRefreshTimer = setTimeout(() => {
       loadFrequent().then(renderGrid);
@@ -88,31 +137,17 @@ function incrementUsage(word) {
 }
 
 /* ============================================================
-   TABS / GRID
+   SCREENS / GRIDS
 ============================================================ */
-const tabsEl = document.getElementById("tabs"),
+const titleEl = document.getElementById("screenTitle"),
+  hintEl = document.getElementById("screenHint"),
+  backToBoards = document.getElementById("backToBoards"),
+  gridTitleEl = document.getElementById("gridTitle"),
   gridEl = document.getElementById("grid"),
+  feelingsEl = document.getElementById("feelings"),
+  feelingsGridEl = document.getElementById("feelingsGrid"),
   aspectBar = document.getElementById("aspectBar");
 
-function buildTabs() {
-  tabsEl.innerHTML = "";
-  const tabLabels = [FREQ_CAT, ...Object.keys(categories)];
-  tabLabels.forEach((cat) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = cat;
-    if (cat === currentCat) b.classList.add("active");
-    b.onclick = async () => {
-      currentCat = cat;
-      remember(TAB_KEY, cat);
-      if (cat === FREQ_CAT) {
-        await loadFrequent();
-      }
-      render();
-    };
-    tabsEl.appendChild(b);
-  });
-}
 document.querySelectorAll("#aspectBar button").forEach((b) => {
   b.onclick = () => {
     currentAspect = b.dataset.a;
@@ -122,15 +157,49 @@ document.querySelectorAll("#aspectBar button").forEach((b) => {
   };
 });
 
+// Light the navigation item of the open screen. Links to other pages (Profile) are left alone.
+function markNavigation() {
+  const section = currentScreen.startsWith("boards") ? "boards" : currentScreen;
+  document.querySelectorAll(".bottomNav a").forEach((link) => {
+    const url = new URL(link.href);
+    if (url.pathname !== location.pathname || !url.hash) return;
+    const active = url.hash === `#${section}`;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+}
+
 function render() {
-  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b.textContent === currentCat));
-  aspectBar.style.display = currentCat === VERB_CAT ? "flex" : "none";
+  const board = openBoard();
+  const onHome = currentScreen === "home";
+  titleEl.textContent = board ? `${board.icon} ${board.name}` : SCREEN_TITLES[currentScreen];
+  backToBoards.classList.toggle("hidden", !board);
+  aspectBar.style.display = board && board.name === VERB_BOARD ? "flex" : "none";
+  gridTitleEl.classList.toggle("hidden", !onHome);
+  feelingsEl.classList.toggle("hidden", !onHome || !boards[FEELINGS_BOARD]);
+  markNavigation();
   renderGrid();
 }
 
+function showScreen(name) {
+  currentScreen = name;
+  remember(SCREEN_KEY, name);
+  render();
+  // The list of favorites may have changed since the page loaded.
+  if (name === "favorites") loadFrequent().then(renderGrid);
+}
+window.addEventListener("hashchange", () => {
+  showScreen(screenInAddress() || "home");
+  window.scrollTo(0, 0);
+  // Opened by the child just now, not put back after a save.
+  const board = openBoard();
+  if (board) recordBoardOpen(board.name);
+});
+
 function findEmojiForWord(word) {
-  for (const cat of Object.keys(categories)) {
-    for (const item of categories[cat]) {
+  for (const board of Object.values(boards)) {
+    for (const item of board.items) {
       const baseLabel = item.verb ? item.verb[currentAspect] : item.w;
       if (item.w === word || baseLabel === word) return item.e || "📝";
       if (item.verb) {
@@ -152,28 +221,62 @@ function el(tag, className, text) {
 
 function renderGrid() {
   gridEl.innerHTML = "";
-  let items;
-  if (currentCat === FREQ_CAT) {
-    if (frequentItems.length === 0) {
-      gridEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:36px 18px;color:var(--sub);">
-        <div style="font-size:40px;margin-bottom:8px;">🔁</div>
-        <div style="font-size:15px;margin-bottom:4px;font-weight:600;color:var(--ink);">Wala pang madalas gamitin</div>
-        <div style="font-size:12px;line-height:1.5;">Pindutin ang mga tile sa ibang tab para mabuo ang listahang ito.<br>Nakaayos ang mga tile dito ayon sa kung ilang beses mo na itong nagamit.</div>
-      </div>`;
-      return;
-    }
-    items = frequentItems.map((it) => {
-      return {
-        w: it.word,
-        e: findEmojiForWord(it.word),
-        _useCount: it.use_count,
-        _fromFrequent: true,
-      };
-    });
-  } else {
-    items = categories[currentCat];
-  }
+  feelingsGridEl.innerHTML = "";
+  hintEl.classList.add("hidden");
 
+  const board = openBoard();
+  if (board) {
+    renderTiles(gridEl, board.items);
+  } else if (currentScreen === "boards") {
+    renderBoards();
+  } else if (currentScreen === "favorites") {
+    renderFavorites();
+  } else {
+    renderTiles(gridEl, boardData.quick_words);
+    if (boards[FEELINGS_BOARD]) renderTiles(feelingsGridEl, boards[FEELINGS_BOARD].items);
+  }
+}
+
+// The boards to choose from: each tile is a link to its board's screen.
+function renderBoards() {
+  Object.values(boards).forEach((board) => {
+    const tile = el("a", "cell board");
+    tile.href = `#boards/${encodeURIComponent(board.name)}`;
+    tile.append(el("span", "emoji", board.icon), el("span", "", board.name));
+    gridEl.appendChild(tile);
+  });
+}
+
+// The words the guardian chose, then the words used most, most used first.
+function renderFavorites() {
+  const chosen = favoriteWords.map((word) => ({ w: word, e: findEmojiForWord(word), _chosen: true }));
+  const frequent = frequentItems.filter((it) => !favoriteWords.includes(it.word));
+  if (chosen.length === 0 && frequent.length === 0) {
+    const empty = el("div", "emptyBoard");
+    empty.append(
+      el("div", "emoji", "⭐"),
+      el("b", "", "Wala pang paborito"),
+      el("p", "", "Pindutin ang mga tile sa Home o sa mga board para mabuo ang listahang ito."),
+    );
+    gridEl.appendChild(empty);
+    return;
+  }
+  hintEl.textContent = chosen.length
+    ? "Ang mga salitang pinili para sa iyo (⭐), at ang mga pinakamadalas mong gamitin."
+    : "Ang mga salitang pinakamadalas mong gamitin, ayon sa kung ilang beses mo na itong nagamit.";
+  hintEl.classList.remove("hidden");
+  renderTiles(gridEl, [
+    ...chosen,
+    ...frequent.map((it) => ({
+      w: it.word,
+      e: findEmojiForWord(it.word),
+      _useCount: it.use_count,
+      _fromFrequent: true,
+    })),
+  ]);
+}
+
+function renderTiles(grid, items) {
   items.forEach((item) => {
     let label = item.w;
     if (item.verb) label = item.verb[currentAspect];
@@ -181,6 +284,7 @@ function renderGrid() {
     // In edit mode the tile holds buttons, so it cannot be a button itself.
     const c = el(editMode ? "div" : "button", "cell");
 
+    if (item._chosen) c.appendChild(el("span", "pinmark", "⭐"));
     if (item._fromFrequent && item._useCount) {
       const useCountMark = el("span", "usecount", `×${item._useCount}`);
       useCountMark.title = `Ginamit nang ${item._useCount} na beses`;
@@ -217,7 +321,7 @@ function renderGrid() {
       c.type = "button";
       c.onclick = () => addWord(label);
     }
-    gridEl.appendChild(c);
+    grid.appendChild(c);
   });
 }
 
@@ -243,6 +347,7 @@ function pickImage(word) {
 }
 tileImageFile.onchange = () => {
   if (!tileImageFile.files[0] || !document.getElementById("tileImageWord").value) return;
+  keepScreenAcrossReload();
   tileImageForm.submit();
 };
 
@@ -269,6 +374,7 @@ async function toggleRecord(word, btnEl) {
       recordingWord = null;
       const file = new File(recChunks, "sound.webm", { type: "audio/webm" });
       document.getElementById("tileSoundWord").value = word;
+      keepScreenAcrossReload();
       try {
         const transfer = new DataTransfer();
         transfer.items.add(file);
@@ -300,6 +406,7 @@ const resetTileForm = document.getElementById("resetTileForm");
 function resetTile(word) {
   const custom = customList[word];
   if (!custom) return; // nothing was customised
+  keepScreenAcrossReload();
   resetTileForm.action = custom.reset_url;
   resetTileForm.submit();
 }
@@ -316,19 +423,21 @@ function addWord(w) {
 // Held here because emptying the sentence removes the placeholder from the page.
 const sentencePlaceholder = document.getElementById("placeholder");
 const playBtn = document.getElementById("playBtn");
+const undoBtn = document.getElementById("undoBtn");
 function renderSentence() {
   const s = document.getElementById("sentence");
   s.innerHTML = "";
   playBtn.disabled = words.length === 0;
+  undoBtn.disabled = words.length === 0;
   playBtn.textContent = playingIndex >= 0 ? "■ Itigil" : "▶ Patugtugin";
   if (words.length === 0) {
     s.appendChild(sentencePlaceholder);
     return;
   }
   words.forEach((w, i) => {
-    const t = document.createElement("span");
-    t.className = i === playingIndex ? "tag playing" : "tag";
-    t.textContent = w;
+    const t = el("span", i === playingIndex ? "tag playing" : "tag");
+    t.append(el("span", "tagEmoji", findEmojiForWord(w)), w);
+    t.title = "Pindutin para alisin";
     t.onclick = () => {
       words.splice(i, 1);
       stopPlayback();
@@ -336,6 +445,11 @@ function renderSentence() {
     s.appendChild(t);
   });
 }
+// Takes back the last word only.
+undoBtn.onclick = () => {
+  words.pop();
+  stopPlayback();
+};
 document.getElementById("clearBtn").onclick = () => {
   words = [];
   stopPlayback();
@@ -442,7 +556,9 @@ document.getElementById("rateForm").onsubmit = (e) => {
   if (selectedStars < 1) {
     e.preventDefault();
     document.getElementById("rateErr").textContent = "Pumili ng bituin bago i-submit.";
+    return;
   }
+  keepScreenAcrossReload();
 };
 
 /* ============================================================
@@ -450,6 +566,8 @@ document.getElementById("rateForm").onsubmit = (e) => {
 ============================================================ */
 paintStars(selectedStars);
 renderSentence();
-buildTabs();
+// The screen named in the address; after a save, the one that was open; otherwise Home.
+currentScreen = screenInAddress() || (isScreen(screenBeforeReload) ? screenBeforeReload : "home");
+if (!screenInAddress() && currentScreen !== "home") history.replaceState(null, "", `#${encodeURI(currentScreen)}`);
 setEditMode(editMode);
-render();
+showScreen(currentScreen);
