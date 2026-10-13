@@ -1,5 +1,6 @@
 from unittest import mock
 
+from django.test import override_settings
 from django.urls import reverse
 
 from salitaaco.defaults.family_voice import TERMS_VERSION
@@ -9,6 +10,8 @@ from salitaaco.tests.users_base import UserBase, make_guardian, sound_upload
 ELEVENLABS = "salitaaco.utils.family_voice.ElevenLabs"
 
 
+# Set here, not left to the machine's .env: without a key the page offers no way to add a voice at all.
+@override_settings(ELEVENLABS_API_KEY="susi")
 class ConsentStepTest(UserBase):
     """Adding a family voice asks for consent first, as a step of its own, before the recording step."""
 
