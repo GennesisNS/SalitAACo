@@ -1,0 +1,95 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Access control - SalitAACo{% endblock %}
+
+{% block heading %}System Settings: Access control{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Ang mga admin ay nakakapasok sa lahat ng pahina ng admin. Pareho ang nagagawa ng bawat admin; walang hiwalay na
+  antas.
+</p>
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>Mga admin</h2>
+    <button class="primaryBtn" type="button" data-open-modal="add-admin">＋ Magdagdag ng admin</button>
+  </div>
+
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Admin</th>
+          <th>Status</th>
+          <th>Sign-up</th>
+          <th>Huling login</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for admin in admins %}
+        <tr>
+          <td>
+            <span class="childName">
+              <b>{{ admin.account.display_name|default:admin.username }}</b>
+              <small>@{{ admin.username }}</small>
+            </span>
+          </td>
+          <td data-label="Status">
+            {% if admin.is_active %}<span class="statusBadge approved">Aktibo</span>{% else %}<span class="statusBadge rejected">Hindi aktibo</span>{% endif %}
+          </td>
+          <td data-label="Sign-up">{{ admin.date_joined|date:"Y-m-d" }}</td>
+          <td data-label="Huling login">{{ admin.last_login|date:"Y-m-d H:i"|default:"—" }}</td>
+          <td>
+            {% if admin == request.user %}
+            <span class="doneNote">Ikaw ito</span>
+            {% else %}
+            <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="remove-admin-{{ admin.pk }}">Alisin bilang admin</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============== ADD AN ADMIN ============== -->
+<div class="settingsBackdrop hidden" data-modal="add-admin" data-open="{{ show_add_admin_modal|yesno:'true,false' }}">
+  <div class="settingsBox narrow" role="dialog" aria-modal="true" aria-labelledby="addAdminTitle">
+    <div class="settingsHeader">
+      <h2 id="addAdminTitle">Magdagdag ng admin</h2>
+      <button class="closeBtn" type="button" data-close-modal="add-admin" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" class="settingsBody" novalidate>
+      {% csrf_token %}
+      <label for="{{ add_admin_form.username.id_for_label }}">{{ add_admin_form.username.label }}</label>
+      {{ add_admin_form.username }}
+      <small class="fieldHelp">{{ add_admin_form.username.help_text }}</small>
+      <small class="fieldError">{{ add_admin_form.username.errors }}</small>
+      <button class="primaryBtn blockBtn formActions" type="submit" name="add_admin_form">Gawing admin</button>
+    </form>
+  </div>
+</div>
+
+<!-- Taking admin access away is asked twice. -->
+{% for admin in admins %}
+{% if admin != request.user %}
+<div class="confirmBackdrop hidden" data-modal="remove-admin-{{ admin.pk }}">
+  <form class="confirmBox" method="post" action="{% url 'remove_admin' admin.pk %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <h3>Alisin si @{{ admin.username }} bilang admin?</h3>
+    <p>
+      Hindi na siya makakapasok sa mga pahina ng admin. Kung tagapag-alaga rin siya, mananatili ang account niyang iyon
+      at ang mga bata niya.
+    </p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="remove-admin-{{ admin.pk }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, alisin</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

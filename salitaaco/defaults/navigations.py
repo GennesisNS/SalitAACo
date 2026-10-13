@@ -77,6 +77,123 @@ dashboard_items = [
             },
         ],
     },
+    # ----- The admin's pages -----
+    {
+        "name": "Buod",
+        "items": [
+            {
+                "name": "Dashboard",
+                "id": "analytics",
+                "route": "analytics",
+                "icon": "home",
+                "roles": [ADMINISTRATOR],
+            },
+            {
+                "name": "Analytics at Ulat",
+                "id": "reports",
+                "route": "reports",
+                "icon": "chart",
+                "roles": [ADMINISTRATOR],
+            },
+        ],
+    },
+    {
+        "name": "Pamamahala",
+        "items": [
+            {
+                "name": "Mga User",
+                "id": "users",
+                "route": "users",
+                "icon": "users",
+                "roles": [ADMINISTRATOR],
+            },
+            {
+                "name": "Mga Board",
+                "id": "admin_boards",
+                "route": "admin_boards",
+                "icon": "grid",
+                "roles": [ADMINISTRATOR],
+            },
+            {
+                "name": "Mga Salita at Simbolo",
+                "id": "words",
+                "route": "words",
+                "icon": "type",
+                "roles": [ADMINISTRATOR],
+            },
+            # May be removed, with routes/institutions/.
+            {
+                "name": "Mga Paaralan at Institusyon",
+                "id": "institutions",
+                "route": "institutions",
+                "icon": "building",
+                "roles": [ADMINISTRATOR],
+            },
+        ],
+    },
+    {
+        "name": "Negosyo",
+        "items": [
+            {
+                "name": "Kita",
+                "id": "revenue",
+                "route": "revenue",
+                "icon": "receipt",
+                "roles": [ADMINISTRATOR],
+            },
+            {
+                "name": "Mga Subscription",
+                "id": "subscriptions",
+                "route": "subscriptions",
+                "icon": "card",
+                "roles": [ADMINISTRATOR],
+            },
+            # May be removed, with routes/feedback/.
+            {
+                "name": "Feedback at mga Isyu",
+                "id": "feedback",
+                "route": "feedback",
+                "icon": "message",
+                "roles": [ADMINISTRATOR],
+            },
+        ],
+    },
+    {
+        "name": "System Settings",
+        "items": [
+            {
+                "name": "General",
+                "id": "system_general",
+                "route": "system_general",
+                "icon": "sliders",
+                "roles": [ADMINISTRATOR],
+            },
+            {
+                "name": "Access control",
+                "id": "system_access",
+                "route": "system_access",
+                "icon": "shield",
+                "roles": [ADMINISTRATOR],
+            },
+            # May be removed, with routes/privacy/.
+            {
+                "name": "Privacy",
+                "id": "system_privacy",
+                "route": "system_privacy",
+                "icon": "lock",
+                "roles": [ADMINISTRATOR],
+            },
+            # May be removed, with routes/technical_status/.
+            {
+                "name": "Technical status",
+                "id": "system_status",
+                "route": "system_status",
+                "icon": "activity",
+                "roles": [ADMINISTRATOR],
+            },
+        ],
+    },
+    # ----- Everyone's own: their board, how the app looks for them, their account -----
     {
         "name": "Account",
         "items": [
@@ -84,8 +201,15 @@ dashboard_items = [
                 "name": "Mga Tile",
                 "id": "board",
                 "route": "board",
-                "icon": "message",
+                "icon": "puzzle",
                 "roles": ["*"],
+            },
+            {
+                "name": "Plano at Subscription",
+                "id": "plan",
+                "route": "plan",
+                "icon": "card",
+                "roles": [GUARDIAN],
             },
             {
                 "name": "Tulong at Suporta",
@@ -95,10 +219,10 @@ dashboard_items = [
                 "roles": [GUARDIAN],
             },
             {
-                "name": "Settings",
+                "name": "Hitsura at Tile",
                 "id": "settings",
                 "route": "settings",
-                "icon": "sliders",
+                "icon": "eye",
                 "roles": ["*"],
             },
             {
@@ -106,19 +230,7 @@ dashboard_items = [
                 "id": "profile",
                 "route": "profile",
                 "icon": "user",
-                "roles": [GUARDIAN],
-            },
-        ],
-    },
-    {
-        "name": "Admin",
-        "items": [
-            {
-                "name": "Admin dashboard",
-                "id": "analytics",
-                "route": "analytics",
-                "icon": "chart",
-                "roles": [ADMINISTRATOR],
+                "roles": [GUARDIAN, ADMINISTRATOR],
             },
         ],
     },

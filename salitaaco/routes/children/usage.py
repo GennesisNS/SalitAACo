@@ -5,7 +5,7 @@ from django.shortcuts import render
 from salitaaco.forms.children.usage_range import UsageRangeForm
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.utils.active_nav import active_nav
-from salitaaco.utils.board import all_boards
+from salitaaco.utils.board import every_board
 from salitaaco.utils.children import guardian_child_or_404
 from salitaaco.utils.perms_check import is_guardian, multi_user_test
 from salitaaco.utils.usage import usage_in_days, with_bar_widths, word_usage
@@ -21,7 +21,8 @@ def view_child_usage(request, child_uuid):
     range_form = UsageRangeForm(request.GET or None)
     days = range_form.days()
 
-    icons = {board["name"]: board["icon"] for board in all_boards()}
+    # A board opened before an admin hid it is still named with its picture.
+    icons = {board["name"]: board["icon"] for board in every_board()}
     boards = with_bar_widths(usage_in_days(child.user, DailyUsage.BOARD, days))
     for row in boards:
         row["icon"] = icons.get(row["name"], "")

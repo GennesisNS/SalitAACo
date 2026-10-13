@@ -1,20 +1,20 @@
 from django import forms
 
-from salitaaco.defaults.vocabulary import CATEGORIES
+from salitaaco.utils.board import all_boards
 from salitaaco.utils.tile_audio import VERB_ASPECTS
 
 from ..helpers import BaseForm
 
 
 def word_choices():
-    """Every tile word, grouped by its board. A verb is offered in each of its three aspects, as the board shows it."""
+    """Every word of the published boards, grouped by board. A verb is offered in each of its three aspects, as the board shows it."""
     groups = []
-    for category in CATEGORIES:
+    for board in all_boards():
         words = []
-        for item in category["items"]:
+        for item in board["items"]:
             verb = item.get("verb")
             words += [verb[aspect] for aspect in VERB_ASPECTS] if verb else [item["w"]]
-        groups.append((category["name"], [(word, word) for word in words]))
+        groups.append((board["name"], [(word, word) for word in words]))
     return groups
 
 

@@ -61,7 +61,15 @@
 
 <section class="section">
   <h2>Makipag-ugnayan sa suporta</h2>
-  <p class="desc">May problema o tanong na wala sa mga gabay? Isulat dito at babasahin ng mga nagpapatakbo ng SalitAACo.</p>
+  <p class="desc">
+    May problema o tanong na wala sa mga gabay? Isulat dito at babasahin ng mga nagpapatakbo ng SalitAACo.
+    {% if site_setting.contact_email or site_setting.contact_phone %}
+    Maaari ka ring makipag-ugnayan sa
+    {% if site_setting.contact_email %}<a href="mailto:{{ site_setting.contact_email }}">{{ site_setting.contact_email }}</a>{% endif %}
+    {% if site_setting.contact_email and site_setting.contact_phone %}o sa{% endif %}
+    {% if site_setting.contact_phone %}<b>{{ site_setting.contact_phone }}</b>{% endif %}.
+    {% endif %}
+  </p>
 
   <form method="post" class="narrowForm settingsFields" novalidate>
     {% csrf_token %}
@@ -82,7 +90,10 @@
   <ul class="messageList">
     {% for sent in sent_messages %}
     <li>
-      <small>{{ sent.created_at|date:"Y-m-d H:i" }}{% if sent.child %} · tungkol kay {{ sent.child.display_name }}{% endif %}</small>
+      <small>
+        {{ sent.created_at|date:"Y-m-d H:i" }}{% if sent.child %} · tungkol kay {{ sent.child.display_name }}{% endif %}
+        · <span class="statusBadge {% if sent.is_resolved %}approved{% else %}pending{% endif %}">{% if sent.is_resolved %}Naayos na{% else %}Bukas pa{% endif %}</span>
+      </small>
       <p>{{ sent.message|linebreaksbr }}</p>
     </li>
     {% endfor %}

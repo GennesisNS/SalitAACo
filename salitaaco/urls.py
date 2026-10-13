@@ -12,7 +12,8 @@ from django.views.generic import RedirectView
 from .routes import auth, dashboard
 
 urlpatterns = [
-    path('', auth.index_view, name="index"),
+    # The public website, which is the site's root ("index").
+    path('', include('public.urls')),
     path('login/', auth.login_view, name="login"),
     path('register/', auth.register_view, name="register"),
     path('logout/', auth.logout_view, name="logout"),

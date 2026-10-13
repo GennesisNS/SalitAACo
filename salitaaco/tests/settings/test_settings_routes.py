@@ -50,11 +50,11 @@ class SettingsAndProfileAreSeparatePagesTest(UserBase):
         self.assertContains(self.client.get(reverse("profile")), f'href="{reverse("settings")}"')
 
     def test_profile_is_in_a_childs_navigation_and_behind_the_avatar_for_everyone(self):
-        # A child has Profile along the bottom; the sidebar of the others does not list it.
-        self.login_as("miguel")
-        self.assertTrue(self.sidebar_items("profile")["profile"]["active"])
-        self.login_as("developer")
-        self.assertNotIn("profile", self.sidebar_items("settings"))
+        # A child has Profile along the bottom; the others have it in the sidebar as "Account".
+        for username in ["miguel", "developer"]:
+            self.login_as(username)
+            self.assertTrue(self.sidebar_items("profile")["profile"]["active"], username)
+            self.assertFalse(self.sidebar_items("board")["profile"]["active"], username)
 
         # The avatar link is in both layouts, so it is on every page drawn in the user's own layout.
         pages = {"miguel": ["board", "settings", "profile"], "developer": ["settings", "profile"]}

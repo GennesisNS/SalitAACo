@@ -1,0 +1,77 @@
+{% extends "layouts/dashboard.html" %}
+{% comment %}This page may be removed: see routes/institutions/institutions.py.{% endcomment %}
+
+{% block title %}Mga Paaralan at Institusyon - SalitAACo{% endblock %}
+
+{% block heading %}Mga Paaralan at Institusyon{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Talaan ng mga paaralan at sentrong gumagamit ng SalitAACo sa ilalim ng napagkasunduang plano. Tala lang ito ng
+  admin: hindi ito nakakabit sa anumang account.
+</p>
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>{{ active_count }} sa {{ total_count }} institusyon ang aktibo</h2>
+    <button class="primaryBtn" type="button" data-open-modal="add-institution">＋ Magdagdag ng institusyon</button>
+  </div>
+
+  {% if institutions %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Institusyon</th>
+          <th>Status</th>
+          <th>Naitala</th>
+          <th>Mga bata</th>
+          <th>Plano</th>
+          <th>Renewal</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for institution in institutions %}
+        <tr>
+          <td>
+            <span class="childName">
+              <b>{{ institution.name }}</b>
+              <small>{{ institution.contact_person }}{% if institution.contact_person and institution.contact_details %} · {% endif %}{{ institution.contact_details }}</small>
+            </span>
+          </td>
+          <td data-label="Status">
+            {% if institution.is_active %}<span class="statusBadge approved">Aktibo</span>{% else %}<span class="statusBadge rejected">Hindi aktibo</span>{% endif %}
+          </td>
+          <td data-label="Naitala">{{ institution.created_at|date:"Y-m-d" }}</td>
+          <td data-label="Mga bata">{{ institution.seats }}</td>
+          <td data-label="Plano" class="comment">{{ institution.plan_notes|default:"—" }}</td>
+          <td data-label="Renewal">{{ institution.renewal_date|date:"Y-m-d"|default:"—" }}</td>
+          <td><a class="secondaryBtn smallBtn" href="{% url 'edit_institution' institution.uuid %}">I-edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyState">Wala pang naitalang institusyon.</p>
+  {% endif %}
+
+  {% include "components/pagination.html" with page_obj=institutions page_param="page" %}
+</section>
+
+<!-- ============== ADD AN INSTITUTION ============== -->
+<div class="settingsBackdrop hidden" data-modal="add-institution" data-open="{{ show_add_institution_modal|yesno:'true,false' }}">
+  <div class="settingsBox wide" role="dialog" aria-modal="true" aria-labelledby="addInstitutionTitle">
+    <div class="settingsHeader">
+      <h2 id="addInstitutionTitle">Magdagdag ng institusyon</h2>
+      <button class="closeBtn" type="button" data-close-modal="add-institution" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" class="settingsBody" novalidate>
+      {% csrf_token %}
+      {% include "components/institutions/institution_fields.html" %}
+      <button class="primaryBtn blockBtn formActions" type="submit" name="institution_form">Idagdag ang institusyon</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

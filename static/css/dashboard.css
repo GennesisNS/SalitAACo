@@ -518,6 +518,323 @@
   color: var(--danger);
 }
 
+/* ---------- Admin pages: a bar for each day, what happened lately, the log ---------- */
+.dayBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 190px;
+}
+.dayBar {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--sub);
+  font-size: 12px;
+}
+.dayTrack {
+  flex: 1;
+  width: 100%;
+  max-width: 44px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background: var(--soft);
+}
+.dayFill {
+  display: block;
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  background: var(--accent);
+}
+.dayCount {
+  color: var(--ink);
+  font-weight: 600;
+}
+.activityList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.activityList li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.activityList li:last-child {
+  border-bottom: none;
+}
+.activityList small {
+  margin-left: auto;
+  color: var(--sub);
+  font-size: 12px;
+}
+.headNote {
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 400;
+}
+.symbolCell {
+  font-size: 24px;
+}
+.logLines {
+  margin: 0;
+  padding: 12px 14px 12px 34px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--raised);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.logLines li {
+  white-space: pre;
+}
+.page code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--on-soft);
+  font-size: 0.92em;
+}
+
+/* ---------- Plans and payments ---------- */
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  max-width: 860px;
+  margin-bottom: 20px;
+}
+.planCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.planCard.current {
+  border: 2px solid var(--accent);
+}
+.planCard h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.planPrice {
+  margin: 6px 0 14px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.planPrice small,
+.payAmount small {
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 400;
+}
+.planFeatures {
+  flex: 1;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.planFeatures li {
+  display: flex;
+  gap: 8px;
+  padding: 5px 0;
+}
+.planFeatures li::before {
+  content: "✓";
+  color: var(--good);
+  font-weight: 700;
+}
+/* A small label: the plan a guardian is on, a feature of the paid plan. */
+.planTag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.planCard > .planTag {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+.planSubscribers {
+  margin: 0 0 4px;
+  color: var(--sub);
+  font-size: 14px;
+}
+.planSubscribers b {
+  color: var(--ink);
+  font-size: 22px;
+}
+.planCard .switchRow {
+  margin-top: 14px;
+}
+
+/* Paying: the QR code on one side, what to do with it on the other. */
+.payLayout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.payCode {
+  text-align: center;
+}
+.qrCode {
+  margin: 0;
+}
+.qrCode svg {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+}
+/* A QR code is dark on white whatever the theme, or a phone cannot read it. */
+.qrPaper {
+  fill: #ffffff;
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+.qrInk {
+  fill: #0f1e3a;
+}
+.qrLabel {
+  fill: #0f1e3a;
+  font-size: 20px;
+  font-weight: 700;
+}
+.qrSub {
+  fill: #4a5a78;
+  font-size: 13px;
+}
+.qrCode figcaption {
+  margin-top: 8px;
+  color: var(--sub);
+  font-size: 12px;
+}
+.payAmount {
+  margin: 10px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+.paySteps h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.paySteps ol {
+  margin: 0 0 6px;
+  padding-left: 20px;
+  font-size: 14px;
+}
+.paySteps li {
+  padding: 3px 0;
+}
+.proofPreview {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+/* Where an uploaded proof of payment is shown. */
+.proofFrame {
+  padding: 36px 20px;
+  border: 2px dashed var(--line-strong);
+  border-radius: var(--radius-m);
+  background: var(--raised);
+  color: var(--sub);
+  font-size: 14px;
+  text-align: center;
+}
+.proofFrame span {
+  font-size: 40px;
+}
+.proofFrame p {
+  margin: 8px 0 0;
+}
+@media (max-width: 640px) {
+  .payLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* What became of a payment. */
+.statusBadge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.statusBadge.pending {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.statusBadge.approved {
+  background: var(--good-soft);
+  color: var(--good);
+}
+.statusBadge.rejected {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.tabCount {
+  margin-left: 8px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--on-soft);
+  font-size: 12px;
+}
+.doneNote {
+  color: var(--sub);
+  font-size: 13px;
+}
+/* Under a control that does nothing yet: says so. */
+.pendingNote {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-left: 4px solid var(--warn);
+  border-radius: var(--radius-s);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 13px;
+}
+/* Development only: turns the made-up payments on and off. */
+.examplesBar {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-m);
+  color: var(--sub);
+  font-size: 13px;
+}
+.examplesBar b {
+  color: var(--ink);
+}
+
 /* ---------- Help and support ---------- */
 .guide {
   margin-bottom: 8px;

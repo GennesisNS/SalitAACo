@@ -12,9 +12,22 @@ import salitaaco.routes.children.usage as child_usage
 import salitaaco.routes.children.voice as child_voice
 import salitaaco.routes.family_voices.family_voices as family_voices
 import salitaaco.routes.favorites.favorites as favorites
+import salitaaco.routes.feedback.feedback as feedback
+import salitaaco.routes.institutions.institutions as institutions
 import salitaaco.routes.overview.overview as overview
+import salitaaco.routes.plan.plan as plan
+import salitaaco.routes.privacy.privacy as privacy
+import salitaaco.routes.reports.reports as reports
+import salitaaco.routes.revenue.revenue as revenue
 import salitaaco.routes.settings.settings as settings
+import salitaaco.routes.subscriptions.subscriptions as subscriptions
 import salitaaco.routes.support.support as support
+import salitaaco.routes.system.access as system_access
+import salitaaco.routes.system.general as system_general
+import salitaaco.routes.technical_status.technical_status as technical_status
+import salitaaco.routes.users.users as users
+import salitaaco.routes.vocabulary.boards as admin_boards
+import salitaaco.routes.vocabulary.words as words
 
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='board'), name='dashboard'),
@@ -59,5 +72,43 @@ urlpatterns = [
 
     path('support/', support.view_support, name='support'),
 
+    # A guardian's plan and payments. Frontend only for now: nothing is saved.
+    path('plan/', plan.view_plan, name='plan'),
+    path('plan/transactions/', plan.view_transactions, name='plan_transactions'),
+
+    # ----- The admin's pages -----
+    # The admin dashboard. Its address is from when it was the only admin page.
     path('analytics/', analytics.view_analytics, name='analytics'),
+    path('reports/', reports.view_reports, name='reports'),
+    path('reports/export/', reports.export_report, name='export_report'),
+
+    path('users/', users.view_users, name='users'),
+    path('users/<int:user_id>/status/', users.set_user_status, name='set_user_status'),
+
+    # The boards and their words: the default vocabulary, and what admins change on top of it.
+    path('vocabulary/boards/', admin_boards.view_admin_boards, name='admin_boards'),
+    path('vocabulary/boards/status/', admin_boards.set_board_status, name='set_board_status'),
+    path('vocabulary/words/', words.view_words, name='words'),
+    path('vocabulary/words/<uuid:word_uuid>/', words.edit_word, name='edit_word'),
+    path('vocabulary/words/<uuid:word_uuid>/delete/', words.delete_word, name='delete_word'),
+
+    # Schools and centres. May be removed, with routes/institutions/.
+    path('institutions/', institutions.view_institutions, name='institutions'),
+    path('institutions/<uuid:institution_uuid>/', institutions.edit_institution, name='edit_institution'),
+    path('institutions/<uuid:institution_uuid>/delete/', institutions.delete_institution, name='delete_institution'),
+
+    # Ratings and support messages. May be removed, with routes/feedback/.
+    path('feedback/', feedback.view_feedback, name='feedback'),
+    path('feedback/messages/<uuid:message_uuid>/resolve/', feedback.resolve_support_message, name='resolve_support_message'),
+
+    path('system/general/', system_general.view_general_settings, name='system_general'),
+    path('system/access/', system_access.view_access_control, name='system_access'),
+    path('system/access/<int:user_id>/remove/', system_access.remove_admin, name='remove_admin'),
+    # May be removed, with routes/privacy/ and routes/technical_status/.
+    path('system/privacy/', privacy.view_privacy, name='system_privacy'),
+    path('system/status/', technical_status.view_technical_status, name='system_status'),
+
+    # The admin's payments to approve and the plans. Frontend only for now: nothing is saved.
+    path('revenue/', revenue.view_revenue, name='revenue'),
+    path('subscriptions/', subscriptions.view_subscriptions, name='subscriptions'),
 ]

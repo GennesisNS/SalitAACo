@@ -1,0 +1,34 @@
+{% load static %}
+{% comment %}What everyone but admins sees while maintenance mode is on (middleware/maintenance.py).{% endcomment %}
+<!DOCTYPE html>
+<html lang="tl" data-palette="navy">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Inaayos ang SalitAACo</title>
+    {% include "components/head_scripts.html" %}
+  </head>
+  <body>
+    <div class="authScreen">
+      <div class="authBox">
+        <h1><span class="brand">Salit<span>AAC</span>o</span></h1>
+        <h2 class="authTitle">Inaayos namin ang app</h2>
+        <p class="sub">
+          {% if message %}{{ message }}{% else %}Babalik ito sa lalong madaling panahon. Salamat sa paghihintay.{% endif %}
+        </p>
+        {% if user.is_authenticated %}
+        <!-- Someone logged in to an account that is not an admin's cannot reach the login
+             form: it sends whoever is logged in back to their own page, which is this one.
+             Logging out first is the way through, and logging out leads to the login form. -->
+        <form class="authAlt" method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          Admin ka ba?
+          <button class="linkBtn" type="submit">Mag-log out at mag-log in bilang admin</button>
+        </form>
+        {% else %}
+        <div class="authAlt">Admin ka ba? <a href="{% url 'login' %}">Mag-log in</a></div>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>

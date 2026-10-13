@@ -1,0 +1,155 @@
+{% extends "layouts/dashboard.html" %}
+{% load star_rating %}
+
+{% block title %}Analytics at Ulat - SalitAACo{% endblock %}
+
+{% block heading %}Analytics at Ulat{% endblock %}
+
+{% block main %}
+<nav class="pillTabs" aria-label="Mga bahagi ng analytics">
+  {% for item in tabs %}
+  <a href="{% url 'reports' %}?tab={{ item.value }}" {% if item.active %}class="active" aria-current="true"{% endif %}>{{ item.label }}</a>
+  {% endfor %}
+</nav>
+
+{% if tab == "growth" %}
+<!-- ============== USER GROWTH ============== -->
+<div class="statsGrid">
+  {% include "components/analytics/stat_card.html" with label="Kabuuang users" value=overview.total_users %}
+  {% include "components/analytics/stat_card.html" with label="Bago ngayong araw" value=overview.new_today %}
+  {% include "components/analytics/stat_card.html" with label="Bago sa linggo" value=overview.new_this_week %}
+  {% include "components/analytics/stat_card.html" with label="Aktibo ngayong araw" value=overview.active_today %}
+  {% include "components/analytics/stat_card.html" with label="Aktibo sa linggo" value=overview.active_this_week %}
+</div>
+
+<div class="twoColumns">
+  <section class="section">
+    <h2>Mga bagong sign-up (huling 14 araw)</h2>
+    {% for day in signups %}
+    {% include "components/analytics/bar_row.html" with label=day.date|date:"m-d" width=day.width count=day.count %}
+    {% endfor %}
+  </section>
+
+  <section class="section">
+    <h2>Mga account ayon sa uri</h2>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>Uri</th><th>Bilang</th></tr></thead>
+        <tbody>
+          {% for row in accounts_by_role %}
+          <tr><td>{{ row.label }}</td><td>{{ row.count }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Ang account na admin at tagapag-alaga nang sabay ay kabilang sa parehong bilang.</p>
+  </section>
+</div>
+
+{% elif tab == "usage" %}
+<!-- ============== FEATURE USAGE ============== -->
+<div class="statsGrid">
+  {% include "components/analytics/stat_card.html" with label="Kabuuang taps" value=overview.total_taps %}
+  {% include "components/analytics/stat_card.html" with label="Mga tile na binago" value=customized_tiles sub="may sariling larawan o tunog" %}
+  {% include "components/analytics/stat_card.html" with label="Custom na larawan" value=overview.total_images %}
+  {% include "components/analytics/stat_card.html" with label="Custom na tunog" value=overview.total_sounds %}
+  {% include "components/analytics/stat_card.html" with label="Boses ng pamilya" value=family_voices %}
+</div>
+
+<section class="section">
+  <h2>Mga pindot kada araw (huling 14 araw)</h2>
+  {% include "components/analytics/day_bars.html" with days=usage_by_day %}
+</section>
+
+<div class="twoColumns">
+  <section class="section">
+    <h2>Mga board na madalas buksan</h2>
+    {% for board in board_opens %}
+    <div class="usageRow">
+      <span class="word">{{ board.icon }} {{ board.name }}</span>
+      <span class="track"><span class="fill" style="width: {{ board.width }}%"></span></span>
+      <span class="count">{{ board.count }}</span>
+    </div>
+    {% empty %}
+    <p class="emptyNote">Wala pang nabubuksang board.</p>
+    {% endfor %}
+  </section>
+
+  <section class="section">
+    <h2>Pinaka-madalas gamitin na salita (lahat ng users)</h2>
+    {% for word in top_words %}
+    <div class="usageRow">
+      <span class="word">{{ word.word }}</span>
+      <span class="track"><span class="fill" style="width: {{ word.width }}%"></span></span>
+      <span class="count">{{ word.total_uses }}</span>
+    </div>
+    {% empty %}
+    <p class="emptyNote">Wala pang datos.</p>
+    {% endfor %}
+  </section>
+</div>
+
+{% elif tab == "retention" %}
+<!-- ============== RETENTION ============== -->
+<section class="section">
+  <h2>Pagbabalik ng mga gumagamit</h2>
+  <div class="tableWrap stackTable">
+    <table>
+      <thead><tr><th>Sukatan</th><th>Ano ang sinasabi nito</th><th>Halaga</th></tr></thead>
+      <tbody>
+        {% for row in retention %}
+        <tr>
+          <td><b>{{ row.metric }}</b></td>
+          <td data-label="Ibig sabihin" class="comment">{{ row.meaning }}</td>
+          <td data-label="Halaga">{{ row.value }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Binibilang ang mga ito mula sa huling login ng bawat account at sa mga araw na may pindot sa board.</p>
+</section>
+
+{% elif tab == "business" %}
+<!-- ============== BUSINESS ============== -->
+<section class="section">
+  <h2>Negosyo</h2>
+  <p class="emptyState">
+    Lalabas dito ang mga subscription at kita kapag nase-save na ang mga bayad. Sa ngayon, tingnan ang
+    <a href="{% url 'subscriptions' %}">Mga Subscription</a> at <a href="{% url 'revenue' %}">Kita</a>.
+  </p>
+</section>
+
+{% else %}
+<!-- ============== REPORTS ============== -->
+<section class="section">
+  <h2>Mag-download ng ulat</h2>
+  <p class="desc">
+    CSV ang file, na nabubuksan sa Excel at Google Sheets. Mga bilang lang ang laman ng mga ulat: walang pangalan,
+    walang username, at walang anumang sinabi gamit ang board.
+  </p>
+
+  <form method="get" action="{% url 'export_report' %}" class="narrowForm settingsFields" novalidate>
+    <label for="{{ export_form.report.id_for_label }}">{{ export_form.report.label }}</label>
+    {{ export_form.report }}
+    <small class="fieldError">{{ export_form.report.errors }}</small>
+
+    <div class="row">
+      <div>
+        <label for="{{ export_form.date_from.id_for_label }}">{{ export_form.date_from.label }}</label>
+        {{ export_form.date_from }}
+        <small class="fieldError">{{ export_form.date_from.errors }}</small>
+      </div>
+      <div>
+        <label for="{{ export_form.date_to.id_for_label }}">{{ export_form.date_to.label }}</label>
+        {{ export_form.date_to }}
+        <small class="fieldError">{{ export_form.date_to.errors }}</small>
+      </div>
+    </div>
+    <small class="fieldHelp">Kapag walang petsa, kasama ang lahat ng araw.</small>
+
+    <button class="primaryBtn formActions" type="submit">I-download ang CSV</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

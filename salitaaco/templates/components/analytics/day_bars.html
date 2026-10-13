@@ -1,0 +1,13 @@
+{% comment %}
+  A bar for each day, as tall as its share of the busiest day, with the count above and the date under.
+  days: rows from utils.admin_stats.usage_by_day (date, taps, height).
+{% endcomment %}
+<div class="dayBars" role="img" aria-label="Mga pindot kada araw">
+  {% for day in days %}
+  <div class="dayBar">
+    <span class="dayCount">{{ day.taps }}</span>
+    <span class="dayTrack"><span class="dayFill" style="height: {{ day.height }}%"></span></span>
+    <span class="dayLabel">{{ day.date|date:"m-d" }}</span>
+  </div>
+  {% endfor %}
+</div>

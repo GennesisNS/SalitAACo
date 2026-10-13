@@ -21,10 +21,13 @@ def redirect_home(request):
     return redirect(home_route(get_user_account(request.user)))
 
 
-def index_view(request):
-    if request.user.is_authenticated:
-        return redirect_home(request)
-    return redirect('login')
+def is_inactive_account(username, password):
+    """
+    Whether the login failed only because an admin made the account inactive.
+    The password has to be right as well: someone guessing usernames learns nothing from this.
+    """
+    user = User.objects.filter(username__iexact=username).first()
+    return user is not None and not user.is_active and user.check_password(password)
 
 
 def login_view(request):
@@ -51,7 +54,10 @@ def login_view(request):
                 if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                     return redirect(next_url)
                 return redirect_home(request)
-            login_form.add_error(None, "Maling username o password.")
+            if is_inactive_account(login_form.cleaned_data['username'], login_form.cleaned_data['password']):
+                login_form.add_error(None, "Hindi aktibo ang account na ito. Makipag-ugnayan sa admin.")
+            else:
+                login_form.add_error(None, "Maling username o password.")
 
     context = {
         "login_form": login_form,

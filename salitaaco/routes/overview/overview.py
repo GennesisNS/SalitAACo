@@ -5,6 +5,7 @@ from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.children import add_board_numbers, children_with_numbers
 from salitaaco.utils.perms_check import is_guardian, multi_user_test
+from salitaaco.utils.plans import current_plan
 
 
 @active_nav("overview")
@@ -26,5 +27,6 @@ def view_overview(request):
     context = {
         "children": children,
         "stat_cards": stat_cards,
+        "current_plan": current_plan(guardian),
     }
     return render(request, 'dashboard/overview/overview.html', context)

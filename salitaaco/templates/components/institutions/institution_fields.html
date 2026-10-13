@@ -1,0 +1,45 @@
+{% comment %}
+  The fields of an institution, in the form that adds one and in the form that changes one.
+  institution_form: an InstitutionForm.
+{% endcomment %}
+<label for="{{ institution_form.name.id_for_label }}">{{ institution_form.name.label }}</label>
+{{ institution_form.name }}
+<small class="fieldError">{{ institution_form.name.errors }}</small>
+
+<div class="row">
+  <div>
+    <label for="{{ institution_form.contact_person.id_for_label }}">{{ institution_form.contact_person.label }}</label>
+    {{ institution_form.contact_person }}
+    <small class="fieldError">{{ institution_form.contact_person.errors }}</small>
+  </div>
+  <div>
+    <label for="{{ institution_form.contact_details.id_for_label }}">{{ institution_form.contact_details.label }}</label>
+    {{ institution_form.contact_details }}
+    <small class="fieldError">{{ institution_form.contact_details.errors }}</small>
+  </div>
+</div>
+
+<div class="row">
+  <div>
+    <label for="{{ institution_form.seats.id_for_label }}">{{ institution_form.seats.label }}</label>
+    {{ institution_form.seats }}
+    <small class="fieldError">{{ institution_form.seats.errors }}</small>
+  </div>
+  <div>
+    <label for="{{ institution_form.renewal_date.id_for_label }}">{{ institution_form.renewal_date.label }}</label>
+    {{ institution_form.renewal_date }}
+    <small class="fieldError">{{ institution_form.renewal_date.errors }}</small>
+  </div>
+</div>
+
+<label for="{{ institution_form.plan_notes.id_for_label }}">{{ institution_form.plan_notes.label }}</label>
+{{ institution_form.plan_notes }}
+<small class="fieldError">{{ institution_form.plan_notes.errors }}</small>
+
+<div class="switchRow">
+  <label class="switch">
+    {{ institution_form.is_active }}
+    <span class="slider"></span>
+  </label>
+  <span>{{ institution_form.is_active.label }}</span>
+</div>

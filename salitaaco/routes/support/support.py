@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from salitaaco.forms.support.contact_support import ContactSupportForm
 from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.models.site_setting import SiteSetting
 from salitaaco.models.support_message import SupportMessage
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.children import guardian_children
@@ -40,6 +41,8 @@ def view_support(request):
 
     context = {
         "contact_form": contact_form,
+        # The email and telephone an admin set on System Settings > General.
+        "site_setting": SiteSetting.load(),
         "sent_messages": guardian.support_messages.select_related("child").order_by("-created_at")[:SENT_MESSAGES_SHOWN],
     }
     return render(request, 'dashboard/support/support.html', context)

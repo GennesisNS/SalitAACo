@@ -1,0 +1,111 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Mga Salita at Simbolo - SalitAACo{% endblock %}
+
+{% block heading %}Mga Salita at Simbolo{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Ang bawat salita at ang simbolo nito. Ang mga default na salita ay ang bokabularyo ng app at hindi binabago rito.
+  Ang mga salitang idinagdag mo ay lumalabas sa dulo ng board nila, para sa lahat ng gumagamit.
+</p>
+
+<section class="section" id="words">
+  <div class="sectionHead">
+    <h2>{{ word_count }} salita <small class="headNote">· {{ added_count }} ang idinagdag</small></h2>
+    <button class="primaryBtn" type="button" data-open-modal="add-word">＋ Magdagdag ng salita</button>
+  </div>
+
+  <form class="searchBar" method="get">
+    <div>
+      <label for="{{ search_form.query.id_for_label }}">{{ search_form.query.label }}</label>
+      {{ search_form.query }}
+    </div>
+    <div>
+      <label for="{{ search_form.board.id_for_label }}">{{ search_form.board.label }}</label>
+      {{ search_form.board }}
+    </div>
+    <button type="submit">Hanapin</button>
+  </form>
+
+  {% if words %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Simbolo</th>
+          <th>Salita</th>
+          <th>Board</th>
+          <th>Pinagmulan</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in words %}
+        <tr>
+          <td class="symbolCell">{{ row.emoji }}</td>
+          <td data-label="Salita"><b>{{ row.word }}</b></td>
+          <td data-label="Board">{{ row.board }}</td>
+          <td data-label="Pinagmulan">
+            {% if row.added %}<span class="statusBadge pending">Idinagdag</span>{% else %}<span class="badge">Default</span>{% endif %}
+          </td>
+          <td>
+            {% if row.added %}
+            <span class="rowActions">
+              <a class="secondaryBtn smallBtn" href="{% url 'edit_word' row.added.uuid %}">I-edit</a>
+              <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="delete-word-{{ row.added.uuid }}">Burahin</button>
+            </span>
+            {% else %}
+            <span class="doneNote">Bahagi ng default</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyState">Walang salitang tumugma.</p>
+  {% endif %}
+
+  {% include "components/pagination.html" with page_obj=words page_param="page" anchor="#words" %}
+
+  <p class="note">
+    Wala pang boses ang bagong salita, kaya boses ng device ang bibigkas nito hanggang patakbuhin ang
+    “python manage.py generate_tile_audio”. Sa mga boses ng pamilya, kusang gagawin ang bagong salita sa susunod na
+    buksan ng tagapag-alaga ang Boses ng Pamilya.
+  </p>
+</section>
+
+<!-- ============== ADD A WORD ============== -->
+<div class="settingsBackdrop hidden" data-modal="add-word" data-open="{{ show_add_word_modal|yesno:'true,false' }}">
+  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="addWordTitle">
+    <div class="settingsHeader">
+      <h2 id="addWordTitle">Magdagdag ng salita</h2>
+      <button class="closeBtn" type="button" data-close-modal="add-word" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" action="{% url 'words' %}" class="settingsBody" novalidate>
+      {% csrf_token %}
+      {% include "components/vocabulary/word_fields.html" %}
+      <button class="primaryBtn blockBtn formActions" type="submit" name="word_form">Idagdag ang salita</button>
+    </form>
+  </div>
+</div>
+
+<!-- Deleting an added word is asked twice. -->
+{% for row in words %}
+{% if row.added %}
+<div class="confirmBackdrop hidden" data-modal="delete-word-{{ row.added.uuid }}">
+  <form class="confirmBox" method="post" action="{% url 'delete_word' row.added.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <h3>Burahin ang “{{ row.word }}”?</h3>
+    <p>Mawawala ito sa board na “{{ row.board }}” ng lahat ng gumagamit. Hindi na ito maibabalik; kailangan itong idagdag muli.</p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-word-{{ row.added.uuid }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, burahin</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

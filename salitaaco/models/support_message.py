@@ -21,6 +21,12 @@ class SupportMessage(models.Model):
     )
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    # When an admin marked it as dealt with; empty while it is still open.
+    resolved_at = models.DateTimeField(blank=True, null=True)
+
+    @property
+    def is_resolved(self):
+        return self.resolved_at is not None
 
     def __str__(self):
         return f"{self.guardian}: {self.message[:40]}"

@@ -123,8 +123,11 @@ class LogoutAndRedirectsTest(UserBase):
         self.assertRedirects(self.client.post(reverse("logout")), reverse("login"))
         self.assertNotIn("_auth_user_id", self.client.session)
 
-    def test_index_goes_to_login_or_board(self):
-        self.assertRedirects(self.client.get(reverse("index")), reverse("login"))
+    def test_index_is_the_public_website_or_the_board(self):
+        # Nobody logged in: the public website (the public/ app), which leads to logging in.
+        response = self.client.get(reverse("index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'href="{reverse("login")}"')
         self.login_as("miguel")
         self.assertRedirects(self.client.get(reverse("index")), reverse("board"))
 

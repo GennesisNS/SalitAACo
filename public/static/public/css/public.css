@@ -1,0 +1,638 @@
+/* The public website (public/templates/public/home.html). It stands by itself:
+   nothing here comes from the app's own stylesheets.
+
+   Colours are the "Ocean Royale" palette:
+   #03045E deep navy   #023EBA brand blue   #00B4D8 highlight
+   #CAF0F8 soft sky    #FBB02D call to action
+   Text keeps a contrast of 4.5:1 or more against what it sits on. */
+
+:root {
+  --page: #ffffff;
+  --ink: #03045e;
+  --sub: #33407f;
+  --card: #ffffff;
+  --tint: #caf0f8;
+  --edge: #03045e;
+  --deep: #03045e;
+  --brand: #023eba;
+  --highlight: #00b4d8;
+  --on-deep: #ffffff;
+  --on-deep-sub: #caf0f8;
+  --cta: #fbb02d;
+  --on-cta: #03045e;
+  --good: #1b6e3c;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: ui-rounded, "Arial Rounded MT Bold", "Nunito", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+/* The theme is set on <html> before the page paints, by the script in the page's head. */
+:root[data-theme="dark"] {
+  --page: #020343;
+  --ink: #ffffff;
+  --sub: #caf0f8;
+  --card: #0a1172;
+  --tint: #03045e;
+  --edge: #00b4d8;
+  --good: #7bdfa4;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.55;
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 3px;
+}
+.skipLink {
+  position: absolute;
+  left: -999px;
+  top: 8px;
+  z-index: 10;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--cta);
+  color: var(--on-cta);
+  font-weight: 700;
+}
+.skipLink:focus {
+  left: 8px;
+}
+
+/* The name of the app, written out: there is no logo file yet. */
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+.brand span {
+  color: var(--highlight);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 28px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+.btn.small {
+  min-height: 44px;
+  padding: 8px 20px;
+  font-size: 16px;
+}
+.btn.cta {
+  border-color: var(--deep);
+  background: var(--cta);
+  box-shadow: 4px 4px 0 var(--deep);
+  color: var(--on-cta);
+}
+.btn.cta:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 var(--deep);
+}
+.btn.cta:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--deep);
+}
+.btn.ghost {
+  border-color: var(--on-deep-sub);
+  color: var(--on-deep);
+}
+.btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.btn.outline {
+  border-color: var(--edge);
+  color: var(--ink);
+}
+.btn.outline:hover {
+  background: var(--tint);
+}
+
+/* ---------- Hero: the navigation and the opening, on the deep blue ---------- */
+.heroWrap {
+  margin: 12px;
+  padding: 16px 24px 56px;
+  border-radius: 32px;
+  background: var(--deep);
+  background:
+    radial-gradient(60% 80% at 100% 0%, rgba(0, 180, 216, 0.45), transparent 70%),
+    linear-gradient(160deg, #03045e 30%, #023eba 100%);
+  color: var(--on-deep);
+}
+.siteNav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.navLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.navLinks a:not(.btn) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: var(--on-deep);
+  font-weight: 600;
+  text-decoration: none;
+}
+.navLinks a:not(.btn):hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.navLinks .btn {
+  margin-left: 8px;
+}
+.navToggle {
+  display: none;
+  width: 48px;
+  height: 48px;
+  padding: 12px 11px;
+  border: 2px solid var(--on-deep-sub);
+  border-radius: 14px;
+  background: none;
+  cursor: pointer;
+}
+.navToggle span {
+  display: block;
+  height: 3px;
+  margin: 4px 0;
+  border-radius: 2px;
+  background: var(--on-deep);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  align-items: center;
+  max-width: 1120px;
+  margin: 48px auto 0;
+}
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 16px;
+  padding: 6px 16px;
+  border: 1px solid var(--on-deep-sub);
+  border-radius: 999px;
+  color: var(--on-deep-sub);
+  font-size: 14px;
+  font-weight: 600;
+}
+.hero h1 {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 4.6vw, 56px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.hero h1 em {
+  color: var(--cta);
+  font-style: normal;
+}
+.lead {
+  max-width: 540px;
+  margin: 0 0 26px;
+  color: var(--on-deep-sub);
+  font-size: 18px;
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 14px;
+}
+.heroNote {
+  max-width: 520px;
+  margin: 22px 0 0;
+  color: var(--on-deep-sub);
+  font-size: 14px;
+}
+
+/* The small working board beside the opening. */
+.demo {
+  padding: 20px;
+  border: 3px solid var(--deep);
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 8px 8px 0 rgba(3, 4, 94, 0.55);
+  color: #03045e;
+}
+.demoHint {
+  margin: 0 0 10px;
+  color: #33407f;
+  font-size: 14px;
+  font-weight: 600;
+}
+.demoSentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 58px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 3px solid #00b4d8;
+  border-radius: 18px;
+  font-size: 17px;
+}
+.demoPlaceholder {
+  color: #33407f;
+}
+.demoChip {
+  padding: 5px 12px;
+  border-radius: 12px;
+  background: #023eba;
+  color: #ffffff;
+  font-weight: 700;
+}
+.demoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.demoTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 92px;
+  padding: 10px 4px;
+  border: 3px solid #9fddec;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 0 #9fddec;
+  color: #03045e;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+.demoTile span {
+  font-size: 32px;
+  line-height: 1;
+}
+.demoTile:hover,
+.demoTile:focus-visible {
+  border-color: #00b4d8;
+  box-shadow: 0 4px 0 #00b4d8;
+}
+.demoTile:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #00b4d8;
+}
+.demoClear {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 18px;
+  border: 2px solid #5a78b0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #03045e;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---------- Sections under the hero ---------- */
+.band {
+  max-width: 1168px;
+  margin: 0 auto;
+  padding: 72px 24px;
+}
+.band h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 40px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+.bandLead {
+  max-width: 640px;
+  margin: 0 auto 36px;
+  color: var(--sub);
+  text-align: center;
+}
+.band.tinted {
+  max-width: none;
+  margin: 0 12px;
+  border-radius: 32px;
+  background: var(--tint);
+}
+
+/* What it does: six cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+}
+.card {
+  padding: 24px;
+  border: 2px solid var(--edge);
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+.cardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--tint);
+  font-size: 26px;
+}
+.card h3 {
+  margin: 14px 0 6px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+}
+.card p {
+  margin: 0;
+  color: var(--sub);
+  font-size: 16px;
+}
+
+/* About Us */
+.about {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 40px;
+  align-items: start;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.about h2 {
+  text-align: left;
+}
+.aboutText p {
+  margin: 0 0 16px;
+}
+.aboutText h3,
+.nameCard h3 {
+  margin: 26px 0 10px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 800;
+}
+.forWhom {
+  margin: 0;
+  padding-left: 22px;
+}
+.forWhom li {
+  margin-bottom: 8px;
+}
+.nameCard {
+  padding: 26px;
+  border: 2px solid var(--edge);
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+.nameCard h3 {
+  margin-top: 0;
+}
+.nameCard dl {
+  margin: 0;
+}
+.nameCard dl div {
+  padding: 12px 0;
+  border-top: 1px solid var(--highlight);
+}
+.nameCard dt {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+}
+.nameCard dd {
+  margin: 2px 0 0;
+  color: var(--sub);
+  font-size: 15px;
+}
+
+/* Plans */
+.plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.plan {
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  border: 2px solid var(--edge);
+  border-radius: 24px;
+  background: var(--card);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+.plan h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+}
+.planPrice {
+  margin: 6px 0 16px;
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.planPrice small {
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 400;
+}
+.plan ul {
+  flex: 1;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+.plan li {
+  display: flex;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 16px;
+}
+.plan li::before {
+  content: "✓";
+  color: var(--good);
+  font-weight: 800;
+}
+/* The paid plan, set apart on the deep blue. */
+.plan.featured {
+  border-color: var(--deep);
+  background: var(--deep);
+  background: linear-gradient(160deg, #03045e 40%, #023eba 100%);
+  color: var(--on-deep);
+}
+.plan.featured li::before {
+  color: var(--cta);
+}
+.plan.featured .btn.cta {
+  border-color: var(--cta);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+.plansNote {
+  margin: 30px auto 0;
+  color: var(--sub);
+  font-size: 15px;
+  text-align: center;
+}
+
+/* ---------- Footer ---------- */
+.siteFooter {
+  margin: 12px;
+  padding: 44px 24px 22px;
+  border-radius: 32px;
+  background: var(--deep);
+  color: var(--on-deep);
+}
+.footerInner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px 40px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.siteFooter p {
+  margin: 10px 0 0;
+  color: var(--on-deep-sub);
+  font-size: 15px;
+}
+.siteFooter nav,
+.siteFooter address {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  font-style: normal;
+  font-size: 15px;
+}
+.siteFooter nav a,
+.siteFooter address a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  color: var(--on-deep-sub);
+}
+.siteFooter nav a:hover,
+.siteFooter address a:hover {
+  color: var(--on-deep);
+}
+.siteFooter address span {
+  color: var(--on-deep-sub);
+}
+.copyright {
+  max-width: 1120px;
+  margin: 32px auto 0 !important;
+  padding-top: 18px;
+  border-top: 1px solid rgba(202, 240, 248, 0.3);
+  font-size: 14px !important;
+}
+
+/* ---------- Tablets held upright, and phones ---------- */
+@media (max-width: 900px) {
+  .hero,
+  .about {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    margin-top: 32px;
+  }
+  .demo {
+    max-width: 520px;
+  }
+}
+@media (max-width: 760px) {
+  body {
+    font-size: 16px;
+  }
+  .heroWrap {
+    padding: 14px 16px 40px;
+  }
+  .navToggle {
+    display: block;
+  }
+  /* The links fold away under the menu button; public.js opens them. */
+  .navLinks {
+    display: none;
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 0 4px;
+  }
+  .navLinks.open {
+    display: flex;
+  }
+  .navLinks .btn {
+    margin: 8px 0 0;
+  }
+  .band {
+    padding: 52px 16px;
+  }
+  .card,
+  .plan,
+  .nameCard {
+    padding: 20px;
+  }
+  .heroActions .btn {
+    flex: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .btn,
+  .demoTile {
+    transition: none;
+  }
+}

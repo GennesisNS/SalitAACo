@@ -36,8 +36,11 @@ class LayoutPerRoleTest(LayoutBase):
 
     def test_a_guardians_and_an_admins_pages_use_the_dashboard_layout_and_palette(self):
         pages = {
-            "nanay": ["overview", "children", "family_voices", "support", "profile", "settings"],
-            "developer": ["analytics", "profile", "settings"],
+            "nanay": ["overview", "children", "family_voices", "plan", "plan_transactions", "support", "profile", "settings"],
+            "developer": [
+                "analytics", "reports", "users", "admin_boards", "words", "institutions", "revenue", "subscriptions",
+                "feedback", "system_general", "system_access", "system_privacy", "system_status", "profile", "settings",
+            ],
         }
         for username, routes in pages.items():
             self.login_as(username)
@@ -90,10 +93,15 @@ class NavigationPerRoleTest(LayoutBase):
         self.assertEqual(self.navigation("children"), [
             "overview", "children", "family_voices",
             "child_boards", "favorites", "child_voice", "child_usage",
-            "board", "support", "settings", "profile",
+            "board", "plan", "support", "settings", "profile",
         ])
         self.login_as("developer")
-        self.assertEqual(self.navigation("analytics"), ["board", "settings", "analytics"])
+        self.assertEqual(self.navigation("analytics"), [
+            "analytics", "reports", "users", "admin_boards", "words", "institutions",
+            "revenue", "subscriptions", "feedback",
+            "system_general", "system_access", "system_privacy", "system_status",
+            "board", "settings", "profile",
+        ])
 
     def test_a_child_logs_out_from_the_profile_page(self):
         # The sidebar holds the log out button; the child layout has no sidebar.

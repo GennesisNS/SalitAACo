@@ -1,0 +1,108 @@
+{% extends "layouts/dashboard.html" %}
+{% load static %}
+{% comment %}
+  FRONTEND ONLY FOR NOW: the design of choosing a plan and paying for it.
+  Picking a picture and seeing it works in the browser; sending it does not,
+  so the button that sends it is disabled.
+{% endcomment %}
+
+{% block title %}Plano at Subscription - SalitAACo{% endblock %}
+
+{% block heading %}Plano at Subscription{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Kasalukuyang plano: <b>{{ current_plan.name }}</b>. Sakop ng isang plano ang lahat ng bata mo. Libre magpakailanman
+  ang mga pangunahing gamit sa pakikipag-usap.
+</p>
+
+<div class="planGrid">
+  {% for plan in plans %}
+  <section class="planCard {% if plan.is_current %}current{% endif %}">
+    {% if plan.is_current %}<span class="planTag">Kasalukuyan</span>{% endif %}
+    <h2>{{ plan.name }}</h2>
+    <p class="planPrice">₱{{ plan.price }} <small>{{ plan.period }}</small></p>
+    <ul class="planFeatures">
+      {% for feature in plan.features %}
+      <li>{{ feature }}</li>
+      {% endfor %}
+    </ul>
+    {% if plan.is_current %}
+    <button class="secondaryBtn blockBtn" type="button" disabled>Ito ang plano mo</button>
+    {% elif plan.needs_payment %}
+    <button class="primaryBtn blockBtn" type="button" data-open-modal="pay">Kunin ang {{ plan.name }}</button>
+    {% else %}
+    <button class="secondaryBtn blockBtn" type="button" disabled>Lumipat sa {{ plan.name }}</button>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>Mga bayad mo</h2>
+    <a class="secondaryBtn" href="{% url 'plan_transactions' %}">Tingnan ang kasaysayan ng bayad</a>
+  </div>
+  <p class="desc">
+    Pagkatapos mong mag-upload ng patunay ng bayad, makikita mo roon kung naghihintay pa ito, naaprubahan na, o
+    tinanggihan.
+  </p>
+</section>
+
+<p class="note">
+  Kapag natapos ang subscription, mananatili sa iyo ang libreng plano. May hiwalay na kasunduan para sa mga paaralan
+  at institusyon.
+</p>
+
+{% if paid_plan %}
+<!-- ============== PAY BY QR CODE ============== -->
+<div class="settingsBackdrop hidden" data-modal="pay">
+  <div class="settingsBox wide" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+    <div class="settingsHeader">
+      <h2 id="payTitle">Bayaran ang {{ paid_plan.name }}</h2>
+      <button class="closeBtn" type="button" data-close-modal="pay" aria-label="Isara">&times;</button>
+    </div>
+    <div class="settingsBody">
+      <div class="payLayout">
+        <div class="payCode">
+          {% include "components/payments/qr_code.html" %}
+          <p class="payAmount">₱{{ paid_plan.price }} <small>{{ paid_plan.period }}</small></p>
+        </div>
+
+        <div class="paySteps">
+          <h3>Paano magbayad</h3>
+          <ol>
+            <li>I-scan ang QR code gamit ang e-wallet o banking app mo.</li>
+            <li>Bayaran ang eksaktong halaga: <b>₱{{ paid_plan.price }}</b>.</li>
+            <li>I-screenshot ang screen na nagsasabing matagumpay ang bayad.</li>
+            <li>I-upload ang larawang iyon dito.</li>
+          </ol>
+
+          <!-- Not a form yet: there is nowhere to send the picture to. -->
+          <div class="settingsFields" id="proofUpload" data-max-megabytes="{{ max_proof_megabytes }}">
+            <label for="proofFile">Larawan ng matagumpay na bayad <span class="required-mark">*</span></label>
+            <input type="file" id="proofFile" accept="image/jpeg,image/png,image/webp" />
+            <small class="fieldHelp">JPEG, PNG o WebP, hanggang {{ max_proof_megabytes }} MB. Ikaw at ang admin lang ang makakakita nito.</small>
+            <small class="fieldError" id="proofError" role="alert"></small>
+            <img class="proofPreview hidden" id="proofPreview" alt="Ang larawang pinili mo" />
+          </div>
+        </div>
+      </div>
+
+      <div class="confirmRow">
+        <button class="secondaryBtn" type="button" data-close-modal="pay">Huwag muna</button>
+        <button class="primaryBtn" type="button" disabled>Ipadala ang patunay ng bayad</button>
+      </div>
+      <p class="pendingNote">
+        Hindi pa gumagana ang pagpapadala: disenyo pa lang ito. Kapag gumagana na, magiging “Naghihintay” ang bayad mo
+        hanggang maaprubahan ng admin, at saka magsisimula ang {{ paid_plan.name }}.
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/plan.js' %}" defer></script>
+{% endblock %}

@@ -1,25 +1,51 @@
 from salitaaco.defaults.board import BOARD_ICONS, QUICK_WORDS
 from salitaaco.defaults.vocabulary import CATEGORIES
+from salitaaco.models.added_word import AddedWord
+from salitaaco.models.board_status import BoardStatus
 
 
-def all_boards():
-    """Every board: each category of the vocabulary, with the picture of its tile."""
+def every_board():
+    """
+    Every board, published or not: each category of the default vocabulary,
+    with the picture of its tile, followed by the words an admin added to it.
+    `is_published` says whether anyone but an admin sees it.
+    """
+    added = {}
+    for word in AddedWord.objects.order_by("created_at", "added_word_id"):
+        added.setdefault(word.board, []).append({"w": word.word, "e": word.emoji})
+    unpublished = set(BoardStatus.objects.filter(is_published=False).values_list("board", flat=True))
+
     return [
         {
             "name": category["name"],
             "icon": BOARD_ICONS.get(category["name"]) or category["items"][0]["e"],
-            "items": category["items"],
+            # A new list each time: the default vocabulary itself is never added to.
+            "items": category["items"] + added.get(category["name"], []),
+            "is_published": category["name"] not in unpublished,
         }
         for category in CATEGORIES
     ]
 
 
-def board_names():
+def every_board_name():
     return [category["name"] for category in CATEGORIES]
 
 
+def all_boards():
+    """The published boards: the ones a board page can show."""
+    return [
+        {"name": board["name"], "icon": board["icon"], "items": board["items"]}
+        for board in every_board() if board["is_published"]
+    ]
+
+
+def board_names():
+    """The names of the published boards."""
+    return [board["name"] for board in all_boards()]
+
+
 def hidden_board_names(child):
-    """The boards the child's guardian turned off, as the names of boards that still exist."""
+    """The published boards the child's guardian turned off."""
     hidden = {hidden_board.board for hidden_board in child.hidden_boards.all()}
     return hidden.intersection(board_names())
 
@@ -29,12 +55,13 @@ def boards(child=None):
     The boards a board page offers. A child's is without the boards their
     guardian turned off; a guardian's or an admin's own board has them all.
     """
+    published = all_boards()
     if child is None:
-        return all_boards()
-    hidden = hidden_board_names(child)
-    shown = [board for board in all_boards() if board["name"] not in hidden]
+        return published
+    hidden = {hidden_board.board for hidden_board in child.hidden_boards.all()}
+    shown = [board for board in published if board["name"] not in hidden]
     # A child is never left without a board, whatever the rows say.
-    return shown or all_boards()
+    return shown or published
 
 
 def quick_words():

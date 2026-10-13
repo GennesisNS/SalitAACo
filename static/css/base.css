@@ -386,12 +386,14 @@ input[type="checkbox"] {
   font-size: 14px;
   font-weight: 600;
 }
-.settingsBody .row {
+.settingsBody .row,
+.settingsFields .row {
   display: flex;
   flex-wrap: wrap;
   gap: 0 14px;
 }
-.settingsBody .row > * {
+.settingsBody .row > *,
+.settingsFields .row > * {
   flex: 1;
   min-width: 180px;
 }
@@ -637,6 +639,9 @@ tr:last-child td {
 .stars {
   color: var(--warn);
   letter-spacing: 1px;
+}
+.comment.wide {
+  max-width: 460px;
 }
 .comment {
   max-width: 280px;
@@ -1011,7 +1016,13 @@ a.cell:active {
   color: var(--line-strong);
 }
 .authBox .authTitle {
+  margin: 14px 0 6px;
   font-size: 22px;
+  text-align: center;
+}
+.authAlt .linkBtn {
+  font-size: inherit;
+  font-weight: 700;
 }
 .authBox p.sub {
   margin: 0 0 22px;

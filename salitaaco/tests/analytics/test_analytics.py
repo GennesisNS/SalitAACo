@@ -123,7 +123,7 @@ class AnalyticsNumbersTest(UserBase):
 
     def test_users_table_has_the_per_user_counts(self):
         self.login_as("developer")
-        users = {user.username: user for user in self.client.get(reverse("analytics")).context["users"]}
+        users = {user.username: user for user in self.client.get(reverse("users")).context["users"]}
 
         miguel = users["miguel"]
         self.assertEqual((miguel.image_count, miguel.sound_count, miguel.total_taps, miguel.rating_stars), (2, 1, 7, 5))
@@ -138,7 +138,7 @@ class AnalyticsNumbersTest(UserBase):
         make_guardian("nanay", "Nanay Rosa", children=[self.miguel])
         User.objects.create_user(username="walangaccount", password="abcd")
         self.login_as("developer")
-        response = self.client.get(reverse("analytics"), {"order_by": "username_asc"})
+        response = self.client.get(reverse("users"), {"order_by": "username_asc"})
 
         kinds = {user.username: user.account.ROLE_LABEL if user.account else None for user in response.context["users"]}
         self.assertEqual(kinds, {
@@ -148,14 +148,14 @@ class AnalyticsNumbersTest(UserBase):
         self.assertContains(response, '<span class="badge">Tagapag-alaga</span>')
 
         # The guardian is found by their display name, which is on a different table from a child's.
-        found = self.client.get(reverse("analytics"), {"query": "rosa"}).context["users"]
+        found = self.client.get(reverse("users"), {"query": "rosa"}).context["users"]
         self.assertEqual([user.username for user in found], ["nanay"])
 
     def test_users_are_newest_first_and_can_be_searched_and_sorted(self):
         self.login_as("developer")
 
         def usernames(**query):
-            return [user.username for user in self.client.get(reverse("analytics"), query).context["users"]]
+            return [user.username for user in self.client.get(reverse("users"), query).context["users"]]
 
         self.assertEqual(usernames(), ["developer", "miguel", "ana"])
         self.assertEqual(usernames(order_by="username_asc"), ["ana", "developer", "miguel"])
@@ -166,7 +166,7 @@ class AnalyticsNumbersTest(UserBase):
     def test_feedback_is_most_recently_updated_first(self):
         Rating.objects.filter(user=self.ana).update(updated_at=timezone.now() + timedelta(minutes=5))
         self.login_as("developer")
-        response = self.client.get(reverse("analytics"))
+        response = self.client.get(reverse("feedback"))
 
         self.assertEqual([rating.user.username for rating in response.context["ratings"]], ["ana", "miguel"])
         self.assertContains(response, "Ang galing")
@@ -177,11 +177,11 @@ class AnalyticsNumbersTest(UserBase):
             ChildAccount.objects.create(user=user, display_name=f"Bata {number}")
         self.login_as("developer")
 
-        first_page = self.client.get(reverse("analytics"))
+        first_page = self.client.get(reverse("users"))
         self.assertEqual(len(first_page.context["users"]), 10)
         self.assertContains(first_page, "?users_page=2#users")
 
-        second_page = self.client.get(reverse("analytics"), {"users_page": 2, "query": "bata"})
+        second_page = self.client.get(reverse("users"), {"users_page": 2, "query": "bata"})
         self.assertEqual(len(second_page.context["users"]), 2)
         self.assertContains(second_page, "?users_page=1&amp;query=bata#users")
 

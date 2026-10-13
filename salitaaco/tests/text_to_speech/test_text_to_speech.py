@@ -7,7 +7,7 @@ from unittest import mock
 import requests
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabs, ElevenLabsError
 from salitaaco.utils.tile_audio import tile_audio_file_name, tile_audio_urls, tile_words
@@ -72,7 +72,7 @@ class ElevenLabsClientTest(SimpleTestCase):
             ElevenLabs(api_key="susi").text_to_speech("boses-123", "opo")
 
 
-class TileWordsTest(SimpleTestCase):
+class TileWordsTest(TestCase):
     def test_every_tile_label_including_all_verb_forms(self):
         words = tile_words()
         for word in ["ako", "tawagan si Nanay", "masakit dito", "kumain", "kumakain", "kakain", "malamig"]:
@@ -101,7 +101,7 @@ class SharedTileAudioTestMixin:
 
 
 @override_settings(ELEVENLABS_API_KEY="susi", ELEVENLABS_MODEL="eleven_multilingual_v2", ELEVENLABS_VOICE_ID="pinoy-boses")
-class GenerateTileAudioCommandTest(SharedTileAudioTestMixin, SimpleTestCase):
+class GenerateTileAudioCommandTest(SharedTileAudioTestMixin, TestCase):
     def run_command(self, *args):
         output = StringIO()
         call_command("generate_tile_audio", *args, stdout=output)

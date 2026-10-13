@@ -1,6 +1,6 @@
 from unittest import mock
 
-from django.test import SimpleTestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from salitaaco.defaults.board import BOARD_ICONS, FEELINGS_BOARD, QUICK_WORDS
@@ -11,7 +11,7 @@ from salitaaco.utils.board import boards, quick_words
 BOARD_NAMES = [category["name"] for category in CATEGORIES]
 
 
-class BoardDefaultsTest(SimpleTestCase):
+class BoardDefaultsTest(TestCase):
     """defaults/board.py lays the vocabulary out; a name it misspells would quietly show nothing."""
 
     def test_quick_words_are_words_of_the_vocabulary(self):

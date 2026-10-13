@@ -25,4 +25,14 @@
   </p>
   {% endif %}
 </section>
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>Plano</h2>
+    <a class="secondaryBtn" href="{% url 'plan' %}">Tingnan ang mga plano</a>
+  </div>
+  <p class="desc">
+    Kasalukuyang plano: <b>{{ current_plan.name }}</b>. Sakop ng isang plano ang lahat ng bata mo.
+  </p>
+</section>
 {% endblock %}
