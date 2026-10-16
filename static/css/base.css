@@ -1,0 +1,1058 @@
+/* Shared by every page: the document, buttons, form fields, the toggle switch,
+   cards, modals, toasts, tables and the tiles. Colours come from tokens.css.
+   The two layouts add their own file on top: dashboard.css or child.css. */
+
+/* ---------- Document ---------- */
+* {
+  box-sizing: border-box;
+}
+html {
+  padding-top: env(safe-area-inset-top, 0px);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+}
+/* A box in another palette (see tokens.css) takes that palette's text colour too. */
+[data-palette] {
+  color: var(--ink);
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+button {
+  cursor: pointer;
+}
+a {
+  color: var(--accent);
+}
+:focus-visible {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.hidden {
+  display: none !important;
+}
+
+/* The name of the app, written out: there is no logo file yet. */
+.brand {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: inherit;
+  text-decoration: none;
+}
+.brand span {
+  color: var(--highlight);
+}
+
+/* ---------- Buttons ---------- */
+.primaryBtn,
+.secondaryBtn,
+.dangerBtn,
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--touch);
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-m);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
+}
+.primaryBtn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.secondaryBtn,
+.iconbtn {
+  background: var(--card);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.secondaryBtn:hover,
+.iconbtn:hover {
+  background: var(--raised);
+}
+.secondaryBtn.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+/* The one button a page most wants pressed. */
+.iconbtn.primary {
+  background: var(--cta);
+  border-color: var(--cta);
+  color: var(--on-cta);
+}
+.iconbtn.editing,
+.dangerBtn.solid {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--on-danger);
+}
+.dangerBtn {
+  background: var(--card);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.primaryBtn:active,
+.secondaryBtn:active,
+.dangerBtn:active,
+.iconbtn:active {
+  transform: translateY(1px);
+}
+.primaryBtn:disabled,
+.secondaryBtn:disabled,
+.dangerBtn:disabled,
+.iconbtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.linkBtn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: underline;
+}
+.closeBtn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  border: none;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--sub);
+  font-size: 24px;
+  line-height: 1;
+}
+.closeBtn:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+/* ---------- Form fields ---------- */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-m);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 16px;
+}
+.textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--accent);
+}
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--sub);
+  opacity: 0.75;
+}
+.input:disabled {
+  background: var(--raised);
+  color: var(--sub);
+  cursor: not-allowed;
+}
+input[type="file"] {
+  max-width: 100%;
+  font-size: 14px;
+  color: var(--sub);
+}
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: var(--switch-on);
+}
+.required-mark {
+  color: var(--danger);
+}
+.errorlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fieldError,
+.err {
+  display: block;
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 13px;
+}
+.err:empty,
+.fieldError:empty {
+  display: none;
+}
+.fieldHelp {
+  display: block;
+  margin-top: 6px;
+  color: var(--sub);
+  font-size: 13px;
+}
+.inlineForm {
+  margin: 0;
+}
+
+/* ---------- Toggle switch ----------
+   For every checkbox that turns something on or off:
+
+     <label class="switch">
+       <input type="checkbox">
+       <span class="slider"></span>
+     </label>
+
+   The checkbox is kept on the page, invisible over the slider, so that it can
+   still be reached and switched from the keyboard. */
+.switch {
+  --button-width: 3.5em;
+  --button-height: 2em;
+  --toggle-diameter: 1.5em;
+  --button-toggle-offset: calc((var(--button-height) - var(--toggle-diameter)) / 2);
+  --toggle-shadow-offset: 10px;
+  --toggle-wider: 3em;
+  --color-grey: var(--switch-off);
+  --color-green: var(--switch-on);
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--button-width);
+  height: var(--button-height);
+  margin: 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+.slider {
+  display: inline-block;
+  width: var(--button-width);
+  height: var(--button-height);
+  background-color: var(--color-grey);
+  border-radius: calc(var(--button-height) / 2);
+  position: relative;
+  transition: 0.3s all ease-in-out;
+}
+.slider::after {
+  content: "";
+  display: inline-block;
+  width: var(--toggle-diameter);
+  height: var(--toggle-diameter);
+  background-color: #fff;
+  border-radius: calc(var(--toggle-diameter) / 2);
+  position: absolute;
+  top: var(--button-toggle-offset);
+  transform: translateX(var(--button-toggle-offset));
+  box-shadow: var(--toggle-shadow-offset) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
+  transition: 0.3s all ease-in-out;
+}
+.switch input[type="checkbox"]:checked + .slider {
+  background-color: var(--color-green);
+}
+.switch input[type="checkbox"]:checked + .slider::after {
+  transform: translateX(calc(var(--button-width) - var(--toggle-diameter) - var(--button-toggle-offset)));
+  box-shadow: calc(var(--toggle-shadow-offset) * -1) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
+}
+.switch input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.switch input[type="checkbox"]:focus-visible + .slider {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+.switch input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+.switch input[type="checkbox"]:disabled + .slider {
+  opacity: 0.5;
+}
+.switch input[type="checkbox"]:active + .slider::after {
+  width: var(--toggle-wider);
+}
+.switch input[type="checkbox"]:checked:active + .slider::after {
+  transform: translateX(calc(var(--button-width) - var(--toggle-wider) - var(--button-toggle-offset)));
+}
+@media (prefers-reduced-motion: reduce) {
+  .slider,
+  .slider::after {
+    transition: none;
+  }
+}
+/* A smaller button, for a table row or a banner. */
+.smallBtn {
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: var(--radius-s);
+  font-size: 13px;
+}
+.note {
+  margin: 16px 0 0;
+  color: var(--sub);
+  font-size: 13px;
+}
+.stepLabel {
+  margin: 0 0 8px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* A switch with the words that say what it turns on. */
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--touch);
+  font-size: 15px;
+}
+
+/* ---------- Cards ----------
+   A page is one or more cards: a header with the title and its main action,
+   and a body. Modals use the same header and body. */
+.pageCard {
+  max-width: 720px;
+  margin: 0 auto 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.settingsHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--line);
+}
+.settingsHeader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.settingsBody {
+  padding: 20px 22px 24px;
+}
+.settingsBody h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.settingsBody p.desc,
+.section p.desc {
+  margin: 0 0 16px;
+  color: var(--sub);
+  font-size: 14px;
+}
+.settingsBody label,
+.settingsFields label {
+  display: block;
+  margin: 14px 0 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.settingsBody .row,
+.settingsFields .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+}
+.settingsBody .row > *,
+.settingsFields .row > * {
+  flex: 1;
+  min-width: 180px;
+}
+.sectionDivider {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid var(--line);
+}
+.dangerTitle {
+  color: var(--danger);
+}
+.blockBtn {
+  display: flex;
+  width: 100%;
+}
+.formActions {
+  margin-top: 16px;
+}
+.tilesCard {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--raised);
+}
+.tilesCard p {
+  margin: 12px 0 0;
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.emptyState,
+.emptyNote {
+  margin: 0;
+  padding: 18px 0;
+  color: var(--sub);
+  font-size: 14px;
+  text-align: center;
+}
+
+.backLink {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+/* ---------- Profile picture ---------- */
+.avatarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.avatarPrev {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 3px solid var(--highlight);
+  border-radius: 50%;
+  background: var(--soft);
+  font-size: 34px;
+}
+.avatarPrev img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The small round picture beside the user's name, in both layouts. */
+.accountAvatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--soft);
+  font-size: 20px;
+}
+.accountAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- Modals ---------- */
+.settingsBackdrop,
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(5, 10, 30, 0.6);
+  backdrop-filter: blur(3px);
+}
+.settingsBox {
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--card);
+  box-shadow: var(--shadow-lift);
+}
+.settingsBox.narrow {
+  max-width: 440px;
+}
+.settingsBox.wide {
+  max-width: 640px;
+}
+.settingsBox .settingsBody {
+  overflow-y: auto;
+}
+.settingsBody p.uploadHint {
+  margin: 12px 0 6px;
+}
+.confirmBox {
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--card);
+  box-shadow: var(--shadow-lift);
+}
+.confirmBox h3 {
+  margin: 0 0 8px;
+  color: var(--danger);
+  font-size: 18px;
+}
+.confirmBox p {
+  margin: 0 0 14px;
+  color: var(--sub);
+  font-size: 14px;
+}
+.confirmRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ---------- Toast messages ---------- */
+.toasts {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(380px, calc(100vw - 28px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--accent);
+  border-radius: var(--radius-m);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  box-shadow: var(--shadow-lift);
+}
+.toast.success {
+  border-left-color: var(--good);
+}
+.toast.error {
+  border-left-color: var(--danger);
+}
+.toast p {
+  flex: 1;
+  margin: 0;
+}
+.toast button {
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--sub);
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* ---------- Tables ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+table.scroll-wrap {
+  display: block;
+  overflow-x: auto;
+}
+th,
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+th {
+  background: var(--raised);
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+tr:last-child td {
+  border-bottom: none;
+}
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--on-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge.admin {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.stars {
+  color: var(--warn);
+  letter-spacing: 1px;
+}
+.comment.wide {
+  max-width: 460px;
+}
+.comment {
+  max-width: 280px;
+  color: var(--sub);
+  font-size: 13px;
+  white-space: normal;
+}
+
+/* ---------- Search and page links of a list ---------- */
+.searchBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.searchBar > div {
+  flex: 1;
+  min-width: 170px;
+}
+.searchBar label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--sub);
+  font-size: 13px;
+}
+.searchBar button {
+  min-height: var(--touch);
+  padding: 10px 20px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-m);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+.pagination a {
+  min-width: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+}
+.pagination a.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+/* ---------- Bars: how much of something, next to its name ---------- */
+.usageRow,
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.usageRow .word,
+.barRow .barLabel {
+  width: 110px;
+  flex-shrink: 0;
+  overflow: hidden;
+  color: var(--sub);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.barRow .barLabel {
+  width: 76px;
+}
+.usageRow .track,
+.barTrack {
+  flex: 1;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--soft);
+}
+.usageRow .fill,
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.usageRow .count,
+.barCount {
+  width: 38px;
+  flex-shrink: 0;
+  color: var(--sub);
+}
+
+/* ---------- Tiles ----------
+   The board's tiles, and the demo of them on the Settings page. The size is a
+   class on the grid, chosen in Settings; "medium" is the grid as drawn here. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 12px;
+}
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 112px;
+  padding: 12px 6px 10px;
+  border: 3px solid var(--line);
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: 0 4px 0 var(--line);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  transition:
+    border-color 0.12s,
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+/* A tile is a button when it is a word and a link when it is a board. */
+a.cell {
+  text-decoration: none;
+}
+button.cell:hover,
+button.cell:focus-visible,
+a.cell:hover,
+a.cell:focus-visible {
+  border-color: var(--highlight);
+  box-shadow: 0 4px 0 var(--highlight);
+}
+button.cell:active,
+a.cell:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--highlight);
+}
+/* A board to open, told apart from the words by its colour. */
+.cell.board {
+  border-color: var(--accent);
+  background: var(--soft);
+  box-shadow: 0 4px 0 var(--accent);
+  color: var(--on-soft);
+}
+.cell .emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+.cell img.customimg {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.cell .soundmark {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 12px;
+}
+/* A word the guardian chose for the Paborito screen. */
+.cell .pinmark {
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  font-size: 14px;
+}
+.cell .usecount {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.cell .editRow {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+.cell .editRow button {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 2px 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--raised);
+  font-size: 15px;
+}
+.grid.tiles-small {
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+}
+.grid.tiles-small .cell {
+  min-height: 88px;
+  padding: 8px 3px 6px;
+  border-radius: 16px;
+  font-size: 13px;
+}
+.grid.tiles-small .cell .emoji {
+  font-size: 28px;
+}
+.grid.tiles-small .cell img.customimg {
+  width: 36px;
+  height: 36px;
+}
+.grid.tiles-small .cell .editRow button {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 1px 2px;
+  font-size: 12px;
+}
+/* The use-count and recording marks sit in the corners; on a small tile they are shrunk to stay clear of the emoji. */
+.grid.tiles-small .cell .usecount {
+  top: 3px;
+  left: 4px;
+  padding: 0 4px;
+  font-size: 9px;
+}
+.grid.tiles-small .cell .soundmark {
+  top: 3px;
+  right: 4px;
+  font-size: 9px;
+}
+.grid.tiles-large {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+}
+.grid.tiles-large .cell {
+  min-height: 150px;
+  padding: 16px 8px 14px;
+  border-radius: 28px;
+  gap: 8px;
+  font-size: 20px;
+}
+.grid.tiles-large .cell .emoji {
+  font-size: 58px;
+}
+.grid.tiles-large .cell img.customimg {
+  width: 76px;
+  height: 76px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cell {
+    transition: none;
+  }
+}
+
+/* ---------- Settings page: the tile size, the voice ---------- */
+.tileSizeOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settingsBody .tileSizeOption,
+.voiceOptions .tileSizeOption {
+  flex: 1;
+  min-width: 130px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--card);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.settingsBody .tileSizeOption:has(input:checked),
+.voiceOptions .tileSizeOption:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--soft);
+  color: var(--on-soft);
+  font-weight: 700;
+}
+.tileSizeOption input {
+  width: 18px;
+  height: 18px;
+}
+.tileDemo {
+  margin-top: 12px;
+  padding: 16px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius-l);
+  background: var(--bg);
+}
+/* A child's choice of voice: each option with its ▶ button */
+.voiceOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.voiceOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voiceOption .secondaryBtn {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* ---------- Star rating picker ---------- */
+.starPicker {
+  display: flex;
+  gap: 4px;
+  margin: 10px 0 16px;
+  font-size: 40px;
+  line-height: 1;
+}
+.starPicker span {
+  color: var(--line-strong);
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.starPicker span.filled {
+  color: var(--warn);
+}
+
+/* ---------- Log in, sign up and error pages ---------- */
+.authScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--shell);
+  background:
+    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--highlight) 30%, transparent), transparent 70%),
+    var(--shell);
+}
+.authBox {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 28px 28px;
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  box-shadow: var(--shadow-lift);
+}
+.authBox h1 {
+  margin: 0 0 4px;
+  text-align: center;
+}
+.authBox .brand {
+  font-size: 30px;
+  color: var(--accent);
+}
+/* On a white card the highlight colour is too pale to read. */
+.authBox .brand span {
+  color: var(--line-strong);
+}
+.authBox .authTitle {
+  margin: 14px 0 6px;
+  font-size: 22px;
+  text-align: center;
+}
+.authAlt .linkBtn {
+  font-size: inherit;
+  font-weight: 700;
+}
+.authBox p.sub {
+  margin: 0 0 22px;
+  color: var(--sub);
+  font-size: 14px;
+  text-align: center;
+}
+.authBox label {
+  display: block;
+  margin: 14px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.authBox button.go {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 20px;
+  border: none;
+  border-radius: var(--radius-m);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 16px;
+  font-weight: 700;
+}
+.authAlt {
+  margin-top: 18px;
+  color: var(--sub);
+  font-size: 14px;
+  text-align: center;
+}
+.authAlt a {
+  font-weight: 700;
+}

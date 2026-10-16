@@ -1,0 +1,117 @@
+{% extends "layouts/dashboard.html" %}
+{% load star_rating query_string %}
+
+{% block title %}Mga User - SalitAACo{% endblock %}
+
+{% block heading %}Mga User{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Lahat ng account. Ang account na hindi aktibo ay hindi makakapag-log in; walang nabubura sa datos nito, at
+  maibabalik ito anumang oras. Hindi nakikita ng mga admin ang mga pangungusap na binuo sa board.
+</p>
+
+<nav class="pillTabs" aria-label="Status ng account">
+  {% for tab in tabs %}
+  <a href="{% query_replace 'status' tab.value %}" {% if tab.active %}class="active" aria-current="true"{% endif %}>
+    {{ tab.label }} <span class="tabCount">{{ tab.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<section class="section" id="users">
+  <form class="searchBar" method="get">
+    <input type="hidden" name="status" value="{{ status }}" />
+    <div>
+      <label for="{{ search_user_form.query.id_for_label }}">{{ search_user_form.query.label }}</label>
+      {{ search_user_form.query }}
+    </div>
+    <div>
+      <label for="{{ search_user_form.order_by.id_for_label }}">{{ search_user_form.order_by.label }}</label>
+      {{ search_user_form.order_by }}
+    </div>
+    <button type="submit">Hanapin</button>
+  </form>
+
+  {% if users %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Uri</th>
+          <th>Status</th>
+          <th>Taps</th>
+          <th>Rating</th>
+          <th>Sign-up</th>
+          <th>Huling login</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in users %}
+        <tr>
+          <td>
+            <span class="childName">
+              <b>{{ row.account.display_name|default:row.username }}</b>
+              <small>@{{ row.username }}{% if row.account.age is not None %} · {{ row.account.age }} taong gulang{% endif %}</small>
+            </span>
+          </td>
+          <td data-label="Uri">{% if row.account %}<span class="{{ row.account.role_badge_class }}">{{ row.account.ROLE_LABEL }}</span>{% else %}—{% endif %}</td>
+          <td data-label="Status">
+            {% if row.is_active %}<span class="statusBadge approved">Aktibo</span>{% else %}<span class="statusBadge rejected">Hindi aktibo</span>{% endif %}
+          </td>
+          <td data-label="Taps">{{ row.total_taps }}</td>
+          <td data-label="Rating">{% if row.rating_stars %}<span class="stars">{{ row.rating_stars|stars }}</span>{% else %}—{% endif %}</td>
+          <td data-label="Sign-up">{{ row.date_joined|date:"Y-m-d" }}</td>
+          <td data-label="Huling login">{{ row.last_login|date:"Y-m-d H:i"|default:"—" }}</td>
+          <td>
+            {% if row == request.user %}
+            <span class="doneNote">Ikaw ito</span>
+            {% elif row.is_active %}
+            <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="deactivate-{{ row.pk }}">Gawing hindi aktibo</button>
+            {% else %}
+            <form class="inlineForm" method="post" action="{% url 'set_user_status' row.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="active" value="on" />
+              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+              <button class="primaryBtn smallBtn" type="submit">Gawing aktibo</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyState">Walang users.</p>
+  {% endif %}
+
+  {% include "components/pagination.html" with page_obj=users page_param="users_page" anchor="#users" %}
+</section>
+
+<!-- Making an account inactive is asked twice: one window for each active account on this page. -->
+{% for row in users %}
+{% if row.is_active and row != request.user %}
+<div class="confirmBackdrop hidden" data-modal="deactivate-{{ row.pk }}">
+  <form class="confirmBox" method="post" action="{% url 'set_user_status' row.pk %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+    <h3>Gawing hindi aktibo si @{{ row.username }}?</h3>
+    <p>
+      Hindi na siya makakapag-log in, at mala-log out siya kung naka-log in ngayon. Walang mabubura sa datos niya, at
+      maibabalik mo ito anumang oras.
+      {% if row.account.ROLE_LABEL == "Tagapag-alaga" %}
+      Mananatiling aktibo ang mga account ng mga bata niya, para hindi maputol ang pakikipag-usap nila.
+      {% endif %}
+    </p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="deactivate-{{ row.pk }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, gawing hindi aktibo</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

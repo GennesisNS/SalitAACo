@@ -1,0 +1,224 @@
+{% load static %}
+{% comment %}
+  The public website: one page with the hero, what the app does, About Us, the
+  plans and the footer. The plans are not written here: they come from the same
+  plan data the admin sees. Everything this page needs is in the public/ folder.
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="tl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>SalitAACo - AAC app para sa mga Pilipino</title>
+    <meta name="description" content="Ang SalitAACo ay AAC web app na gawa para sa mga Pilipino. Pinipindot ang mga larawan at salita para bumuo ng pangungusap, at binibigkas ito ng app nang malakas." />
+    <script>
+      // The theme chosen in the app's Settings, or the device's, set before the page paints.
+      (function () {
+        var theme = null;
+        try {
+          theme = localStorage.getItem("salitaaco-theme");
+        } catch (e) {}
+        if (theme !== "dark" && theme !== "light") {
+          theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <link rel="stylesheet" href="{% static 'public/css/public.css' %}" />
+    <script src="{% static 'public/js/public.js' %}" defer></script>
+  </head>
+  <body>
+    <a class="skipLink" href="#main">Lumaktaw sa nilalaman</a>
+
+    <!-- ============== HERO ============== -->
+    <div class="heroWrap">
+      <header class="siteNav">
+        <a class="brand" href="#top" id="top">Salit<span>AAC</span>o</a>
+        <button class="navToggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Buksan ang menu">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="navLinks" id="navLinks" aria-label="Pangunahing menu">
+          <a href="#features">Mga gamit</a>
+          <a href="#about">Tungkol sa Amin</a>
+          <a href="#plans">Mga Plano</a>
+          <a href="{% url 'login' %}">Mag-log in</a>
+          <a class="btn cta small" href="{% url 'register' %}">Magsimula</a>
+        </nav>
+      </header>
+
+      <section class="hero" aria-labelledby="heroTitle">
+        <div class="heroText">
+          <p class="eyebrow">AAC app na gawa para sa mga Pilipino</p>
+          <h1 id="heroTitle">Tulungan ang anak mong masabi ang <em>gusto niyang sabihin</em>.</h1>
+          <p class="lead">
+            Sa SalitAACo, pinipindot ng bata ang mga larawan at salita para bumuo ng pangungusap, at binibigkas ito ng
+            app nang malakas. Para ito sa mga batang nahihirapang magsalita o hindi nakakapagsalita, at sa mga
+            magulang at tagapag-alagang kasama nila araw-araw.
+          </p>
+          <div class="heroActions">
+            <a class="btn cta" href="{% url 'register' %}">Magsimula</a>
+            <a class="btn ghost" href="#about">Alamin pa</a>
+          </div>
+          <p class="heroNote">Libre ang mga pangunahing gamit. Walang ini-install: gumagana sa browser ng tablet, computer at telepono.</p>
+        </div>
+
+        <!-- A small working picture of the board: tapping a tile adds its word, as in the app. -->
+        <div class="demo" aria-label="Halimbawa ng board">
+          <p class="demoHint">Subukan: pindutin ang mga larawan</p>
+          <div class="demoSentence" id="demoSentence" aria-live="polite">
+            <span class="demoPlaceholder" id="demoPlaceholder">Pindutin ang mga salita...</span>
+          </div>
+          <div class="demoGrid" id="demoGrid">
+            <button class="demoTile" type="button" data-word="ako"><span aria-hidden="true">🙋</span>ako</button>
+            <button class="demoTile" type="button" data-word="gusto ko"><span aria-hidden="true">❤️</span>gusto ko</button>
+            <button class="demoTile" type="button" data-word="kumain"><span aria-hidden="true">🍚</span>kumain</button>
+            <button class="demoTile" type="button" data-word="mama"><span aria-hidden="true">👩</span>mama</button>
+            <button class="demoTile" type="button" data-word="masaya"><span aria-hidden="true">😄</span>masaya</button>
+            <button class="demoTile" type="button" data-word="salamat"><span aria-hidden="true">🙏</span>salamat</button>
+          </div>
+          <button class="demoClear" id="demoClear" type="button">✕ Burahin</button>
+        </div>
+      </section>
+    </div>
+
+    <main id="main">
+      <!-- ============== WHAT IT DOES ============== -->
+      <section class="band" id="features" aria-labelledby="featuresTitle">
+        <h2 id="featuresTitle">Ano ang nagagawa ng SalitAACo</h2>
+        <p class="bandLead">Isang board ng mga larawan at salita, na inaayos ng pamilya para sa bata.</p>
+
+        <div class="cards">
+          <article class="card">
+            <span class="cardIcon" aria-hidden="true">🧩</span>
+            <h3>Pindutin, buuin, iparinig</h3>
+            <p>Pumipindot ang bata ng mga larawan at salita para bumuo ng pangungusap. Isang pindot pa, at binibigkas ito ng app nang malakas.</p>
+          </article>
+          <article class="card">
+            <span class="cardIcon" aria-hidden="true">🗣️</span>
+            <h3>Filipino mula sa simula</h3>
+            <p>Hindi ito salin ng app na Ingles. Kasama ang mga salitang gamit natin araw-araw, tulad ng po, opo, jeep at sukli, at ang mga pandiwa sa tatlong aspekto: nangyari na, ngayon at mamaya.</p>
+          </article>
+          <article class="card">
+            <span class="cardIcon" aria-hidden="true">🎙️</span>
+            <h3>Boses ng pamilya</h3>
+            <p>Maaaring boses ni Nanay, Tatay o Lola ang bumigkas ng mga salita, para mas pamilyar at komportable sa bata.</p>
+          </article>
+          <article class="card">
+            <span class="cardIcon" aria-hidden="true">👪</span>
+            <h3>Inaayos ng tagapag-alaga</h3>
+            <p>Gumagawa ang magulang ng account para sa bawat bata, pumipili ng mga board na makikita niya, at naglalagay ng sariling larawan at recording sa mga tile.</p>
+          </article>
+          <article class="card">
+            <span class="cardIcon" aria-hidden="true">📱</span>
+            <h3>Walang ini-install</h3>
+            <p>Web app ang SalitAACo. Gumagana ito sa kahit anong makabagong browser, sa tablet, computer o telepono.</p>
+          </article>
+          <article class="card">
+            <span class="cardIcon" aria-hidden="true">🤝</span>
+            <h3>Abot-kaya</h3>
+            <p>Libre magpakailanman ang mga pangunahing gamit sa pakikipag-usap, para walang pamilyang maiiwan dahil sa gastos.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============== ABOUT US ============== -->
+      <section class="band tinted" id="about" aria-labelledby="aboutTitle">
+        <div class="about">
+          <div class="aboutText">
+            <h2 id="aboutTitle">Tungkol sa Amin</h2>
+            <p>
+              Ang SalitAACo ay web-based na Augmentative and Alternative Communication (AAC) app: paraan ng
+              pakikipag-usap para sa mga taong nahihirapang magsalita o hindi nakakapagsalita. Sa halip na boses,
+              mga larawan, simbolo at salita sa screen ang ginagamit para bumuo ng pangungusap, na binibigkas naman
+              ng app.
+            </p>
+            <p>
+              Maraming AAC app na ang mayroon, pero karamihan ay gawa para sa mga nagsasalita ng Ingles, at dagdag
+              lang ang Filipino kung mayroon man. Iba ang SalitAACo: <b>Filipino ang pundasyon nito, hindi salin.</b>
+              Isinasaalang-alang nito kung paano talaga nag-uusap ang mga Pilipino.
+            </p>
+
+            <h3>Para kanino ito</h3>
+            <ul class="forWhom">
+              <li><b>Mga bata</b>, kahit kasing-aga ng 12 buwan, na nahihirapang magsalita o nagpapakita ng senyales nito.</li>
+              <li><b>Mga magulang at tagapag-alaga</b>, na sila ang nagse-set up at araw-araw na gumagamit ng app kasama ng bata.</li>
+              <li><b>Mga guro sa SPED at speech-language</b>, na maaaring gumamit nito sa klase at magrekomenda sa mga pamilya.</li>
+            </ul>
+          </div>
+
+          <aside class="nameCard" aria-labelledby="nameTitle">
+            <h3 id="nameTitle">Bakit “SalitAACo”?</h3>
+            <dl>
+              <div>
+                <dt>salita</dt>
+                <dd>ang salitang Filipino para sa “word” at sa pagsasalita</dd>
+              </div>
+              <div>
+                <dt>AAC</dt>
+                <dd>ang teknolohiyang pinagbatayan nito</dd>
+              </div>
+              <div>
+                <dt>-o</dt>
+                <dd>ang hulaping nagbibigay rito ng makabagong tunog ng isang app</dd>
+              </div>
+            </dl>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============== PLANS ============== -->
+      <section class="band" id="plans" aria-labelledby="plansTitle">
+        <h2 id="plansTitle">Mga Plano</h2>
+        <p class="bandLead">
+          Libre magpakailanman ang mga pangunahing gamit. May buwanang plano para sa mga tagapag-alagang nangangailangan
+          ng higit pa.
+        </p>
+
+        <div class="plans">
+          {% for plan in plans %}
+          <article class="plan {% if not plan.is_free %}featured{% endif %}">
+            <h3>{{ plan.name }}</h3>
+            <p class="planPrice">₱{{ plan.price }} <small>{{ plan.period }}</small></p>
+            <ul>
+              {% for feature in plan.features %}
+              <li>{{ feature }}</li>
+              {% endfor %}
+            </ul>
+            <a class="btn {% if plan.is_free %}outline{% else %}cta{% endif %}" href="{% url 'register' %}">
+              {% if plan.is_free %}Magsimula nang libre{% else %}Magsimula{% endif %}
+            </a>
+          </article>
+          {% empty %}
+          <p class="bandLead">Inaayos pa ang mga plano. Bumalik muli sa lalong madaling panahon.</p>
+          {% endfor %}
+        </div>
+        <p class="plansNote">Para sa mga SPED school at iba pang institusyon, may planong napagkakasunduan.</p>
+      </section>
+    </main>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="siteFooter">
+      <div class="footerInner">
+        <div>
+          <span class="brand">Salit<span>AAC</span>o</span>
+          <p>Gawa para sa mga batang Pilipino na nangangailangan ng tulong sa pakikipag-usap.</p>
+        </div>
+        <nav aria-label="Mga link sa dulo">
+          <a href="#features">Mga gamit</a>
+          <a href="#about">Tungkol sa Amin</a>
+          <a href="#plans">Mga Plano</a>
+          <a href="{% url 'login' %}">Mag-log in</a>
+          <a href="{% url 'register' %}">Gumawa ng account</a>
+        </nav>
+        {% if site_setting.contact_email or site_setting.contact_phone %}
+        <address>
+          <b>Makipag-ugnayan</b>
+          {% if site_setting.contact_email %}<a href="mailto:{{ site_setting.contact_email }}">{{ site_setting.contact_email }}</a>{% endif %}
+          {% if site_setting.contact_phone %}<span>{{ site_setting.contact_phone }}</span>{% endif %}
+        </address>
+        {% endif %}
+      </div>
+      <p class="copyright">© {{ year }} SalitAACo</p>
+    </footer>
+  </body>
+</html>

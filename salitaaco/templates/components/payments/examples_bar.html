@@ -1,0 +1,19 @@
+{% load query_string %}
+{% comment %}
+  FRONTEND ONLY FOR NOW: the bar that turns the made-up payments on and off, so
+  the design of a full table can be looked at. It appears only when DEBUG is on.
+  Delete it with defaults/payment_examples.py when payments are saved for real.
+
+  examples_can_be_shown, showing_examples: from the view.
+{% endcomment %}
+{% if examples_can_be_shown %}
+<p class="examplesBar" role="note">
+  {% if showing_examples %}
+  <b>Halimbawa lang ang mga bayad sa ibaba.</b> Gawa-gawa ang mga ito para makita ang disenyo; hindi ito totoong datos.
+  <a href="{% query_replace 'halimbawa' 0 %}">Itago ang halimbawa</a>
+  {% else %}
+  Para sa pag-review ng disenyo habang wala pang nase-save na bayad:
+  <a href="{% query_replace 'halimbawa' 1 %}">Ipakita ang halimbawa</a>
+  {% endif %}
+</p>
+{% endif %}

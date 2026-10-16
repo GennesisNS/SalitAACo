@@ -1,0 +1,41 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Boses ni {{ child.display_name }} - SalitAACo{% endblock %}
+
+{% block heading %}Boses{% endblock %}
+
+{% block main %}
+{% include "components/children/selected_child.html" with child=child %}
+
+<section class="section">
+  <h2>Boses na maririnig ni {{ child.display_name }}</h2>
+  <p class="desc">
+    Kaninong boses ang bibigkas ng mga tile ni {{ child.display_name }}? Pindutin ang ▶ para marinig muna. Kapag may
+    sariling recording ang isang tile, iyon pa rin ang maririnig.
+  </p>
+
+  <form method="post" class="narrowForm" novalidate>
+    {% csrf_token %}
+    <div class="voiceOptions" role="radiogroup" aria-label="Boses na maririnig">
+      {% for radio, preview_url in voice_choices %}
+      <div class="voiceOption">
+        <label class="tileSizeOption" for="{{ radio.id_for_label }}">{{ radio.tag }} {{ radio.choice_label }}</label>
+        <button class="secondaryBtn" type="button" data-preview="{{ preview_url|default:'' }}" aria-label="Pakinggan ang {{ radio.choice_label }}" {% if not preview_url %}disabled{% endif %}>▶</button>
+      </div>
+      {% endfor %}
+    </div>
+    <small class="fieldError">{{ voice_form.family_voice.errors }}</small>
+
+    <button class="primaryBtn formActions" type="submit" name="voice_form">I-save ang boses</button>
+  </form>
+
+  <p class="note">
+    {% if has_family_voices %}
+    Para magdagdag o magbura ng boses, pumunta sa <a href="{% url 'family_voices' %}">Boses ng Pamilya</a>.
+    {% else %}
+    Wala pang boses ng pamilya. Mag-record ng boses ni Nanay, Tatay o Lola sa
+    <a href="{% url 'family_voices' %}">Boses ng Pamilya</a>, at mapipili mo ito rito.
+    {% endif %}
+  </p>
+</section>
+{% endblock %}

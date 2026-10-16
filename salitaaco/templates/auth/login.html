@@ -1,7 +1,7 @@
 {% extends "auth/base.html" %}
 
 {% block body %}
-<h1>SalitAACo</h1>
+<h1><span class="brand">Salit<span>AAC</span>o</span></h1>
 <p class="sub">Filipino AAC - Mag-log in para simulan</p>
 
 <form method="post" novalidate>
@@ -20,5 +20,5 @@
   <button class="go" type="submit">Mag-log in</button>
 </form>
 
-<div class="switch">Wala ka pang account? <a href="{% url 'register' %}">Mag-sign up</a></div>
+<div class="authAlt">Wala ka pang account? <a href="{% url 'register' %}">Mag-sign up</a></div>
 {% endblock %}

@@ -1,0 +1,13 @@
+{% comment %}
+  The banner at the top of a page about one child: who the page is about, and
+  the two things a guardian most often does next.
+  child: the ChildAccount.
+{% endcomment %}
+<div class="selectedChild">
+  <span class="selectedChildLabel">Napiling bata</span>
+  {% include "components/children/child_cell.html" with child=child %}
+  <span class="rowActions">
+    <a class="secondaryBtn smallBtn" href="{% url 'manage_child' child.uuid %}">I-edit ang profile</a>
+    <a class="primaryBtn smallBtn" href="{% url 'child_board' child.uuid %}">Buksan ang board</a>
+  </span>
+</div>

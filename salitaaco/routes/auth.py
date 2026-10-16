@@ -11,15 +11,23 @@ from django.views.decorators.http import require_POST
 from salitaaco.defaults.user_roles import GUARDIAN
 from salitaaco.forms.authentication import LoginForm, RegisterForm
 from salitaaco.models.guardian_account import GuardianAccount
-from salitaaco.utils.account import add_to_group
+from salitaaco.utils.account import add_to_group, get_user_account, home_route
 
 logger = logging.getLogger(__name__)
 
 
-def index_view(request):
-    if request.user.is_authenticated:
-        return redirect('board')
-    return redirect('login')
+def redirect_home(request):
+    """To the first page of whoever is logged in: the board, the overview or the admin dashboard."""
+    return redirect(home_route(get_user_account(request.user)))
+
+
+def is_inactive_account(username, password):
+    """
+    Whether the login failed only because an admin made the account inactive.
+    The password has to be right as well: someone guessing usernames learns nothing from this.
+    """
+    user = User.objects.filter(username__iexact=username).first()
+    return user is not None and not user.is_active and user.check_password(password)
 
 
 def login_view(request):
@@ -28,8 +36,8 @@ def login_view(request):
     if request.user.is_authenticated:
         # A logged-in user only lands here when a page turned them away.
         if next_url:
-            messages.error(request, "Naka-log in ka pero hindi admin ang account na ito.")
-        return redirect('board')
+            messages.error(request, "Naka-log in ka pero walang pahintulot ang account na ito sa pahinang iyon.")
+        return redirect_home(request)
 
     login_form = LoginForm()
 
@@ -45,8 +53,11 @@ def login_view(request):
                 login(request, user)
                 if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                     return redirect(next_url)
-                return redirect('board')
-            login_form.add_error(None, "Maling username o password.")
+                return redirect_home(request)
+            if is_inactive_account(login_form.cleaned_data['username'], login_form.cleaned_data['password']):
+                login_form.add_error(None, "Hindi aktibo ang account na ito. Makipag-ugnayan sa admin.")
+            else:
+                login_form.add_error(None, "Maling username o password.")
 
     context = {
         "login_form": login_form,
@@ -57,7 +68,7 @@ def login_view(request):
 
 def register_view(request):
     if request.user.is_authenticated:
-        return redirect('board')
+        return redirect_home(request)
 
     register_form = RegisterForm()
 

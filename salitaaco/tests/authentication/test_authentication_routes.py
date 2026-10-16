@@ -10,7 +10,7 @@ from django.urls import clear_url_caches, resolve, reverse
 from salitaaco import urls
 from salitaaco.models.admin_account import AdminAccount
 from salitaaco.models.child_account import ChildAccount
-from salitaaco.tests.users_base import UserBase
+from salitaaco.tests.users_base import GUARDIAN_PASSWORD, UserBase, make_guardian
 from salitaaco.utils.account import find_user_account
 
 
@@ -23,6 +23,21 @@ class LoginRouteTest(UserBase):
     def test_login_redirects_to_the_board(self):
         response = self.client.post(reverse("login"), {"username": "miguel", "password": "lihim1234"})
         self.assertRedirects(response, reverse("board"))
+
+    def test_each_kind_of_account_lands_on_its_own_first_page(self):
+        make_guardian("nanay", "Nanay Rosa")
+        landings = [
+            ("miguel", "lihim1234", "board"),
+            ("nanay", GUARDIAN_PASSWORD, "overview"),
+            ("developer", "dev-password", "analytics"),
+        ]
+        for username, password, route in landings:
+            response = self.client.post(reverse("login"), {"username": username, "password": password})
+            self.assertRedirects(response, reverse(route), msg_prefix=username)
+            # Already logged in, the login and sign-up pages and the site's root lead there too.
+            for page in ["login", "register", "index"]:
+                self.assertRedirects(self.client.get(reverse(page)), reverse(route), msg_prefix=f"{username} {page}")
+            self.client.post(reverse("logout"))
 
     def test_login_ignores_username_case(self):
         response = self.client.post(reverse("login"), {"username": "MIGUEL", "password": "lihim1234"})
@@ -108,8 +123,11 @@ class LogoutAndRedirectsTest(UserBase):
         self.assertRedirects(self.client.post(reverse("logout")), reverse("login"))
         self.assertNotIn("_auth_user_id", self.client.session)
 
-    def test_index_goes_to_login_or_board(self):
-        self.assertRedirects(self.client.get(reverse("index")), reverse("login"))
+    def test_index_is_the_public_website_or_the_board(self):
+        # Nobody logged in: the public website (the public/ app), which leads to logging in.
+        response = self.client.get(reverse("index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'href="{reverse("login")}"')
         self.login_as("miguel")
         self.assertRedirects(self.client.get(reverse("index")), reverse("board"))
 

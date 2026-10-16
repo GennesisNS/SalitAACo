@@ -1,0 +1,78 @@
+{% load static %}
+{% comment %}
+  The layout of a guardian's and an admin's pages: the sidebar and the bar across the top.
+  A child's pages use layouts/child.html. Pages shared by every role extend
+  the "layout_template" variable, which names the right one of the two.
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="tl" data-palette="navy">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{% block title %}SalitAACo - Filipino AAC{% endblock %}</title>
+    {% include "components/head_scripts.html" %}
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    {% include "components/toasts.html" %}
+
+    <div class="shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="{{ home_url }}">Salit<span>AAC</span>o</a>
+        <p class="sidebarRole">{{ current_account.ROLE_LABEL }}</p>
+
+        <nav aria-label="Menu">
+          {% for category in navigation_items %}
+          <div class="sidebarSection">{{ category.name }}</div>
+          {% if category.child_picker %}
+          <!-- The pages below are about this child. Picking another opens the same page for them (main.js). -->
+          <select class="childPicker" id="childPicker" aria-label="Napiling bata">
+            {% for option in child_picker %}
+            <option value="{{ option.url }}" {% if option.selected %}selected{% endif %}>{{ option.child.display_name }}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+          {% for item in category.items %}
+          <a class="sidebarItem {% if item.active %}active{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>
+            {% include "components/icon.html" with name=item.icon %} {{ item.name }}
+          </a>
+          {% endfor %}
+          {% endfor %}
+        </nav>
+
+        <div class="sidebarFoot">
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="logoutBtn" type="submit">{% include "components/icon.html" with name="logout" %} Log out</button>
+          </form>
+        </div>
+      </aside>
+      <div class="sidebarBackdrop" id="sidebarBackdrop"></div>
+
+      <div class="shellMain">
+        <header class="topbar">
+          <button class="menuBtn" id="menuBtn" type="button" aria-label="Buksan ang menu">{% include "components/icon.html" with name="menu" %}</button>
+          <h1 class="topbarHello">
+            {% block heading %}Kumusta, {{ current_account.display_name }}!{% endblock %}
+          </h1>
+          <a href="{% url 'profile' %}" class="accountLink" title="Profile" aria-label="Profile">
+            <span class="accountAvatar">
+              {% if current_account.has_avatar %}
+              <img src="{% url 'view_avatar' %}?v={{ current_account.updated_at|date:'U' }}" alt="" />
+              {% else %}👤{% endif %}
+            </span>
+            <span class="name">{{ current_account.display_name }}</span>
+          </a>
+        </header>
+
+        {% block page_header %}{% endblock %}
+        <main class="page">
+          {% block main %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,58 @@
+{% extends "layouts/dashboard.html" %}
+{% load static %}
+{% comment %}FRONTEND ONLY FOR NOW: no payment is saved yet, so the list is empty.{% endcomment %}
+
+{% block title %}Kasaysayan ng Bayad - SalitAACo{% endblock %}
+
+{% block heading %}Kasaysayan ng Bayad{% endblock %}
+
+{% block main %}
+<p class="backLink"><a href="{% url 'plan' %}">← Plano at Subscription</a></p>
+
+{% include "components/payments/examples_bar.html" %}
+
+<section class="section">
+  <h2>Mga bayad mo</h2>
+
+  {% if transactions %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Petsa</th>
+          <th>Plano</th>
+          <th>Halaga</th>
+          <th>Status</th>
+          <th>Tala ng admin</th>
+          <th>Patunay</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for transaction in transactions %}
+        <tr>
+          <td data-label="Petsa">{{ transaction.date|date:"Y-m-d" }}</td>
+          <td data-label="Plano">{{ transaction.plan }}</td>
+          <td data-label="Halaga">₱{{ transaction.amount }}</td>
+          <td data-label="Status">{% include "components/payments/status_badge.html" with status=transaction.status name=transaction.status_name %}</td>
+          <td data-label="Tala ng admin" class="comment">{{ transaction.note|default:"—" }}</td>
+          <td data-label="Patunay">
+            <button class="secondaryBtn smallBtn" type="button" data-open-modal="proof" data-proof="{{ transaction.plan }}, ₱{{ transaction.amount }}, {{ transaction.date|date:'Y-m-d' }}">Tingnan</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyState">
+    Wala ka pang bayad. Kapag kumuha ka ng plano at nag-upload ng patunay ng bayad, dito mo ito makikita.
+  </p>
+  {% endif %}
+</section>
+
+{% include "components/payments/proof_modal.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/plan.js' %}" defer></script>
+{% endblock %}

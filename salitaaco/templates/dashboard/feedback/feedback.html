@@ -1,0 +1,104 @@
+{% extends "layouts/dashboard.html" %}
+{% load star_rating %}
+{% comment %}This page may be removed: see routes/feedback/feedback.py.{% endcomment %}
+
+{% block title %}Feedback at mga Isyu - SalitAACo{% endblock %}
+
+{% block heading %}Feedback at mga Isyu{% endblock %}
+
+{% block main %}
+<section class="section" id="messages">
+  <h2>Mga mensahe sa suporta <small class="headNote">· {{ open_count }} ang bukas pa</small></h2>
+  <p class="desc">Ang isinulat ng mga tagapag-alaga sa “Tulong at Suporta”. Markahan kapag naayos na; makikita ito ng nagpadala.</p>
+
+  {% if support_messages %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Petsa</th>
+          <th>Mula kay</th>
+          <th>Mensahe</th>
+          <th>Status</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for message in support_messages %}
+        <tr>
+          <td data-label="Petsa">{{ message.created_at|date:"Y-m-d H:i" }}</td>
+          <td data-label="Mula kay">
+            {{ message.guardian.display_name }} <span class="badge">@{{ message.guardian.user.username }}</span>
+            {% if message.child %}<br /><small class="doneNote">tungkol kay {{ message.child.display_name }}</small>{% endif %}
+          </td>
+          <td data-label="Mensahe" class="comment wide">{{ message.message|linebreaksbr }}</td>
+          <td data-label="Status">
+            {% if message.is_resolved %}<span class="statusBadge approved">Naayos na</span>{% else %}<span class="statusBadge pending">Bukas pa</span>{% endif %}
+          </td>
+          <td>
+            <form class="inlineForm" method="post" action="{% url 'resolve_support_message' message.uuid %}">
+              {% csrf_token %}
+              {% if message.is_resolved %}
+              <button class="secondaryBtn smallBtn" type="submit">Buksan muli</button>
+              {% else %}
+              <button class="primaryBtn smallBtn" type="submit">Markahang naayos</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyNote">Wala pang mensahe sa suporta.</p>
+  {% endif %}
+  {% include "components/pagination.html" with page_obj=support_messages page_param="messages_page" anchor="#messages" %}
+</section>
+
+<section class="section" id="ratings">
+  <h2>Mga rating</h2>
+  {% if overview.rating_count %}
+  <p class="ratingSummary">
+    <span class="stars">{{ overview.average_stars|stars }}</span>
+    <b>{{ overview.average_rating }}</b> / 5 ({{ overview.rating_count }} na rating)
+  </p>
+  {% else %}
+  <p class="emptyNote">Walang rating pa.</p>
+  {% endif %}
+
+  <h3>Distribution</h3>
+  {% for row in rating_distribution %}
+  {% include "components/analytics/bar_row.html" with label=row.label width=row.width count=row.count %}
+  {% endfor %}
+
+  <h3>Pinakabagong feedback</h3>
+  {% if ratings %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Rating</th>
+          <th>Comment</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rating in ratings %}
+        <tr>
+          <td>{{ rating.user.account.display_name }} <span class="badge">@{{ rating.user.username }}</span></td>
+          <td data-label="Rating"><span class="stars">{{ rating.stars }}</span></td>
+          <td data-label="Comment" class="comment">{{ rating.comment|default:"—" }}</td>
+          <td data-label="Updated">{{ rating.updated_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyNote">Walang feedback pa.</p>
+  {% endif %}
+  {% include "components/pagination.html" with page_obj=ratings page_param="ratings_page" anchor="#ratings" %}
+</section>
+{% endblock %}

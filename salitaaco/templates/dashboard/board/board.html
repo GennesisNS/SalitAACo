@@ -1,8 +1,8 @@
-{% extends "dashboard/base.html" %}
+{% extends "layouts/child.html" %}
 {% load static %}
 
 {% block page_header %}
-<header>
+<div class="boardBar">
   {% if managed_child %}
   <div class="managedBanner">
     <span>🧒 Inaayos mo ang mga tile ni <b>{{ managed_child.display_name }}</b>. Hindi nabibilang ang mga pindot mo rito.</span>
@@ -10,33 +10,51 @@
   </div>
   {% endif %}
   <div class="sentence-row">
-    <div id="sentence"><span id="placeholder" style="color: var(--sub)">Pindutin ang mga salita...</span></div>
+    <div id="sentence"><span id="placeholder">Pindutin ang mga salita...</span></div>
     <button class="iconbtn primary" id="playBtn" type="button" disabled>▶ Patugtugin</button>
+    <button class="iconbtn" id="undoBtn" type="button" disabled>↩ Ibalik</button>
     <button class="iconbtn" id="clearBtn" type="button">✕ Burahin</button>
   </div>
-  <div class="toggles">
-    <button class="iconbtn" id="editModeBtn" type="button" style="padding: 6px 12px; min-height: auto">
-      ✏️ I-edit ang mga cell
-    </button>
-    {% if not managed_child %}
-    <button class="iconbtn" type="button" data-open-modal="rating" style="padding: 6px 12px; min-height: auto">
-      ⭐ I-rate ang app
-    </button>
-    {% endif %}
-  </div>
-</header>
+</div>
 {% endblock %}
 
 {% block main %}
-<div class="tabs" id="tabs"></div>
+<!-- One page, four screens: board.js shows the one named after the "#" in the
+     address (#home, #boards, #boards/<board>, #favorites) and fills in the tiles. -->
+<div class="screenHead">
+  <a class="iconbtn hidden" id="backToBoards" href="#boards">← Mga board</a>
+  <h1 class="screenTitle" id="screenTitle">Ano ang gusto mong sabihin?</h1>
+</div>
+<p class="screenHint hidden" id="screenHint"></p>
+
 <div class="aspect" id="aspectBar" style="display: none">
   <button type="button" data-a="past" class="active">nangyari na</button>
   <button type="button" data-a="present">ngayon</button>
   <button type="button" data-a="future">mamaya</button>
 </div>
+
+<h2 class="sectionTitle hidden" id="gridTitle">Mabilis na Salita</h2>
 <div class="grid tiles-{{ tile_size }}" id="grid"></div>
 
-<footer>Gawa para sa mga batang Pilipino na nangangailangan ng tulong sa pakikipag-usap.</footer>
+<!-- Home only: the board of feelings under the quick words. -->
+<div class="hidden" id="feelings">
+  <h2 class="sectionTitle">Ang Nararamdaman Ko</h2>
+  <div class="grid tiles-{{ tile_size }}" id="feelingsGrid"></div>
+</div>
+
+<!-- Setting the board up and rating the app: under the tiles, out of the way of a child talking. -->
+<div class="toggles">
+  <button class="iconbtn" id="editModeBtn" type="button">
+    ✏️ I-edit ang mga cell
+  </button>
+  {% if not managed_child %}
+  <button class="iconbtn" type="button" data-open-modal="rating">
+    ⭐ I-rate ang app
+  </button>
+  {% endif %}
+</div>
+
+<p class="boardFoot">Gawa para sa mga batang Pilipino na nangangailangan ng tulong sa pakikipag-usap.</p>
 
 <!-- Forms without visible fields: board.js fills them in and submits them in edit mode. -->
 <form id="tileImageForm" method="post" enctype="multipart/form-data" class="hidden">
@@ -59,7 +77,7 @@
 
 <!-- ============== RATE THE APP MODAL ============== -->
 <div class="settingsBackdrop hidden" data-modal="rating" data-open="{{ show_rating_modal|yesno:'true,false' }}">
-  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="rateTitle" style="max-width: 420px">
+  <div class="settingsBox narrow" role="dialog" aria-modal="true" aria-labelledby="rateTitle">
     <div class="settingsHeader">
       <h2 id="rateTitle">⭐ I-rate ang SalitAACo</h2>
       <button class="closeBtn" type="button" data-close-modal="rating" aria-label="Isara">&times;</button>
@@ -81,16 +99,27 @@
       {{ rating_form.rating }}
       <div class="err" id="rateErr">{{ rating_form.rating.errors }}</div>
 
-      <label for="{{ rating_form.comment.id_for_label }}" style="margin-top: 0">{{ rating_form.comment.label }}</label>
+      <label for="{{ rating_form.comment.id_for_label }}">{{ rating_form.comment.label }}</label>
       {{ rating_form.comment }}
       <small class="fieldError">{{ rating_form.comment.errors }}</small>
 
-      <button class="primaryBtn" type="submit" name="rating_form" style="margin-top: 14px; width: 100%">
+      <button class="primaryBtn blockBtn formActions" type="submit" name="rating_form">
         💾 I-submit ang rating
       </button>
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block bottom_nav %}
+{% if is_child %}
+{{ block.super }}
+{% else %}
+<!-- A guardian or an admin has no child navigation: only the board's own screens. -->
+<a href="#home"><span class="emoji" aria-hidden="true">🏠</span> Home</a>
+<a href="#boards"><span class="emoji" aria-hidden="true">🧩</span> Mga Board</a>
+<a href="#favorites"><span class="emoji" aria-hidden="true">⭐</span> Paborito</a>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

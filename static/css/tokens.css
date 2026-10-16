@@ -1,0 +1,192 @@
+/* Colours.
+
+   Each palette is one block. It gives every colour twice: --l-* for the light
+   theme and --d-* for the dark one. The block at the end turns them into the
+   names the rest of the CSS uses (--bg, --card, --ink...).
+
+   An element carrying data-palette="<name>" draws itself and everything inside
+   it in that palette. The layouts put it on <html>; the tile demo on a
+   guardian's Settings page puts it on a box, to show tiles in the child's colours.
+
+   To add a palette: copy a block, rename it, change its values. Text colours
+   must keep a contrast of 4.5:1 or more against the surface they sit on. */
+
+/* ---------- Navy + White: guardian and admin ----------
+   #0F1E3A  #1E2F4F  #A7B4D0  #FFFFFF */
+[data-palette="navy"] {
+  --l-bg: #eef1f7;
+  --l-card: #ffffff;
+  --l-raised: #f4f6fb;
+  --l-ink: #0f1e3a;
+  --l-sub: #4a5a78;
+  --l-line: #d5dcea;
+  --l-line-strong: #7f8daa;
+  --l-accent: #1e2f4f;
+  --l-on-accent: #ffffff;
+  --l-soft: #e4e9f3;
+  --l-on-soft: #0f1e3a;
+  --l-highlight: #a7b4d0;
+  --l-cta: #0f1e3a;
+  --l-on-cta: #ffffff;
+  --l-shell: #0f1e3a;
+  --l-on-shell: #ffffff;
+  --l-shell-sub: #a7b4d0;
+  --l-shell-active: #ffffff;
+  --l-on-shell-active: #0f1e3a;
+  --l-switch-on: #1e2f4f;
+
+  --d-bg: #0a1528;
+  --d-card: #0f1e3a;
+  --d-raised: #16284a;
+  --d-ink: #ffffff;
+  --d-sub: #a7b4d0;
+  --d-line: #2a3c60;
+  --d-line-strong: #5c6e94;
+  --d-accent: #a7b4d0;
+  --d-on-accent: #0f1e3a;
+  --d-soft: #1e2f4f;
+  --d-on-soft: #ffffff;
+  --d-highlight: #a7b4d0;
+  --d-cta: #ffffff;
+  --d-on-cta: #0f1e3a;
+  --d-shell: #0c1930;
+  --d-on-shell: #ffffff;
+  --d-shell-sub: #a7b4d0;
+  --d-shell-active: #a7b4d0;
+  --d-on-shell-active: #0f1e3a;
+  --d-switch-on: #a7b4d0;
+}
+
+/* ---------- Ocean Royale: child ----------
+   #03045E primary background   #023EBA main brand colour   #00B4D8 highlights
+   #CAF0F8 backgrounds and cards   #FBB02D call-to-action buttons */
+[data-palette="ocean"] {
+  --l-bg: #caf0f8;
+  --l-card: #ffffff;
+  --l-raised: #e9f9fc;
+  --l-ink: #03045e;
+  --l-sub: #33407f;
+  --l-line: #9fddec;
+  --l-line-strong: #5a78b0;
+  --l-accent: #023eba;
+  --l-on-accent: #ffffff;
+  --l-soft: #caf0f8;
+  --l-on-soft: #03045e;
+  --l-highlight: #00b4d8;
+  --l-cta: #fbb02d;
+  --l-on-cta: #03045e;
+  --l-shell: #03045e;
+  --l-on-shell: #ffffff;
+  --l-shell-sub: #caf0f8;
+  --l-shell-active: #fbb02d;
+  --l-on-shell-active: #03045e;
+  --l-switch-on: #023eba;
+
+  --d-bg: #03045e;
+  --d-card: #0a1172;
+  --d-raised: #111c8c;
+  --d-ink: #ffffff;
+  --d-sub: #caf0f8;
+  --d-line: #2c3dae;
+  --d-line-strong: #6f7fe0;
+  --d-accent: #00b4d8;
+  --d-on-accent: #03045e;
+  --d-soft: #023eba;
+  --d-on-soft: #ffffff;
+  --d-highlight: #00b4d8;
+  --d-cta: #fbb02d;
+  --d-on-cta: #03045e;
+  --d-shell: #020343;
+  --d-on-shell: #ffffff;
+  --d-shell-sub: #caf0f8;
+  --d-shell-active: #fbb02d;
+  --d-on-shell-active: #03045e;
+  --d-switch-on: #00b4d8;
+}
+
+/* ---------- The names the rest of the CSS uses ----------
+   The theme is the data-theme attribute on <html>, set before the page paints
+   by components/head_scripts.html: the choice made in Settings, or the device's. */
+[data-palette] {
+  --bg: var(--l-bg);
+  --card: var(--l-card);
+  --raised: var(--l-raised);
+  --ink: var(--l-ink);
+  --sub: var(--l-sub);
+  --line: var(--l-line);
+  --line-strong: var(--l-line-strong);
+  --accent: var(--l-accent);
+  --on-accent: var(--l-on-accent);
+  --soft: var(--l-soft);
+  --on-soft: var(--l-on-soft);
+  --highlight: var(--l-highlight);
+  --cta: var(--l-cta);
+  --on-cta: var(--l-on-cta);
+  --shell: var(--l-shell);
+  --on-shell: var(--l-on-shell);
+  --shell-sub: var(--l-shell-sub);
+  --shell-active: var(--l-shell-active);
+  --on-shell-active: var(--l-on-shell-active);
+  --switch-on: var(--l-switch-on);
+  --switch-off: #8c95a6;
+
+  /* The same in every palette: what went wrong, what went well, what to mind. */
+  --danger: #b3261e;
+  --on-danger: #ffffff;
+  --danger-soft: #fbe9e7;
+  --good: #1b6e3c;
+  --good-soft: #e3f4ea;
+  --warn: #7a4f00;
+  --warn-soft: #fff1cc;
+
+  --shadow: 0 10px 30px rgba(15, 30, 58, 0.08);
+  --shadow-lift: 0 18px 48px rgba(15, 30, 58, 0.18);
+  color-scheme: light;
+}
+:root[data-theme="dark"][data-palette],
+:root[data-theme="dark"] [data-palette] {
+  --bg: var(--d-bg);
+  --card: var(--d-card);
+  --raised: var(--d-raised);
+  --ink: var(--d-ink);
+  --sub: var(--d-sub);
+  --line: var(--d-line);
+  --line-strong: var(--d-line-strong);
+  --accent: var(--d-accent);
+  --on-accent: var(--d-on-accent);
+  --soft: var(--d-soft);
+  --on-soft: var(--d-on-soft);
+  --highlight: var(--d-highlight);
+  --cta: var(--d-cta);
+  --on-cta: var(--d-on-cta);
+  --shell: var(--d-shell);
+  --on-shell: var(--d-on-shell);
+  --shell-sub: var(--d-shell-sub);
+  --shell-active: var(--d-shell-active);
+  --on-shell-active: var(--d-on-shell-active);
+  --switch-on: var(--d-switch-on);
+  --switch-off: #5b6478;
+
+  --danger: #ff9a8f;
+  --on-danger: #3b0a06;
+  --danger-soft: #4a1512;
+  --good: #7bdfa4;
+  --good-soft: #123a24;
+  --warn: #ffd36b;
+  --warn-soft: #3d2f08;
+
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 18px 48px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+/* ---------- Sizes shared by every page ---------- */
+:root {
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 20px;
+  --radius-xl: 28px;
+  --touch: 44px;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: ui-rounded, "Arial Rounded MT Bold", "Nunito", "Segoe UI", system-ui, sans-serif;
+}

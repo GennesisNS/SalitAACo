@@ -1,0 +1,53 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}General - SalitAACo{% endblock %}
+
+{% block heading %}System Settings: General{% endblock %}
+
+{% block main %}
+{% if setting.maintenance_mode %}
+<p class="pendingNote">
+  <b>Naka-on ang maintenance mode.</b> Mga admin lang ang nakakagamit ng app ngayon. Hindi makakapagsalita ang mga bata
+  gamit ang board nila hangga't naka-on ito.
+</p>
+{% endif %}
+
+<section class="section">
+  <form method="post" class="narrowForm settingsFields" novalidate>
+    {% csrf_token %}
+
+    <h2>Paano makakausap ang suporta</h2>
+    <p class="desc">Ipinapakita ito sa mga tagapag-alaga sa pahinang “Tulong at Suporta”.</p>
+
+    <label for="{{ settings_form.contact_email.id_for_label }}">{{ settings_form.contact_email.label }}</label>
+    {{ settings_form.contact_email }}
+    <small class="fieldError">{{ settings_form.contact_email.errors }}</small>
+
+    <label for="{{ settings_form.contact_phone.id_for_label }}">{{ settings_form.contact_phone.label }}</label>
+    {{ settings_form.contact_phone }}
+    <small class="fieldError">{{ settings_form.contact_phone.errors }}</small>
+
+    <hr class="sectionDivider" />
+
+    <h2>Maintenance mode</h2>
+    <p class="desc">
+      Habang naka-on, pahina ng maintenance ang makikita ng lahat maliban sa mga admin. <b>Kasama rito ang mga bata:
+      hindi nila magagamit ang board nila.</b> I-on lang ito kapag kailangan, at i-off agad pagkatapos.
+    </p>
+
+    <div class="switchRow">
+      <label class="switch">
+        {{ settings_form.maintenance_mode }}
+        <span class="slider"></span>
+      </label>
+      <span>{{ settings_form.maintenance_mode.label }}</span>
+    </div>
+
+    <label for="{{ settings_form.maintenance_message.id_for_label }}">{{ settings_form.maintenance_message.label }}</label>
+    {{ settings_form.maintenance_message }}
+    <small class="fieldError">{{ settings_form.maintenance_message.errors }}</small>
+
+    <button class="primaryBtn formActions" type="submit" name="settings_form">I-save ang mga setting</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "layouts/dashboard.html" %}
+{% comment %}This page may be removed: see routes/privacy/privacy.py.{% endcomment %}
+
+{% block title %}Privacy - SalitAACo{% endblock %}
+
+{% block heading %}System Settings: Privacy{% endblock %}
+
+{% block main %}
+<section class="section">
+  <h2>Ano ang itinatago ng app</h2>
+  <div class="tableWrap stackTable">
+    <table>
+      <thead><tr><th>Datos</th><th>Bilang</th><th>Tala</th></tr></thead>
+      <tbody>
+        {% for row in kept %}
+        <tr>
+          <td><b>{{ row.what }}</b></td>
+          <td data-label="Bilang">{{ row.count }}</td>
+          <td data-label="Tala" class="comment wide">{{ row.note }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="note">
+    Hindi itinatago ang mga pangungusap na binuo sa board, at walang itinatanong tungkol sa diagnosis. Kapag binura ng
+    may-ari ang account niya, permanenteng nabubura ang lahat ng nasa itaas na sa kanya.
+  </p>
+</section>
+
+<section class="section">
+  <h2>Pahintulot sa boses ng pamilya</h2>
+  <p class="desc">
+    Ang kasalukuyang bersyon ng Paalala at Kasunduan ay <b>{{ terms_version }}</b>. Bawat boses ay nagtatala kung aling
+    bersyon ang sinang-ayunan ng tagapag-alaga at kailan.
+  </p>
+  {% if consents %}
+  <div class="tableWrap">
+    <table>
+      <thead><tr><th>Bersyon ng kasunduan</th><th>Mga boses na ginawa rito</th></tr></thead>
+      <tbody>
+        {% for consent in consents %}
+        <tr>
+          <td>{{ consent.consent_version }}{% if consent.consent_version == terms_version %} <span class="badge">kasalukuyan</span>{% endif %}</td>
+          <td>{{ consent.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyNote">Wala pang boses ng pamilya.</p>
+  {% endif %}
+</section>
+
+<section class="section">
+  <h2>Gaano katagal itinatago ang mga bilang kada araw</h2>
+  <p class="desc">
+    Ang mga bilang ng pindot at bukas ng board kada araw ay itinatago hanggang burahin dito.
+    {% if oldest_usage_day %}Ang pinakaluma ay mula <b>{{ oldest_usage_day|date:"Y-m-d" }}</b>.{% else %}Wala pang naitatala.{% endif %}
+    Hindi nagagalaw ang kabuuang bilang ng bawat salita, kaya mananatili ang “Paborito” ng mga bata.
+  </p>
+  <button class="dangerBtn" type="button" data-open-modal="purge-usage">Burahin ang mga lumang bilang</button>
+</section>
+
+<div class="confirmBackdrop hidden" data-modal="purge-usage" data-open="{{ show_purge_modal|yesno:'true,false' }}">
+  <form class="confirmBox settingsFields" method="post" role="dialog" aria-modal="true" novalidate>
+    {% csrf_token %}
+    <h3>Burahin ang mga lumang bilang kada araw?</h3>
+    <p>
+      Mawawala ang mga ito sa “Paggamit” ng mga tagapag-alaga at sa mga ulat ng admin para sa mga araw na iyon. Hindi
+      na ito maibabalik.
+    </p>
+    <label for="{{ purge_form.older_than.id_for_label }}">{{ purge_form.older_than.label }}</label>
+    {{ purge_form.older_than }}
+    <small class="fieldError">{{ purge_form.older_than.errors }}</small>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="purge-usage">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit" name="purge_form">Oo, burahin</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

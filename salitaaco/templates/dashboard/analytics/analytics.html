@@ -1,9 +1,6 @@
-{% extends "dashboard/base.html" %}
-{% load static star_rating %}
+{% extends "layouts/dashboard.html" %}
 
-{% block title %}SalitAACo - Admin Dashboard{% endblock %}
-
-{% block page_css %}<link rel="stylesheet" href="{% static 'css/admin.css' %}" />{% endblock %}
+{% block title %}Dashboard - SalitAACo{% endblock %}
 
 {% block main %}
 <div class="statsGrid">
@@ -12,119 +9,44 @@
   {% endfor %}
 </div>
 
-<div class="section">
-  <h2>📈 Mga bagong sign-up (huling 14 araw)</h2>
-  {% for day in signups %}
-  {% include "components/analytics/bar_row.html" with label=day.date|date:"m-d" width=day.width count=day.count %}
-  {% endfor %}
+<div class="twoColumns">
+  <section class="section">
+    <h2>Mga pindot kada araw (huling 7 araw)</h2>
+    {% include "components/analytics/day_bars.html" with days=usage_by_day %}
+  </section>
+
+  <section class="section">
+    <h2>Mga board na madalas buksan</h2>
+    {% for board in board_opens %}
+    <div class="usageRow">
+      <span class="word">{{ board.icon }} {{ board.name }}</span>
+      <span class="track"><span class="fill" style="width: {{ board.width }}%"></span></span>
+      <span class="count">{{ board.count }}</span>
+    </div>
+    {% empty %}
+    <p class="emptyNote">Wala pang nabubuksang board.</p>
+    {% endfor %}
+  </section>
 </div>
 
-<div class="section" id="ratings">
-  <h2>⭐ Mga rating</h2>
-  {% if overview.rating_count %}
-  <p style="margin: 0; font-size: 14px">
-    <span class="stars">{{ overview.average_stars|stars }}</span>
-    <b>{{ overview.average_rating }}</b> / 5 ({{ overview.rating_count }} na rating)
-  </p>
+<section class="section">
+  <div class="sectionHead">
+    <h2>Mga pinakabagong nangyari</h2>
+    <a class="secondaryBtn" href="{% url 'reports' %}">Tingnan ang Analytics at Ulat</a>
+  </div>
+  {% if recent_activity %}
+  <ul class="activityList">
+    {% for event in recent_activity %}
+    <li>
+      <span class="badge">{{ event.kind }}</span>
+      <span>{{ event.text }}</span>
+      <small>{{ event.when|date:"Y-m-d H:i" }}</small>
+    </li>
+    {% endfor %}
+  </ul>
   {% else %}
-  <p class="emptyNote">Walang rating pa.</p>
+  <p class="emptyNote">Wala pang nangyayari.</p>
   {% endif %}
-
-  <h3>Distribution</h3>
-  {% for row in rating_distribution %}
-  {% include "components/analytics/bar_row.html" with label=row.label width=row.width count=row.count %}
-  {% endfor %}
-
-  <h3>Pinakabagong feedback</h3>
-  <table class="scroll-wrap">
-    <thead>
-      <tr>
-        <th>User</th>
-        <th>Rating</th>
-        <th>Comment</th>
-        <th>Updated</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for rating in ratings %}
-      <tr>
-        <td>{{ rating.user.account.display_name }} <span class="badge">@{{ rating.user.username }}</span></td>
-        <td><span class="stars">{{ rating.stars }}</span></td>
-        <td class="comment">{{ rating.comment|default:"—" }}</td>
-        <td>{{ rating.updated_at|date:"Y-m-d H:i" }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="emptyNote">Walang feedback pa.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% include "components/pagination.html" with page_obj=ratings page_param="ratings_page" anchor="#ratings" %}
-</div>
-
-<div class="section">
-  <h2>🔥 Pinaka-madalas gamitin na salita (lahat ng users)</h2>
-  {% for word in top_words %}
-  {% include "components/analytics/bar_row.html" with label=word.word width=word.width count=word.total_uses %}
-  {% empty %}
-  <p class="emptyNote">Wala pang datos.</p>
-  {% endfor %}
-</div>
-
-<div class="section" id="users">
-  <h2>👥 Mga users</h2>
-
-  <form class="searchBar" method="get" action="#users">
-    <div>
-      <label for="{{ search_user_form.query.id_for_label }}">{{ search_user_form.query.label }}</label>
-      {{ search_user_form.query }}
-    </div>
-    <div>
-      <label for="{{ search_user_form.order_by.id_for_label }}">{{ search_user_form.order_by.label }}</label>
-      {{ search_user_form.order_by }}
-    </div>
-    <button type="submit">Hanapin</button>
-  </form>
-
-  <table class="scroll-wrap">
-    <thead>
-      <tr>
-        <th>Username</th>
-        <th>Pangalan</th>
-        <th>Edad</th>
-        <th>Larawan</th>
-        <th>Tunog</th>
-        <th>Taps</th>
-        <th>Rating</th>
-        <th>Uri</th>
-        <th>Sign-up</th>
-        <th>Huling login</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in users %}
-      <tr>
-        <td>@{{ row.username }}</td>
-        <td>{{ row.account.display_name }}</td>
-        <td>{{ row.account.age|default_if_none:"—" }}</td>
-        <td>{{ row.image_count }}</td>
-        <td>{{ row.sound_count }}</td>
-        <td>{{ row.total_taps }}</td>
-        <td>
-          {% if row.rating_stars %}<span class="stars">{{ row.rating_stars|stars }}</span>{% else %}—{% endif %}
-        </td>
-        <td>{% if row.account %}<span class="{{ row.account.role_badge_class }}">{{ row.account.ROLE_LABEL }}</span>{% else %}—{% endif %}</td>
-        <td>{{ row.date_joined|date:"Y-m-d H:i" }}</td>
-        <td>{{ row.last_login|date:"Y-m-d H:i"|default:"—" }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="10" class="emptyNote">Walang users.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% include "components/pagination.html" with page_obj=users page_param="users_page" anchor="#users" %}
-</div>
+  <p class="note">Nakikita ng mga admin kung aling mga bahagi ng app ang ginagamit, hindi ang mismong sinasabi ng mga gumagamit.</p>
+</section>
 {% endblock %}

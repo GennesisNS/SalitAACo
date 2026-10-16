@@ -1,0 +1,41 @@
+{% extends "layouts/dashboard.html" %}
+{% comment %}This page may be removed: see routes/institutions/institutions.py.{% endcomment %}
+
+{% block title %}{{ institution.name }} - SalitAACo{% endblock %}
+
+{% block heading %}I-edit ang institusyon{% endblock %}
+
+{% block main %}
+<p class="backLink"><a href="{% url 'institutions' %}">← Mga Paaralan at Institusyon</a></p>
+
+<section class="section">
+  <h2>{{ institution.name }}</h2>
+
+  <form method="post" class="narrowForm settingsFields" novalidate>
+    {% csrf_token %}
+    {% include "components/institutions/institution_fields.html" %}
+    <div class="confirmRow">
+      <a class="secondaryBtn" href="{% url 'institutions' %}">Huwag muna</a>
+      <button class="primaryBtn" type="submit" name="institution_form">I-save</button>
+    </div>
+  </form>
+
+  <hr class="sectionDivider" />
+
+  <h3 class="dangerTitle">Burahin ang institusyon</h3>
+  <p class="desc">Mabubura ang tala nito. Walang account na maaapektuhan.</p>
+  <button class="dangerBtn" type="button" data-open-modal="delete-institution">Burahin ang {{ institution.name }}</button>
+</section>
+
+<div class="confirmBackdrop hidden" data-modal="delete-institution">
+  <form class="confirmBox" method="post" action="{% url 'delete_institution' institution.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <h3>Burahin ang {{ institution.name }}?</h3>
+    <p>Permanenteng mabubura ang tala ng institusyong ito at hindi na maibabalik.</p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-institution">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, burahin</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

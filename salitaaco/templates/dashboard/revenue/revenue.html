@@ -1,0 +1,82 @@
+{% extends "layouts/dashboard.html" %}
+{% load static query_string %}
+{% comment %}
+  FRONTEND ONLY FOR NOW: no payment is saved yet, so the list is empty, and the
+  buttons that approve and reject are disabled.
+{% endcomment %}
+
+{% block title %}Kita - SalitAACo{% endblock %}
+
+{% block heading %}Kita{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Bawat patunay ng bayad na in-upload ng tagapag-alaga ay lalabas dito bilang “Naghihintay”. Tingnan ang patunay,
+  saka aprubahan o tanggihan. Kapag naaprubahan, magsisimula ang plano ng tagapag-alaga.
+</p>
+
+{% include "components/payments/examples_bar.html" %}
+
+<nav class="pillTabs" aria-label="Status ng bayad">
+  {% for tab in tabs %}
+  <a href="{% query_replace 'status' tab.value %}" {% if tab.active %}class="active" aria-current="true"{% endif %}>
+    {{ tab.label }} <span class="tabCount">{{ tab.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<section class="section">
+  <h2>Mga bayad</h2>
+
+  {% if transactions %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Petsa</th>
+          <th>Tagapag-alaga</th>
+          <th>Plano</th>
+          <th>Halaga</th>
+          <th>Status</th>
+          <th>Patunay</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for transaction in transactions %}
+        <tr>
+          <td data-label="Petsa">{{ transaction.date|date:"Y-m-d" }}</td>
+          <td data-label="Tagapag-alaga">{{ transaction.guardian }} <span class="badge">@{{ transaction.username }}</span></td>
+          <td data-label="Plano">{{ transaction.plan }}</td>
+          <td data-label="Halaga">₱{{ transaction.amount }}</td>
+          <td data-label="Status">{% include "components/payments/status_badge.html" with status=transaction.status name=transaction.status_name %}</td>
+          <td data-label="Patunay">
+            <button class="secondaryBtn smallBtn" type="button" data-open-modal="proof" data-proof="{{ transaction.guardian }}, ₱{{ transaction.amount }}, {{ transaction.date|date:'Y-m-d' }}">Tingnan</button>
+          </td>
+          <td>
+            {% if transaction.status == "pending" %}
+            <span class="rowActions">
+              <button class="primaryBtn smallBtn" type="button" disabled>Aprubahan</button>
+              <button class="secondaryBtn danger smallBtn" type="button" disabled>Tanggihan</button>
+            </span>
+            {% else %}
+            <span class="doneNote">Tapos na</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="pendingNote">Hindi pa gumagana ang “Aprubahan” at “Tanggihan”: disenyo pa lang ito.</p>
+  {% else %}
+  <p class="emptyState">Walang bayad sa status na ito.</p>
+  {% endif %}
+</section>
+
+{% include "components/payments/proof_modal.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/plan.js' %}" defer></script>
+{% endblock %}

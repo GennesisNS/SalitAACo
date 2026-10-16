@@ -3,6 +3,7 @@ from django.templatetags.static import static
 from django.utils.text import slugify
 
 from salitaaco.defaults.vocabulary import CATEGORIES
+from salitaaco.models.added_word import AddedWord
 
 # The shared voice's audio for the tile words, one MP3 per word, under static/.
 TILE_AUDIO_FOLDER = "audio/text-to-speech"
@@ -13,6 +14,7 @@ def tile_words():
     """
     Every word a tile can say, in board order: each tile's word, and for a
     verb all three of its forms (a verb tile shows one of them, never the root).
+    The words an admin added come last, in the order they were added.
     """
     words = []
     for category in CATEGORIES:
@@ -21,6 +23,7 @@ def tile_words():
                 words += [item["verb"][aspect] for aspect in VERB_ASPECTS]
             else:
                 words.append(item["w"])
+    words += AddedWord.objects.order_by("created_at", "added_word_id").values_list("word", flat=True)
     return list(dict.fromkeys(words))
 
 

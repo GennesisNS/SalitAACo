@@ -1,8 +1,8 @@
 {% extends "auth/base.html" %}
 
 {% block body %}
-<h1>SalitAACo</h1>
-<p class="sub">Filipino AAC - Mag-log in para simulan</p>
+<h1><span class="brand">Salit<span>AAC</span>o</span></h1>
+<p class="sub">Filipino AAC - Gumawa ng account para simulan</p>
 
 <form method="post" novalidate>
   {% csrf_token %}
@@ -27,5 +27,5 @@
   <button class="go" type="submit">Gumawa ng account</button>
 </form>
 
-<div class="switch">May account ka na? <a href="{% url 'login' %}">Mag-log in</a></div>
+<div class="authAlt">May account ka na? <a href="{% url 'login' %}">Mag-log in</a></div>
 {% endblock %}

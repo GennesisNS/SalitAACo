@@ -1,0 +1,103 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Tulong at Suporta - SalitAACo{% endblock %}
+
+{% block heading %}Tulong at Suporta{% endblock %}
+
+{% block main %}
+<section class="section">
+  <h2>Mga gabay</h2>
+
+  <details class="guide">
+    <summary>Paano magsimula</summary>
+    <ol>
+      <li>Sa <a href="{% url 'children' %}">Mga Bata</a>, pindutin ang “Magdagdag ng bata” at gumawa ng username at password para sa kanya.</li>
+      <li>Ipa-log in ang bata sa tablet o telepono gamit ang username at password na iyon. Sa board siya dadalhin.</li>
+      <li>Ipakita sa kanya kung paano pumindot ng mga larawan para bumuo ng pangungusap, at ang ▶ Patugtugin para iparinig ito.</li>
+    </ol>
+  </details>
+
+  <details class="guide">
+    <summary>Paano gamitin ang mga board</summary>
+    <p>
+      May apat na bahagi ang board ng bata: <b>Home</b> (mga mabilis na salita at nararamdaman), <b>Mga Board</b>
+      (mga salita ayon sa paksa, tulad ng Tao, Pagkain at Lugar), <b>Paborito</b> (mga salitang madalas niyang gamitin)
+      at <b>Profile</b>.
+    </p>
+    <p>
+      Bawat pindot ay nagdadagdag ng salita sa pangungusap sa itaas. <b>▶ Patugtugin</b> ang nagpaparinig nito,
+      <b>↩ Ibalik</b> ang nag-aalis ng huling salita, at <b>✕ Burahin</b> ang nagbubura ng lahat.
+    </p>
+    <p>Sa “Mga Board” sa menu, mapipili mo kung aling mga board ang makikita ng bawat bata.</p>
+  </details>
+
+  <details class="guide">
+    <summary>Paano magdagdag o mag-edit ng profile ng bata</summary>
+    <p>
+      Sa <a href="{% url 'children' %}">Mga Bata</a>, pindutin ang “I-edit” sa tabi ng bata para palitan ang pangalan,
+      edad, larawan o password niya. Doon din mabubura ang account niya; permanente ito at kailangan ang password mo.
+    </p>
+    <p>Para palitan ang larawan o tunog ng isang tile niya, pindutin ang “Buksan ang board”.</p>
+  </details>
+
+  <details class="guide">
+    <summary>Pag-set up ng boses</summary>
+    <p>
+      Sa <a href="{% url 'family_voices' %}">Boses ng Pamilya</a>, makakapag-record ka ng boses ng kasapi ng pamilya
+      para iyon ang bumigkas ng mga tile. Babasahin muna ang Paalala at Kasunduan, at kailangan ang pagsang-ayon bago
+      makapag-record.
+    </p>
+    <p>Pagkatapos, piliin sa “Boses” sa menu kung kaninong boses ang maririnig ng bawat bata.</p>
+  </details>
+
+  <details class="guide">
+    <summary>Mga madalas itanong</summary>
+    <p><b>Walang tunog kapag pinindot ang ▶ Patugtugin.</b> Tingnan ang volume ng device at kung naka-silent ito. Sa unang gamit, kailangan munang pumindot sa screen bago payagan ng browser ang tunog.</p>
+    <p><b>Hindi makapag-record ng tunog.</b> Buksan ang app sa HTTPS at payagan ang mikropono sa browser.</p>
+    <p><b>Nakalimutan ng bata ang password niya.</b> Bigyan siya ng bago sa “I-edit” sa Mga Bata.</p>
+    <p><b>Nakikita ba ng iba ang sinasabi ng bata?</b> Hindi. Bilang lang ng mga pindot ang itinatago, hindi ang mga pangungusap.</p>
+  </details>
+</section>
+
+<section class="section">
+  <h2>Makipag-ugnayan sa suporta</h2>
+  <p class="desc">
+    May problema o tanong na wala sa mga gabay? Isulat dito at babasahin ng mga nagpapatakbo ng SalitAACo.
+    {% if site_setting.contact_email or site_setting.contact_phone %}
+    Maaari ka ring makipag-ugnayan sa
+    {% if site_setting.contact_email %}<a href="mailto:{{ site_setting.contact_email }}">{{ site_setting.contact_email }}</a>{% endif %}
+    {% if site_setting.contact_email and site_setting.contact_phone %}o sa{% endif %}
+    {% if site_setting.contact_phone %}<b>{{ site_setting.contact_phone }}</b>{% endif %}.
+    {% endif %}
+  </p>
+
+  <form method="post" class="narrowForm settingsFields" novalidate>
+    {% csrf_token %}
+    <label for="{{ contact_form.child.id_for_label }}">{{ contact_form.child.label }}</label>
+    {{ contact_form.child }}
+    <small class="fieldError">{{ contact_form.child.errors }}</small>
+
+    <label for="{{ contact_form.message.id_for_label }}">{{ contact_form.message.label }}</label>
+    {{ contact_form.message }}
+    <small class="fieldHelp">{{ contact_form.message.help_text }}</small>
+    <small class="fieldError">{{ contact_form.message.errors }}</small>
+
+    <button class="primaryBtn formActions" type="submit" name="contact_form">Ipadala</button>
+  </form>
+
+  {% if sent_messages %}
+  <h3>Mga huli mong ipinadala</h3>
+  <ul class="messageList">
+    {% for sent in sent_messages %}
+    <li>
+      <small>
+        {{ sent.created_at|date:"Y-m-d H:i" }}{% if sent.child %} · tungkol kay {{ sent.child.display_name }}{% endif %}
+        · <span class="statusBadge {% if sent.is_resolved %}approved{% else %}pending{% endif %}">{% if sent.is_resolved %}Naayos na{% else %}Bukas pa{% endif %}</span>
+      </small>
+      <p>{{ sent.message|linebreaksbr }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

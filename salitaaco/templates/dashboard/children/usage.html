@@ -1,0 +1,58 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Paggamit ni {{ child.display_name }} - SalitAACo{% endblock %}
+
+{% block heading %}Paggamit{% endblock %}
+
+{% block main %}
+{% include "components/children/selected_child.html" with child=child %}
+
+<p class="pageIntro">
+  Buod lang ito ng paggamit ng app: ilang beses binuksan ang mga board at pinindot ang mga salita. Hindi ito
+  medikal na pagsusuri at hindi nito sinusukat ang kakayahan ni {{ child.display_name }} sa pakikipag-usap.
+  Kabuuan mula nang magsimula: <b>{{ total_taps }}</b> pindot.
+</p>
+
+<nav class="pillTabs" aria-label="Saklaw ng petsa">
+  {% for range in ranges %}
+  <a href="?range={{ range.value }}" {% if range.active %}class="active" aria-current="true"{% endif %}>{{ range.label }}</a>
+  {% endfor %}
+</nav>
+
+<div class="twoColumns">
+  <section class="section">
+    <h2>Mga board na madalas buksan</h2>
+    {% for row in boards %}
+    <div class="usageRow">
+      <span class="word">{{ row.icon }} {{ row.name }}</span>
+      <span class="track"><span class="fill" style="width: {{ row.width }}%"></span></span>
+      <span class="count">{{ row.use_count }}</span>
+    </div>
+    {% empty %}
+    <p class="emptyState">Wala pang nabubuksang board sa panahong ito.</p>
+    {% endfor %}
+  </section>
+
+  <section class="section">
+    <h2>Mga salitang madalas pindutin</h2>
+    {% for row in words %}
+    <div class="usageRow">
+      <span class="word">{{ row.name }}</span>
+      <span class="track"><span class="fill" style="width: {{ row.width }}%"></span></span>
+      <span class="count">{{ row.use_count }}</span>
+    </div>
+    {% empty %}
+    <p class="emptyState">Wala pang napipindot na salita sa panahong ito.</p>
+    {% endfor %}
+  </section>
+</div>
+
+<p class="note">
+  {% if counted_since %}
+  Binibilang ang paggamit kada araw mula {{ counted_since|date:"Y-m-d" }}. Ang mga pindot bago nito ay kasama lang sa “Lahat”.
+  {% else %}
+  Magsisimula ang bilang kada araw sa unang pindot ni {{ child.display_name }} sa sarili niyang board. Ang mga naunang pindot ay nasa “Lahat”.
+  {% endif %}
+  Hindi nabibilang ang mga pindot mo kapag ikaw ang nagbukas ng board niya.
+</p>
+{% endblock %}

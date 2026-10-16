@@ -1,9 +1,13 @@
-{% extends "dashboard/base.html" %}
+{% extends layout_template %}
 {% load static %}
 
 {% block title %}Settings - SalitAACo{% endblock %}
 
 {% block main %}
+{% if is_child %}
+<p class="backLink"><a class="iconbtn" href="{% url 'profile' %}">← Profile</a></p>
+{% endif %}
+
 <!-- ============== TILES ============== -->
 <div class="pageCard">
   <div class="settingsHeader">
@@ -16,10 +20,10 @@
       para: magpalit ng larawan (🖼️), mag-record ng tunog (🎙️), o ibalik sa default (↺).
     </p>
     <div class="tilesCard">
-      <a class="iconbtn" href="{% url 'board' %}?edit=1" style="display: block; text-align: center; padding: 12px; font-weight: 600; text-decoration: none">
+      <a class="iconbtn blockBtn" href="{% url 'board' %}?edit=1">
         ✏️ Buksan ang Edit Mode
       </a>
-      <p style="margin: 10px 0 0; font-size: 12px; color: var(--sub); line-height: 1.5">
+      <p>
         💡 Tips: <br />
         • 🖼️ <b>Larawan</b> – Mag-upload ng litrato para sa salita (hal. totoong larawan ng "Nanay").<br />
         • 🎙️ <b>Tunog</b> – Mag-record ng sariling boses para sa salita (maririnig kapag pinindot ang ▶ Patugtugin).<br />
@@ -37,9 +41,13 @@
   <div class="settingsBody">
     <h3>Tema</h3>
     <p class="desc">Piliin kung maliwanag o madilim ang kulay ng app. Tatandaan ito sa browser na ito.</p>
-    <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; color: var(--ink); cursor: pointer">
-      <input type="checkbox" id="darkToggle" style="width: 20px; height: 20px" /> Madilim na tema
-    </label>
+    <div class="switchRow">
+      <label class="switch">
+        <input type="checkbox" id="darkToggle" aria-label="Madilim na tema" />
+        <span class="slider"></span>
+      </label>
+      <span>Madilim na tema</span>
+    </div>
 
     <hr class="sectionDivider" />
 
@@ -58,8 +66,8 @@
       </div>
       <small class="fieldError">{{ tile_size_form.tile_size.errors }}</small>
 
-      <!-- The demo uses the same classes as the board, so it is drawn exactly as the board will be. -->
-      <div class="tileDemo">
+      <!-- The demo uses the same classes and palette as the board, so it is drawn exactly as the board will be. -->
+      <div class="tileDemo" data-palette="ocean">
         <div class="grid tiles-{{ tile_size }}" id="tileDemoGrid" aria-hidden="true">
           <div class="cell"><span class="emoji">🙋</span><span>ako</span></div>
           <div class="cell"><span class="emoji">❤️</span><span>gusto ko</span></div>
@@ -68,7 +76,7 @@
         </div>
       </div>
 
-      <button class="primaryBtn" type="submit" name="tile_size_form" style="margin-top: 14px">💾 I-save ang laki ng tile</button>
+      <button class="primaryBtn formActions" type="submit" name="tile_size_form">💾 I-save ang laki ng tile</button>
     </form>
 
     {% if voice_form %}
@@ -92,7 +100,7 @@
       </div>
       <small class="fieldError">{{ voice_form.family_voice.errors }}</small>
 
-      <button class="primaryBtn" type="submit" name="voice_form" style="margin-top: 14px">💾 I-save ang boses</button>
+      <button class="primaryBtn formActions" type="submit" name="voice_form">💾 I-save ang boses</button>
     </form>
     {% endif %}
   </div>

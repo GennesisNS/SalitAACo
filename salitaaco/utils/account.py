@@ -52,6 +52,52 @@ def get_user_account(user):
     return GuardianAccount.objects.create(user=user, display_name=user.username)
 
 
+def grant_admin(user):
+    """
+    Give an account access to the admin pages. An admin account is added next
+    to whatever account the user already has, which keeps a guardian's
+    children and a child's guardian in place.
+    """
+    if not AdminAccount.objects.filter(user=user).exists():
+        existing_account = find_user_account(user)
+        AdminAccount.objects.create(
+            user=user,
+            display_name=existing_account.display_name if existing_account else user.username,
+        )
+    add_to_group(user, ADMINISTRATOR)
+
+
+def revoke_admin(user):
+    """
+    Take admin access away, with access to Django's admin site. The admin
+    account goes too; a guardian or child account the user also has is left as
+    it is, and is what they are from now on.
+    """
+    user.groups.remove(*Group.objects.filter(name=ADMINISTRATOR))
+    user.is_staff = False
+    user.is_superuser = False
+    user.save()
+    for admin_account in AdminAccount.objects.filter(user=user):
+        admin_account.remove_avatar(save=False)
+        admin_account.delete()
+
+
+def home_route(account):
+    """The URL name of the page an account lands on after logging in: a child's board, a guardian's overview, an admin's dashboard."""
+    if isinstance(account, AdminAccount):
+        return "analytics"
+    if isinstance(account, GuardianAccount):
+        return "overview"
+    return "board"
+
+
+def request_account(request):
+    """The logged-in user's account, looked up once per request however many times it is asked for."""
+    if not hasattr(request, "_account"):
+        request._account = get_user_account(request.user)
+    return request._account
+
+
 def delete_user_account(user):
     """
     Permanently delete an account with everything it owns: its admin, guardian

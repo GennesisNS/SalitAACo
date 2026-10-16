@@ -40,15 +40,26 @@ class SettingsAndProfileAreSeparatePagesTest(UserBase):
         }
 
     def test_sidebar_lists_settings_and_highlights_it_when_open(self):
-        self.login_as("miguel")
+        self.login_as("developer")
         self.assertTrue(self.sidebar_items("settings")["settings"]["active"])
-        self.assertFalse(self.sidebar_items("board")["settings"]["active"])
+        self.assertFalse(self.sidebar_items("profile")["settings"]["active"])
 
-    def test_profile_is_reached_from_the_avatar_not_from_a_sidebar_tab(self):
+    def test_a_child_reaches_settings_from_the_profile_page(self):
         self.login_as("miguel")
-        self.assertNotIn("profile", self.sidebar_items("board"))
+        self.assertNotIn("settings", self.sidebar_items("board"))
+        self.assertContains(self.client.get(reverse("profile")), f'href="{reverse("settings")}"')
 
-        # The avatar link is in the shell, so it is on every dashboard page.
-        for route in ["board", "settings", "profile"]:
-            response = self.client.get(reverse(route))
-            self.assertContains(response, f'<a href="{reverse("profile")}" class="sidebarUserLink"')
+    def test_profile_is_in_a_childs_navigation_and_behind_the_avatar_for_everyone(self):
+        # A child has Profile along the bottom; the others have it in the sidebar as "Account".
+        for username in ["miguel", "developer"]:
+            self.login_as(username)
+            self.assertTrue(self.sidebar_items("profile")["profile"]["active"], username)
+            self.assertFalse(self.sidebar_items("board")["profile"]["active"], username)
+
+        # The avatar link is in both layouts, so it is on every page drawn in the user's own layout.
+        pages = {"miguel": ["board", "settings", "profile"], "developer": ["settings", "profile"]}
+        for username, routes in pages.items():
+            self.login_as(username)
+            for route in routes:
+                response = self.client.get(reverse(route))
+                self.assertContains(response, f'<a href="{reverse("profile")}" class="accountLink"')

@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'salitaaco',
+    # The public website at "/". Everything of it is in the top-level public/ folder.
+    'public',
 ]
 
 MIDDLEWARE = [
@@ -57,6 +59,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # After authentication: it lets admins through, so it has to know who is asking.
+    'salitaaco.middleware.maintenance.MaintenanceModeMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

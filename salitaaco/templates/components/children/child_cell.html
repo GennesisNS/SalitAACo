@@ -1,0 +1,15 @@
+{% comment %}
+  A child in a table row or a banner: their picture, name and username.
+  child: the ChildAccount.
+{% endcomment %}
+<span class="childCell">
+  <span class="childAvatar">
+    {% if child.has_avatar %}
+    <img src="{% url 'view_child_avatar' child.uuid %}?v={{ child.updated_at|date:'U' }}" alt="" />
+    {% else %}🧒{% endif %}
+  </span>
+  <span class="childName">
+    <b>{{ child.display_name }}</b>
+    <small>@{{ child.user.username }}</small>
+  </span>
+</span>

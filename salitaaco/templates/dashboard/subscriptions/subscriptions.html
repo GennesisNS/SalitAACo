@@ -1,0 +1,54 @@
+{% extends "layouts/dashboard.html" %}
+{% comment %}
+  FRONTEND ONLY FOR NOW: the plans come from defaults/plans.py, and the form
+  that edits a plan is disabled because there is nowhere to save it.
+{% endcomment %}
+
+{% block title %}Mga Subscription - SalitAACo{% endblock %}
+
+{% block heading %}Mga Subscription{% endblock %}
+
+{% block main %}
+<div class="statsGrid">
+  {% for card in stat_cards %}
+  {% include "components/analytics/stat_card.html" with label=card.label value=card.value sub=card.sub %}
+  {% endfor %}
+</div>
+
+<section class="section">
+  <h2>Mga plano</h2>
+  <p class="desc">
+    Ito ang mga planong nakikita ng mga tagapag-alaga sa “Plano at Subscription” at sa pampublikong website.
+    Ang planong hindi iniaalok ay hindi na mapipili ng bago, pero mananatili sa mga mayroon na nito.
+  </p>
+
+  <div class="planGrid">
+    {% for plan in plans %}
+    <!-- Not a form yet: there is nowhere to save a plan to. -->
+    <div class="planCard settingsFields">
+      <p class="planSubscribers"><b>{{ plan.subscribers }}</b> tagapag-alaga sa planong ito</p>
+
+      <label for="planName-{{ plan.key }}">Pangalan</label>
+      <input class="input" type="text" id="planName-{{ plan.key }}" value="{{ plan.name }}" disabled />
+
+      <label for="planPrice-{{ plan.key }}">Presyo (₱) {{ plan.period }}</label>
+      <input class="input" type="number" id="planPrice-{{ plan.key }}" value="{{ plan.price }}" min="0" disabled />
+
+      <label for="planFeatures-{{ plan.key }}">Mga kasama (isa kada linya)</label>
+      <textarea class="textarea" id="planFeatures-{{ plan.key }}" rows="{{ plan.features|length }}" disabled>{{ plan.features_text }}</textarea>
+
+      <div class="switchRow">
+        <label class="switch">
+          <input type="checkbox" aria-label="Iniaalok ang {{ plan.name }}" {% if plan.offered %}checked{% endif %} disabled />
+          <span class="slider"></span>
+        </label>
+        <span>Iniaalok sa mga tagapag-alaga</span>
+      </div>
+
+      <button class="primaryBtn formActions" type="button" disabled>I-save ang plano</button>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="pendingNote">Hindi pa mae-edit ang mga plano: disenyo pa lang ito.</p>
+</section>
+{% endblock %}

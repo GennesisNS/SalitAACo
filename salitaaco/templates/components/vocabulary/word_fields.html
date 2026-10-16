@@ -1,0 +1,21 @@
+{% comment %}
+  The fields of a word, in the form that adds one and in the form that changes one.
+  word_form: a WordForm.
+{% endcomment %}
+<label for="{{ word_form.board.id_for_label }}">{{ word_form.board.label }}</label>
+{{ word_form.board }}
+<small class="fieldError">{{ word_form.board.errors }}</small>
+
+<div class="row">
+  <div>
+    <label for="{{ word_form.word.id_for_label }}">{{ word_form.word.label }}</label>
+    {{ word_form.word }}
+    <small class="fieldHelp">{{ word_form.word.help_text }}</small>
+    <small class="fieldError">{{ word_form.word.errors }}</small>
+  </div>
+  <div>
+    <label for="{{ word_form.emoji.id_for_label }}">{{ word_form.emoji.label }}</label>
+    {{ word_form.emoji }}
+    <small class="fieldError">{{ word_form.emoji.errors }}</small>
+  </div>
+</div>

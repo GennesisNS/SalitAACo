@@ -1,0 +1,87 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Mga Board - SalitAACo{% endblock %}
+
+{% block heading %}Mga Board{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Ang mga board ng app at ang status ng bawat isa. Ang board na nakatago ay hindi nakikita ninuman: hindi ng mga
+  bata, at hindi ng mga tagapag-alagang pumipili ng board ng anak nila. Kailangang may kahit isang naka-publish.
+</p>
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>{{ published_count }} sa {{ boards|length }} board ang naka-publish</h2>
+    <a class="secondaryBtn" href="{% url 'words' %}">Mga salita at simbolo</a>
+  </div>
+
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Board</th>
+          <th>Mga salita</th>
+          <th>Status</th>
+          <th>Huling binago</th>
+          <th>Mga bukas</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for board in boards %}
+        <tr>
+          <td><b>{{ board.icon }} {{ board.name }}</b></td>
+          <td data-label="Mga salita">{{ board.word_count }}</td>
+          <td data-label="Status">
+            {% if board.is_published %}<span class="statusBadge approved">Naka-publish</span>{% else %}<span class="statusBadge rejected">Nakatago</span>{% endif %}
+          </td>
+          <td data-label="Huling binago">{{ board.updated_at|date:"Y-m-d H:i"|default:"—" }}</td>
+          <td data-label="Mga bukas">{{ board.opens }}</td>
+          <td>
+            <span class="rowActions">
+              {% if board.is_published %}
+              <a class="secondaryBtn smallBtn" href="{% url 'board' %}#boards/{{ board.name|urlencode }}">Silipin</a>
+              <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="hide-board-{{ forloop.counter }}" {% if published_count == 1 %}disabled title="Ito na lang ang naka-publish"{% endif %}>Itago</button>
+              {% else %}
+              <form class="inlineForm" method="post" action="{% url 'set_board_status' %}">
+                {% csrf_token %}
+                <input type="hidden" name="board" value="{{ board.name }}" />
+                <input type="hidden" name="published" value="on" />
+                <button class="primaryBtn smallBtn" type="submit">I-publish</button>
+              </form>
+              {% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="note">
+    Ang mga board ay ang mga kategorya ng default na bokabularyo ng app. Ang binabago rito ay nase-save nang hiwalay,
+    kaya hindi nagagalaw ang default.
+  </p>
+</section>
+
+<!-- Hiding a board from everyone is asked twice. -->
+{% for board in boards %}
+{% if board.is_published %}
+<div class="confirmBackdrop hidden" data-modal="hide-board-{{ forloop.counter }}">
+  <form class="confirmBox" method="post" action="{% url 'set_board_status' %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <input type="hidden" name="board" value="{{ board.name }}" />
+    <h3>Itago ang board na “{{ board.name }}”?</h3>
+    <p>
+      Mawawala ito sa board ng lahat ng bata at tagapag-alaga hanggang i-publish mo ulit. Walang mabubura: mananatili
+      ang mga salita, larawan at recording nito.
+    </p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="hide-board-{{ forloop.counter }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, itago</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

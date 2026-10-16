@@ -75,10 +75,10 @@ class ChildrenAccessTest(GuardianBase):
 
     def test_sidebar_shows_mga_bata_to_guardians_only(self):
         self.login_as("nanay")
-        self.assertContains(self.client.get(reverse("board")), reverse("children"))
+        self.assertContains(self.client.get(reverse("settings")), f'href="{reverse("children")}"')
         for username in ["miguel", "developer"]:
             self.login_as(username)
-            self.assertNotContains(self.client.get(reverse("board")), reverse("children"))
+            self.assertNotContains(self.client.get(reverse("settings")), reverse("children"))
 
 
 class CreateChildTest(GuardianBase):
@@ -122,22 +122,19 @@ class ManageChildTest(GuardianBase):
         self.login_as("nanay")
         self.url = reverse("manage_child", args=[self.miguel_account.uuid])
 
-    def test_page_shows_the_childs_usage(self):
-        for word, count in [("kain", 5), ("inom", 2)]:
-            WordUsage.objects.create(user=self.miguel, word=word, use_count=count)
-        WordUsage.objects.create(user=self.ana, word="laro", use_count=9)
+    def test_page_counts_the_childs_own_pictures_and_recordings(self):
         customization = Customization.objects.create(user=self.miguel, word="mama")
         customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
 
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["usage"], [
-            {"word": "kain", "use_count": 5, "width": 100},
-            {"word": "inom", "use_count": 2, "width": 40},
-        ])
-        self.assertEqual(response.context["total_taps"], 7)
         self.assertEqual((response.context["image_count"], response.context["sound_count"]), (1, 0))
+        # The voice and the usage have pages of their own, which this one leads to.
+        for route in ["child_boards", "child_voice", "child_usage"]:
+            self.assertContains(response, f'href="{reverse(route, args=[self.miguel_account.uuid])}"')
+        self.assertNotIn("voice_form", response.context)
+        self.assertNotIn("usage", response.context)
 
     def test_update_the_childs_profile(self):
         response = self.client.post(self.url, {"child_form": "", "display_name": "Migs", "age": "8"})
