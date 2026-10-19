@@ -1,3 +1,4 @@
+import shutil
 from datetime import timedelta
 from unittest import mock
 
@@ -200,6 +201,9 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
 
     def setUp(self):
         super().setUp()
+        # The guardians are the same in every test of the class, and so is their folder of
+        # audio: emptied after each test, as the database is, so one test's files do not reach the next.
+        self.addCleanup(shutil.rmtree, guardian_word_audio_directory(self.nanay).parent, ignore_errors=True)
         patcher = mock.patch("salitaaco.utils.family_voice.ElevenLabs")
         self.elevenlabs = patcher.start().return_value
         self.addCleanup(patcher.stop)
