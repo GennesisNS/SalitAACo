@@ -20,6 +20,7 @@ from salitaaco.tests.text_to_speech.test_text_to_speech import SharedTileAudioTe
 from salitaaco.tests.users_base import UserBase, make_guardian
 from salitaaco.utils.account import delete_user_account
 from salitaaco.utils.family_voice import family_voice_directory, family_voice_progress, generate_family_voice_words
+from salitaaco.utils.guardian_words import guardian_word_audio_directory
 from salitaaco.utils.plans import approve_payment
 from salitaaco.utils.tile_audio import tile_audio_file_name
 
@@ -215,6 +216,10 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
     def family_audio(self, voice, word):
         return family_voice_directory(voice) / tile_audio_file_name(word)
 
+    def shared_audio(self, guardian, word):
+        """A guardian's tile in the shared voice: in their own folder under media/, not in static/."""
+        return guardian_word_audio_directory(guardian) / tile_audio_file_name(word)
+
     def test_adding_a_tile_voices_it_in_the_shared_voice_and_every_family_voice(self):
         lola, lolo = self.make_family_voice("Lola"), self.make_family_voice("Lolo")
         self.login_as("nanay")
@@ -225,14 +230,18 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
             sorted(call.args for call in self.elevenlabs.text_to_speech.call_args_list),
             [("boses-Lola", "Kuya Jun"), ("boses-Lolo", "Kuya Jun"), ("pinoy-boses", "Kuya Jun")],
         )
-        self.assertEqual((self.audio_directory / "kuya-jun.mp3").read_bytes(), b"pinoy-boses: Kuya Jun")
+        self.assertEqual(self.shared_audio(self.nanay, "Kuya Jun").read_bytes(), b"pinoy-boses: Kuya Jun")
         self.assertEqual(self.family_audio(lola, "Kuya Jun").read_bytes(), b"boses-Lola: Kuya Jun")
         self.assertEqual(self.family_audio(lolo, "Kuya Jun").read_bytes(), b"boses-Lolo: Kuya Jun")
+        # The vocabulary's folder in static/ is left alone.
+        self.assertEqual(list(self.audio_directory.iterdir()), [])
 
         # The page plays it, and the boards use it: Miguel hears it in his family voice.
-        self.assertContains(self.client.get(self.url), "▶ Pakinggan")
+        word = GuardianWord.objects.get()
+        play_url = reverse("play_guardian_word", args=[word.uuid])
+        self.assertContains(self.client.get(self.url), f'data-preview="{play_url}?v=')
         tile_audio = self.client.get(reverse("board")).context["board_data"]["tile_audio"]
-        self.assertIn("kuya-jun.mp3", tile_audio["Kuya Jun"])
+        self.assertTrue(tile_audio["Kuya Jun"].startswith(f"{play_url}?v="))
         self.login_as("miguel")
         tile_audio = self.client.get(reverse("board")).context["board_data"]["tile_audio"]
         self.assertTrue(tile_audio["Kuya Jun"].startswith(reverse("play_family_voice_word", args=[lolo.uuid, "kuya-jun"])))
@@ -252,14 +261,32 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
         self.elevenlabs.text_to_speech.side_effect = lambda voice_id, text: b"mp3"
         response = self.client.post(reverse("voice_guardian_word", args=[word.uuid]))
         self.assertEqual(messages_of(response), ["Nagawa na ang boses ng “Kuya Jun”."])
-        self.assertTrue((self.audio_directory / "kuya-jun.mp3").exists())
+        self.assertTrue(self.shared_audio(self.nanay, "Kuya Jun").exists())
 
     def test_audio_already_made_is_not_made_again(self):
-        (self.audio_directory / "kuya-jun.mp3").write_bytes(b"dati na")
+        shared = self.shared_audio(self.nanay, "Kuya Jun")
+        shared.parent.mkdir(parents=True)
+        shared.write_bytes(b"dati na")
         self.login_as("nanay")
         self.add()
         self.elevenlabs.text_to_speech.assert_not_called()
-        self.assertEqual((self.audio_directory / "kuya-jun.mp3").read_bytes(), b"dati na")
+        self.assertEqual(shared.read_bytes(), b"dati na")
+
+    def test_only_the_guardian_and_her_children_hear_her_tile(self):
+        self.login_as("nanay")
+        self.add()
+        url = reverse("play_guardian_word", args=[GuardianWord.objects.get().uuid])
+
+        for username in ["nanay", "miguel"]:
+            self.login_as(username)
+            response = self.client.get(url)
+            self.assertEqual((response.status_code, response["Content-Type"]), (200, "audio/mpeg"), username)
+            self.assertEqual(b"".join(response.streaming_content), b"pinoy-boses: Kuya Jun")
+        for username in ["tatay", "ana", "developer"]:
+            self.login_as(username)
+            self.assertEqual(self.client.get(url).status_code, 404, username)
+        self.client.logout()
+        self.assertRedirects(self.client.get(url), f"/login/?next={url}")
 
     @override_settings(ELEVENLABS_API_KEY="")
     def test_without_elevenlabs_the_tile_speaks_in_the_devices_voice(self):
@@ -279,21 +306,24 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
         self.assertTrue(self.family_audio(voice, "Kuya Jun").exists())
         self.assertEqual(family_voice_progress(voice), (total, total))
 
-    def test_deleting_the_tile_deletes_its_audio_unless_another_family_has_the_word(self):
+    def test_each_family_has_its_own_audio_and_deleting_removes_only_its_own(self):
         voice = self.make_family_voice("Lola")
-        self.login_as("nanay")
-        self.add()
-        word = GuardianWord.objects.get()
-        shared = self.audio_directory / "kuya-jun.mp3"
-
         tito = make_guardian("tito", "Tito Ben")
-        self.make_word(tito, "Kuya Jun")
-        self.client.post(reverse("remove_guardian_word", args=[word.uuid]))
+        approve_payment(make_payment(tito), self.developer)
+        for username in ["nanay", "tito"]:
+            self.login_as(username)
+            self.add()
+        nanays, titos = self.shared_audio(self.nanay, "Kuya Jun"), self.shared_audio(tito, "Kuya Jun")
+        self.assertTrue(nanays.exists() and titos.exists())
+
+        self.login_as("nanay")
+        self.client.post(reverse("remove_guardian_word", args=[GuardianWord.objects.get(guardian=self.nanay).uuid]))
+        self.assertFalse(nanays.exists())
         self.assertFalse(self.family_audio(voice, "Kuya Jun").exists())
-        self.assertTrue(shared.exists())  # Tito's tile still says it
+        self.assertTrue(titos.exists())
 
         delete_user_account(tito.user)
-        self.assertFalse(shared.exists())
+        self.assertFalse(guardian_word_audio_directory(tito).exists())
 
     def test_a_tile_on_free_is_not_voiced_again(self):
         word = self.make_word(self.tatay, "Lolo Ben")

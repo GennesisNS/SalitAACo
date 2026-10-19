@@ -75,6 +75,7 @@ urlpatterns = [
     path('tiles/', guardian_words.view_guardian_words, name='guardian_words'),
     path('tiles/<uuid:word_uuid>/delete/', guardian_words.remove_guardian_word, name='remove_guardian_word'),
     path('tiles/<uuid:word_uuid>/voice/', guardian_words.voice_word, name='voice_guardian_word'),
+    path('tiles/<uuid:word_uuid>/audio.mp3', guardian_words.play_guardian_word, name='play_guardian_word'),
 
     path('support/', support.view_support, name='support'),
 

@@ -10,10 +10,9 @@ from salitaaco.models.admin_account import AdminAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_account import GuardianAccount
-from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.payment import Payment
 from salitaaco.utils.family_voice import delete_family_voice
-from salitaaco.utils.guardian_words import delete_shared_audio_if_unused
+from salitaaco.utils.guardian_words import delete_guardian_audio_folder
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +117,8 @@ def delete_user_account(user):
         file_names += [customization.image.name, customization.sound.name]
     for payment in Payment.objects.filter(guardian__user=user):
         file_names.append(payment.proof.name)
-    # A guardian's own tiles go with the account; their audio in the shared voice once no one else's tile says the word.
-    own_words = list(GuardianWord.objects.filter(guardian__user=user).values_list("word", flat=True))
+    # A guardian's own tiles go with the account, and their folder of audio after it.
+    guardian = GuardianAccount.objects.filter(user=user).first()
     for relation in ACCOUNT_RELATIONS:
         account = getattr(user, relation, None)
         if account is not None:
@@ -134,7 +133,7 @@ def delete_user_account(user):
             default_storage.delete(file_name)
         except OSError:
             logger.exception("Could not delete upload %s of deleted account %s", file_name, username)
-    for word in own_words:
-        delete_shared_audio_if_unused(word)
+    if guardian is not None:
+        delete_guardian_audio_folder(guardian)
 
     logger.info("Deleted account %s", username)

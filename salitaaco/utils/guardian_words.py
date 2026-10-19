@@ -1,12 +1,21 @@
+import shutil
+from pathlib import Path
+
 from django.conf import settings
+from django.urls import reverse
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
 from salitaaco.models.guardian_account import GuardianAccount
-from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.family_voice import elevenlabs_client, elevenlabs_is_set_up, family_voice_directory
 from salitaaco.utils.plans import current_plan
-from salitaaco.utils.tile_audio import tile_audio_file_name, tile_audio_path, tile_word_slug, tile_words
+from salitaaco.utils.tile_audio import tile_audio_file_name, tile_word_slug, tile_words
+
+# The guardians' tiles in the shared voice, one folder per guardian under
+# media/. They are not the app's vocabulary, so they are kept apart from its
+# audio in static/, and like every upload they are served only by a
+# login-protected view (play_guardian_word).
+GUARDIAN_WORD_AUDIO_FOLDER = "guardian-tile-audio"
 
 
 def guardian_word_limit():
@@ -37,10 +46,29 @@ def shown_guardian_words(guardian):
     return list(guardian.words.all())
 
 
+def guardian_word_audio_directory(guardian):
+    return Path(settings.MEDIA_ROOT) / GUARDIAN_WORD_AUDIO_FOLDER / str(guardian.uuid)
+
+
+def guardian_word_audio_path(word):
+    """Where a guardian's tile in the shared voice is, made or not."""
+    return guardian_word_audio_directory(word.guardian) / tile_audio_file_name(word.word)
+
+
+def guardian_word_audio_urls(words):
+    """{word: url} for the guardian's tiles already made in the shared voice."""
+    urls = {}
+    for word in words:
+        path = guardian_word_audio_path(word)
+        if path.exists():
+            urls[word.word] = f"{reverse('play_guardian_word', args=[word.uuid])}?v={int(path.stat().st_mtime)}"
+    return urls
+
+
 def voice_guardian_word(word):
     """
     Voice a guardian's tile with ElevenLabs, as the vocabulary's tiles are: in
-    the shared voice (ELEVENLABS_VOICE_ID), saved with their audio in static/,
+    the shared voice (ELEVENLABS_VOICE_ID), saved in the guardian's own folder,
     and in each of the guardian's family voices. Audio already made is not made
     again. Returns False when ElevenLabs refused any of it; until it is made,
     the tile speaks in the device's voice.
@@ -51,7 +79,7 @@ def voice_guardian_word(word):
     # (the ElevenLabs voice, where its audio of the word goes)
     targets = []
     if settings.ELEVENLABS_VOICE_ID:
-        targets.append((settings.ELEVENLABS_VOICE_ID, tile_audio_path(word.word)))
+        targets.append((settings.ELEVENLABS_VOICE_ID, guardian_word_audio_path(word)))
     for voice in word.guardian.family_voices.all():
         targets.append((voice.elevenlabs_voice_id, family_voice_directory(voice) / tile_audio_file_name(word.word)))
 
@@ -73,26 +101,21 @@ def voice_guardian_word(word):
 
 def delete_guardian_word_audio(guardian, text):
     """
-    Remove the audio of a tile a guardian deleted: the guardian's family
-    voices' and, when no other guardian's tile says the word, the shared
-    voice's. Audio of a word the vocabulary has (an admin may have added it
-    since) belongs to the vocabulary and stays.
+    Remove the audio of a tile a guardian deleted: in the shared voice, from
+    the guardian's folder, and in each of their family voices. A family voice's
+    audio of a word the vocabulary has (an admin may have added it since)
+    belongs to the vocabulary and stays.
     """
-    slug = tile_word_slug(text)
-    if slug in {tile_word_slug(word) for word in tile_words()}:
+    (guardian_word_audio_directory(guardian) / tile_audio_file_name(text)).unlink(missing_ok=True)
+    if tile_word_slug(text) in {tile_word_slug(word) for word in tile_words()}:
         return
     for voice in guardian.family_voices.all():
         (family_voice_directory(voice) / tile_audio_file_name(text)).unlink(missing_ok=True)
-    delete_shared_audio_if_unused(text)
 
 
-def delete_shared_audio_if_unused(text):
-    """Remove the shared voice's audio of a guardian's tile once no guardian's tile says the word."""
-    slug = tile_word_slug(text)
-    if slug in {tile_word_slug(word) for word in tile_words()}:
-        return
-    if not any(tile_word_slug(other) == slug for other in GuardianWord.objects.values_list("word", flat=True)):
-        tile_audio_path(text).unlink(missing_ok=True)
+def delete_guardian_audio_folder(guardian):
+    """Remove all of a guardian's tiles in the shared voice, when their account goes."""
+    shutil.rmtree(guardian_word_audio_directory(guardian), ignore_errors=True)
 
 
 def add_guardian_words(categories, words):

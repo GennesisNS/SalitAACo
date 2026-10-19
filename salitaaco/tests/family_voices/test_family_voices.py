@@ -458,7 +458,7 @@ class BoardUsesTheFamilyVoiceTest(FamilyVoiceBase):
         shared = {"opo": "/static/audio/text-to-speech/opo.mp3?v=1", "ako": "/static/audio/text-to-speech/ako.mp3?v=1"}
 
         # A fresh dict per call, as the real tile_audio_urls() returns.
-        with mock.patch("salitaaco.routes.board.board.tile_audio_urls", side_effect=lambda extra_words=(): dict(shared)):
+        with mock.patch("salitaaco.routes.board.board.tile_audio_urls", side_effect=lambda: dict(shared)):
             self.login_as("miguel")
             miguel_audio = self.client.get(reverse("board")).context["board_data"]["tile_audio"]
             self.login_as("ana")

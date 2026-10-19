@@ -18,7 +18,12 @@ from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.board import boards, extra_board_data, quick_words
 from salitaaco.utils.children import guardian_child_or_404
 from salitaaco.utils.family_voice import family_voice_urls
-from salitaaco.utils.guardian_words import add_guardian_words, board_guardian, shown_guardian_words
+from salitaaco.utils.guardian_words import (
+    add_guardian_words,
+    board_guardian,
+    guardian_word_audio_urls,
+    shown_guardian_words,
+)
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.tile_audio import tile_audio_urls
 from salitaaco.utils.uploads import random_upload_name
@@ -118,7 +123,8 @@ def view_board(request, child_uuid=None):
     owner_child = managed_child or ChildAccount.objects.filter(user=owner).select_related("family_voice").first()
     # The guardian's own tiles, while the guardian is on a paid plan.
     own_words = shown_guardian_words(board_guardian(owner, owner_child))
-    tile_audio = tile_audio_urls([word.word for word in own_words])
+    tile_audio = tile_audio_urls()
+    tile_audio.update(guardian_word_audio_urls(own_words))
     if owner_child and owner_child.family_voice:
         tile_audio.update(family_voice_urls(owner_child.family_voice))
 

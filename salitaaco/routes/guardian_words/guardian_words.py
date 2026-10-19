@@ -4,11 +4,14 @@ which show on their own board and on every one of their children's. How many
 a guardian can have is set on System Settings > General. While the guardian
 is not on a paid plan, their tiles are kept but not shown, and none can be added.
 
-A tile is voiced with ElevenLabs when it is added: in the shared voice and in
-each of the guardian's family voices (utils/guardian_words.py).
+A tile is voiced with ElevenLabs when it is added: in the shared voice, kept in
+the guardian's own folder under media/ apart from the vocabulary's audio in
+static/, and in each of the guardian's family voices (utils/guardian_words.py).
 """
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -20,11 +23,12 @@ from salitaaco.utils.family_voice import elevenlabs_is_set_up
 from salitaaco.utils.guardian_words import (
     can_add_words,
     delete_guardian_word_audio,
+    guardian_word_audio_path,
+    guardian_word_audio_urls,
     guardian_word_limit,
     voice_guardian_word,
 )
-from salitaaco.utils.perms_check import is_guardian, multi_user_test
-from salitaaco.utils.tile_audio import tile_audio_urls
+from salitaaco.utils.perms_check import is_app_user, is_guardian, multi_user_test
 
 NOT_VOICED = "Hindi pa nagawa ang boses nito, kaya boses muna ng device ang gagamitin. Subukan muli mamaya."
 
@@ -62,7 +66,7 @@ def view_guardian_words(request):
                 messages.error(request, NOT_VOICED)
             return redirect('guardian_words')
 
-    audio_urls = tile_audio_urls([word.word for word in words])
+    audio_urls = guardian_word_audio_urls(words)
 
     context = {
         "words": [{"word": word, "audio_url": audio_urls.get(word.word)} for word in words],
@@ -87,6 +91,22 @@ def remove_guardian_word(request, word_uuid):
     delete_guardian_word_audio(guardian, text)
     messages.success(request, f"Nabura na ang “{text}”. Wala na ito sa mga board.")
     return redirect('guardian_words')
+
+
+@login_required(login_url='/login/')
+@multi_user_test(is_app_user)
+def play_guardian_word(request, word_uuid):
+    """A guardian's tile in the shared voice, for the guardian and for the guardian's children."""
+    allowed = GuardianWord.objects.filter(
+        Q(guardian__user=request.user) | Q(guardian__children__user=request.user)
+    ).distinct()
+    word = get_object_or_404(allowed.select_related("guardian"), uuid=word_uuid)
+    path = guardian_word_audio_path(word)
+    if not path.is_file():
+        raise Http404()
+    response = FileResponse(path.open('rb'), content_type="audio/mpeg")
+    response["Cache-Control"] = "private, max-age=86400"
+    return response
 
 
 @login_required(login_url='/login/')

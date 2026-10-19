@@ -2,15 +2,14 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabs, ElevenLabsError
-from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.utils.tile_audio import tile_audio_directory, tile_audio_file_name, tile_words
 
 
 class Command(BaseCommand):
     help = (
-        "Voice the tile words, and the guardians' own tiles, in the shared ElevenLabs voice "
-        "(ELEVENLABS_VOICE_ID) and save one MP3 per word in static/audio/text-to-speech/. "
-        "Words that already have a file are skipped."
+        "Voice the tile words in the shared ElevenLabs voice (ELEVENLABS_VOICE_ID) and save one MP3 "
+        "per word in static/audio/text-to-speech/. Words that already have a file are skipped. "
+        "Guardians' own tiles are not voiced here: theirs are kept under media/ (utils/guardian_words.py)."
     )
 
     def add_arguments(self, parser):
@@ -29,8 +28,7 @@ class Command(BaseCommand):
         if not settings.ELEVENLABS_VOICE_ID:
             raise CommandError("Set ELEVENLABS_VOICE_ID in .env to the ID of the Filipino voice to use.")
 
-        # A guardian's tile is voiced when it is added; this makes any that ElevenLabs refused then.
-        words = list(dict.fromkeys(tile_words() + list(GuardianWord.objects.values_list("word", flat=True))))
+        words = tile_words()
         if options["words"]:
             unknown = [word for word in options["words"] if word not in words]
             if unknown:

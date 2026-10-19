@@ -136,14 +136,11 @@ class GenerateTileAudioCommandTest(SharedTileAudioTestMixin, TestCase):
         self.run_command("--words", "opo", "--overwrite")
         self.assertEqual((self.audio_directory / "opo.mp3").read_bytes(), b"bago")
 
-    @mock.patch("salitaaco.management.commands.generate_tile_audio.ElevenLabs")
-    def test_the_guardians_own_tiles_are_voiced_too(self, client_class):
-        client_class.return_value.text_to_speech.return_value = b"mp3"
+    def test_the_guardians_own_tiles_are_not_the_static_folders(self):
         guardian = make_guardian("nanay", "Nanay Rosa")
         GuardianWord.objects.create(guardian=guardian, board="Tao", word="Kuya Jun", emoji="👦")
-
-        self.run_command("--words", "Kuya Jun")
-        self.assertTrue((self.audio_directory / "kuya-jun.mp3").exists())
+        with self.assertRaisesRegex(CommandError, "Not tile words: Kuya Jun"):
+            self.run_command("--words", "Kuya Jun")
 
     def test_unknown_words_are_refused(self):
         with self.assertRaisesRegex(CommandError, "Not tile words: kain, hello"):
