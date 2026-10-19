@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
-from salitaaco.utils.uploads import IMAGE_MIME_TYPES, MAX_UPLOAD_SIZE, base_mime
+from salitaaco.utils.uploads import IMAGE_MIME_TYPES, MAX_UPLOAD_SIZE, PAYMENT_IMAGE_MIME_TYPES, base_mime
 
 import re
 
@@ -14,6 +14,11 @@ def username_exists(value):
 def validate_image_type(file):
     if base_mime(getattr(file, "content_type", "")) not in IMAGE_MIME_TYPES:
         raise ValidationError("Hindi suportadong file type ng larawan.")
+
+
+def validate_payment_image_type(file):
+    if base_mime(getattr(file, "content_type", "")) not in PAYMENT_IMAGE_MIME_TYPES:
+        raise ValidationError("JPEG, PNG o WebP lang ang puwedeng larawan.")
 
 
 def validate_image_size(file):

@@ -1,5 +1,7 @@
 from django.db import models
 
+from salitaaco.defaults.plans import DEFAULT_GUARDIAN_WORD_LIMIT
+
 
 class SiteSetting(models.Model):
     """
@@ -16,6 +18,14 @@ class SiteSetting(models.Model):
     # While on, everyone but admins sees the maintenance page instead of the app.
     maintenance_mode = models.BooleanField(default=False)
     maintenance_message = models.CharField(max_length=300, blank=True)
+    # Where guardians send the money for a paid plan: the GCash QR code they
+    # scan, and the name and number of the account. Shown on Plano at Subscription.
+    gcash_qr = models.ImageField(upload_to='payment-qr/', blank=True)
+    gcash_qr_mime = models.CharField(max_length=50, blank=True)
+    gcash_name = models.CharField(max_length=100, blank=True)
+    gcash_number = models.CharField(max_length=20, blank=True)
+    # How many tiles of their own a guardian on a paid plan can add, across all the boards.
+    guardian_word_limit = models.PositiveSmallIntegerField(default=DEFAULT_GUARDIAN_WORD_LIMIT)
     updated_at = models.DateTimeField(auto_now=True)
 
     @classmethod
@@ -26,6 +36,24 @@ class SiteSetting(models.Model):
     def save(self, *args, **kwargs):
         self.pk = self.ONLY_ROW
         super().save(*args, **kwargs)
+
+    @property
+    def has_gcash_qr(self):
+        return bool(self.gcash_qr)
+
+    def set_gcash_qr(self, file_name, content, mime):
+        """Replace the QR code, removing the previous file from storage."""
+        self.remove_gcash_qr(save=False)
+        self.gcash_qr.save(file_name, content, save=False)
+        self.gcash_qr_mime = mime
+        self.save()
+
+    def remove_gcash_qr(self, save=True):
+        if self.gcash_qr:
+            self.gcash_qr.delete(save=False)
+        self.gcash_qr_mime = ''
+        if save:
+            self.save()
 
     def __str__(self):
         return "Site settings"

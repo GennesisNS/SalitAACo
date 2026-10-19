@@ -1,8 +1,8 @@
 {% load static %}
 {% comment %}
   The public website: one page with the hero, what the app does, About Us, the
-  plans and the footer. The plans are not written here: they come from the same
-  plan data the admin sees. Everything this page needs is in the public/ folder.
+  plans and the footer. The plans are not written here: they are the Plan rows
+  the admin edits. Everything this page needs is in the public/ folder.
 {% endcomment %}
 <!DOCTYPE html>
 <html lang="tl">
@@ -180,7 +180,7 @@
             <h3>{{ plan.name }}</h3>
             <p class="planPrice">₱{{ plan.price }} <small>{{ plan.period }}</small></p>
             <ul>
-              {% for feature in plan.features %}
+              {% for feature in plan.feature_list %}
               <li>{{ feature }}</li>
               {% endfor %}
             </ul>

@@ -36,7 +36,10 @@ class LayoutPerRoleTest(LayoutBase):
 
     def test_a_guardians_and_an_admins_pages_use_the_dashboard_layout_and_palette(self):
         pages = {
-            "nanay": ["overview", "children", "family_voices", "plan", "plan_transactions", "support", "profile", "settings"],
+            "nanay": [
+                "overview", "children", "family_voices", "guardian_words", "plan", "plan_transactions", "support",
+                "profile", "settings",
+            ],
             "developer": [
                 "analytics", "reports", "users", "admin_boards", "words", "institutions", "revenue", "subscriptions",
                 "feedback", "system_general", "system_access", "system_privacy", "system_status", "profile", "settings",
@@ -91,7 +94,7 @@ class NavigationPerRoleTest(LayoutBase):
         self.assertEqual(self.navigation("board"), ["home", "boards", "favorites", "profile"])
         self.login_as("nanay")
         self.assertEqual(self.navigation("children"), [
-            "overview", "children", "family_voices",
+            "overview", "children", "family_voices", "guardian_words",
             "child_boards", "favorites", "child_voice", "child_usage",
             "board", "plan", "support", "settings", "profile",
         ])

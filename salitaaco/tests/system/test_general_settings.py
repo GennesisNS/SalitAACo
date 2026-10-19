@@ -1,9 +1,10 @@
 from django.contrib.messages import get_messages
+from django.core.files.storage import default_storage
 from django.urls import reverse
 
 from salitaaco.forms.system.general_settings import GeneralSettingsForm
 from salitaaco.models.site_setting import SiteSetting
-from salitaaco.tests.users_base import UserBase, make_guardian
+from salitaaco.tests.users_base import UserBase, image_upload, make_guardian
 
 
 def messages_of(response):
@@ -76,6 +77,69 @@ class GeneralSettingsPageTest(SystemBase):
         response = self.client.post(self.url, {"contact_email": "hindi-email", "maintenance_mode": "on"})
         self.assertContains(response, "Hindi tama ang email address.")
         self.assertFalse(SiteSetting.load().maintenance_mode)
+
+
+class GcashSettingsTest(SystemBase):
+    def send(self, **data):
+        return self.client.post(self.url, {"payment_form": "", **data})
+
+    def test_uploading_the_qr_code_and_the_account(self):
+        self.login_as("developer")
+        self.assertContains(self.client.get(self.url), "Wala pang QR code. Hindi pa makakabayad ang mga tagapag-alaga.")
+
+        response = self.send(gcash_qr=image_upload(), gcash_name="Juan D.", gcash_number="0917 000 0000")
+        self.assertRedirects(response, self.url)
+        self.assertEqual(messages_of(response), ["Naka-save na ang bayaran sa GCash."])
+        setting = SiteSetting.load()
+        self.assertTrue(setting.gcash_qr.name.startswith("payment-qr/"))
+        self.assertEqual((setting.gcash_qr_mime, setting.gcash_name, setting.gcash_number),
+                         ("image/png", "Juan D.", "0917 000 0000"))
+        self.assertContains(self.client.get(self.url), f'class="qrPreview" src="{reverse("view_gcash_qr")}?v=')
+
+    def test_saving_without_a_new_picture_keeps_the_old_one_and_a_new_one_replaces_it(self):
+        self.login_as("developer")
+        self.send(gcash_qr=image_upload())
+        first = SiteSetting.load().gcash_qr.name
+
+        self.send(gcash_name="Bagong Pangalan")
+        setting = SiteSetting.load()
+        self.assertEqual((setting.gcash_qr.name, setting.gcash_name), (first, "Bagong Pangalan"))
+
+        self.send(gcash_qr=image_upload("bago.png"))
+        self.assertNotEqual(SiteSetting.load().gcash_qr.name, first)
+        self.assertFalse(default_storage.exists(first))
+
+    def test_removing_the_qr_code(self):
+        self.login_as("developer")
+        self.send(gcash_qr=image_upload())
+        name = SiteSetting.load().gcash_qr.name
+
+        response = self.client.post(self.url, {"remove_gcash_qr": ""})
+        self.assertRedirects(response, self.url)
+        self.assertFalse(SiteSetting.load().has_gcash_qr)
+        self.assertFalse(default_storage.exists(name))
+
+    def test_what_is_not_valid_saves_nothing(self):
+        self.login_as("developer")
+        response = self.send(gcash_qr=image_upload("qr.gif", "GIF", "image/gif"), gcash_number="tawagan mo ako")
+        self.assertContains(response, "JPEG, PNG o WebP lang ang puwedeng larawan.")
+        self.assertContains(response, "Mga numero lang ang puwede sa GCash number.")
+        self.assertFalse(SiteSetting.load().has_gcash_qr)
+
+    def test_saving_the_qr_code_leaves_the_other_settings_alone(self):
+        setting = SiteSetting.load()
+        setting.contact_email = "tulong@halimbawa.ph"
+        setting.save()
+
+        self.login_as("developer")
+        self.send(gcash_qr=image_upload())
+        self.assertEqual(SiteSetting.load().contact_email, "tulong@halimbawa.ph")
+
+    def test_only_admins_set_it(self):
+        self.login_as("nanay")
+        self.assertEqual(self.send(gcash_qr=image_upload()).status_code, 302)
+        self.assertEqual(self.client.post(self.url, {"remove_gcash_qr": ""}).status_code, 302)
+        self.assertFalse(SiteSetting.load().has_gcash_qr)
 
 
 class MaintenanceModeTest(SystemBase):

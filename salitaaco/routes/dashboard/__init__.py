@@ -13,6 +13,7 @@ import salitaaco.routes.children.voice as child_voice
 import salitaaco.routes.family_voices.family_voices as family_voices
 import salitaaco.routes.favorites.favorites as favorites
 import salitaaco.routes.feedback.feedback as feedback
+import salitaaco.routes.guardian_words.guardian_words as guardian_words
 import salitaaco.routes.institutions.institutions as institutions
 import salitaaco.routes.overview.overview as overview
 import salitaaco.routes.plan.plan as plan
@@ -70,11 +71,18 @@ urlpatterns = [
     path('family-voices/<uuid:family_voice_uuid>/delete/', family_voices.remove_family_voice, name='remove_family_voice'),
     path('family-voices/<uuid:family_voice_uuid>/words/<slug:word_slug>.mp3', family_voices.play_family_voice_word, name='play_family_voice_word'),
 
+    # Tiles a guardian on a paid plan adds to their family's boards.
+    path('tiles/', guardian_words.view_guardian_words, name='guardian_words'),
+    path('tiles/<uuid:word_uuid>/delete/', guardian_words.remove_guardian_word, name='remove_guardian_word'),
+    path('tiles/<uuid:word_uuid>/voice/', guardian_words.voice_word, name='voice_guardian_word'),
+
     path('support/', support.view_support, name='support'),
 
-    # A guardian's plan and payments. Frontend only for now: nothing is saved.
+    # A guardian's plan and payments. The proof and the QR code are opened by admins too.
     path('plan/', plan.view_plan, name='plan'),
     path('plan/transactions/', plan.view_transactions, name='plan_transactions'),
+    path('plan/payments/<uuid:payment_uuid>/proof/', plan.view_payment_proof, name='view_payment_proof'),
+    path('plan/gcash-qr/', plan.view_gcash_qr, name='view_gcash_qr'),
 
     # ----- The admin's pages -----
     # The admin dashboard. Its address is from when it was the only admin page.
@@ -108,7 +116,9 @@ urlpatterns = [
     path('system/privacy/', privacy.view_privacy, name='system_privacy'),
     path('system/status/', technical_status.view_technical_status, name='system_status'),
 
-    # The admin's payments to approve and the plans. Frontend only for now: nothing is saved.
+    # The admin's payments to approve, and the plans.
     path('revenue/', revenue.view_revenue, name='revenue'),
+    path('revenue/<uuid:payment_uuid>/approve/', revenue.approve_payment, name='approve_payment'),
+    path('revenue/<uuid:payment_uuid>/reject/', revenue.reject_payment, name='reject_payment'),
     path('subscriptions/', subscriptions.view_subscriptions, name='subscriptions'),
 ]

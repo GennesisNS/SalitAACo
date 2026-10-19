@@ -691,10 +691,14 @@
   margin-top: 14px;
 }
 
-/* Paying: the QR code on one side, what to do with it on the other. */
+/* Paying: the QR code on one side, what to do with it on the other. The QR
+   code is big enough to scan from the screen with a phone. */
+.settingsBox.pay {
+  max-width: 820px;
+}
 .payLayout {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 320px 1fr;
   gap: 24px;
   align-items: start;
 }
@@ -704,39 +708,68 @@
 .qrCode {
   margin: 0;
 }
-.qrCode svg {
+/* A QR code is dark on white whatever the theme, or a phone cannot read it. */
+.qrCode img,
+.qrPreview {
   display: block;
   width: 100%;
   max-width: 220px;
   margin: 0 auto;
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-m);
+  background: #ffffff;
 }
-/* A QR code is dark on white whatever the theme, or a phone cannot read it. */
-.qrPaper {
-  fill: #ffffff;
-  stroke: var(--line-strong);
-  stroke-width: 2;
+.qrPreview {
+  margin: 0 0 12px;
 }
-.qrInk {
-  fill: #0f1e3a;
+.qrCode img {
+  max-width: 320px;
 }
-.qrLabel {
-  fill: #0f1e3a;
-  font-size: 20px;
-  font-weight: 700;
+.qrMissing {
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 48px 12px;
+  border: 2px dashed var(--line-strong);
+  border-radius: var(--radius-m);
+  background: var(--raised);
+  color: var(--sub);
+  font-size: 14px;
 }
-.qrSub {
-  fill: #4a5a78;
-  font-size: 13px;
+.qrMissing span {
+  font-size: 40px;
+}
+.qrMissing p {
+  margin: 8px 0 0;
 }
 .qrCode figcaption {
-  margin-top: 8px;
+  margin-top: 10px;
   color: var(--sub);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+.qrCode figcaption b,
+.qrCode figcaption span {
+  display: block;
+}
+.qrCode figcaption b {
+  color: var(--ink);
+  font-size: 15px;
 }
 .payAmount {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   font-size: 28px;
   font-weight: 700;
+  line-height: 1.2;
+}
+/* Under both columns, just above the buttons. */
+.payNote {
+  margin: 20px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--sub);
+  font-size: 13px;
 }
 .paySteps h3 {
   margin: 0 0 8px;
@@ -758,21 +791,20 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
 }
-/* Where an uploaded proof of payment is shown. */
+/* Where an uploaded proof of payment is shown; it links to the picture at full size. */
 .proofFrame {
-  padding: 36px 20px;
-  border: 2px dashed var(--line-strong);
+  display: block;
+  padding: 8px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-m);
   background: var(--raised);
-  color: var(--sub);
-  font-size: 14px;
   text-align: center;
 }
-.proofFrame span {
-  font-size: 40px;
-}
-.proofFrame p {
-  margin: 8px 0 0;
+.proofFrame img {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  margin: 0 auto;
 }
 @media (max-width: 640px) {
   .payLayout {
@@ -812,7 +844,7 @@
   color: var(--sub);
   font-size: 13px;
 }
-/* Under a control that does nothing yet: says so. */
+/* A notice of something that is waiting or not set up. */
 .pendingNote {
   margin: 12px 0 0;
   padding: 10px 14px;
@@ -822,19 +854,6 @@
   color: var(--warn);
   font-size: 13px;
 }
-/* Development only: turns the made-up payments on and off. */
-.examplesBar {
-  margin: 0 0 16px;
-  padding: 10px 14px;
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-m);
-  color: var(--sub);
-  font-size: 13px;
-}
-.examplesBar b {
-  color: var(--ink);
-}
-
 /* ---------- Help and support ---------- */
 .guide {
   margin-bottom: 8px;

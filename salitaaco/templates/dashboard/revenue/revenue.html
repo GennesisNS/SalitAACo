@@ -1,9 +1,5 @@
 {% extends "layouts/dashboard.html" %}
 {% load static query_string %}
-{% comment %}
-  FRONTEND ONLY FOR NOW: no payment is saved yet, so the list is empty, and the
-  buttons that approve and reject are disabled.
-{% endcomment %}
 
 {% block title %}Kita - SalitAACo{% endblock %}
 
@@ -11,11 +7,10 @@
 
 {% block main %}
 <p class="pageIntro">
-  Bawat patunay ng bayad na in-upload ng tagapag-alaga ay lalabas dito bilang “Naghihintay”. Tingnan ang patunay,
-  saka aprubahan o tanggihan. Kapag naaprubahan, magsisimula ang plano ng tagapag-alaga.
+  Bawat patunay ng bayad na in-upload ng tagapag-alaga ay lalabas dito bilang “Naghihintay”. Tingnan ang patunay at
+  i-check sa GCash na natanggap ang bayad, saka aprubahan o tanggihan. Kapag naaprubahan, magsisimula ang plano ng
+  tagapag-alaga.
 </p>
-
-{% include "components/payments/examples_bar.html" %}
 
 <nav class="pillTabs" aria-label="Status ng bayad">
   {% for tab in tabs %}
@@ -28,7 +23,7 @@
 <section class="section">
   <h2>Mga bayad</h2>
 
-  {% if transactions %}
+  {% if payments %}
   <div class="tableWrap stackTable">
     <table>
       <thead>
@@ -43,24 +38,28 @@
         </tr>
       </thead>
       <tbody>
-        {% for transaction in transactions %}
+        {% for payment in payments %}
         <tr>
-          <td data-label="Petsa">{{ transaction.date|date:"Y-m-d" }}</td>
-          <td data-label="Tagapag-alaga">{{ transaction.guardian }} <span class="badge">@{{ transaction.username }}</span></td>
-          <td data-label="Plano">{{ transaction.plan }}</td>
-          <td data-label="Halaga">₱{{ transaction.amount }}</td>
-          <td data-label="Status">{% include "components/payments/status_badge.html" with status=transaction.status name=transaction.status_name %}</td>
+          <td data-label="Petsa">{{ payment.created_at|date:"Y-m-d H:i" }}</td>
+          <td data-label="Tagapag-alaga">{{ payment.guardian.display_name }} <span class="badge">@{{ payment.guardian.user.username }}</span></td>
+          <td data-label="Plano">{{ payment.plan.name }}</td>
+          <td data-label="Halaga">₱{{ payment.amount }}</td>
+          <td data-label="Status">{% include "components/payments/status_badge.html" with status=payment.status name=payment.get_status_display %}</td>
           <td data-label="Patunay">
-            <button class="secondaryBtn smallBtn" type="button" data-open-modal="proof" data-proof="{{ transaction.guardian }}, ₱{{ transaction.amount }}, {{ transaction.date|date:'Y-m-d' }}">Tingnan</button>
+            <button class="secondaryBtn smallBtn" type="button" data-open-modal="proof"
+              data-proof="{{ payment.guardian.display_name }}, ₱{{ payment.amount }}, {{ payment.created_at|date:'Y-m-d' }}"
+              data-proof-url="{% url 'view_payment_proof' payment.uuid %}">Tingnan</button>
           </td>
           <td>
-            {% if transaction.status == "pending" %}
+            {% if payment.is_pending %}
             <span class="rowActions">
-              <button class="primaryBtn smallBtn" type="button" disabled>Aprubahan</button>
-              <button class="secondaryBtn danger smallBtn" type="button" disabled>Tanggihan</button>
+              <button class="primaryBtn smallBtn" type="button" data-open-modal="approve-{{ payment.uuid }}">Aprubahan</button>
+              <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="reject-{{ payment.uuid }}">Tanggihan</button>
             </span>
+            {% elif payment.is_approved %}
+            <span class="doneNote">Sakop: {{ payment.starts_at|date:"Y-m-d" }} hanggang {{ payment.ends_at|date:"Y-m-d" }}</span>
             {% else %}
-            <span class="doneNote">Tapos na</span>
+            <span class="doneNote">{{ payment.note }}</span>
             {% endif %}
           </td>
         </tr>
@@ -68,13 +67,50 @@
       </tbody>
     </table>
   </div>
-  <p class="pendingNote">Hindi pa gumagana ang “Aprubahan” at “Tanggihan”: disenyo pa lang ito.</p>
   {% else %}
   <p class="emptyState">Walang bayad sa status na ito.</p>
   {% endif %}
+
+  {% include "components/pagination.html" with page_obj=payments page_param="page" %}
 </section>
 
 {% include "components/payments/proof_modal.html" %}
+
+<!-- Approving and rejecting are each asked once more; rejecting asks why, for the guardian. -->
+{% for payment in payments %}
+{% if payment.is_pending %}
+<div class="confirmBackdrop hidden" data-modal="approve-{{ payment.uuid }}">
+  <form class="confirmBox" method="post" action="{% url 'approve_payment' payment.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="?{{ request.GET.urlencode }}" />
+    <h3>Aprubahan ang ₱{{ payment.amount }} ni {{ payment.guardian.display_name }}?</h3>
+    <p>
+      Gawin lang ito kapag natanggap na sa GCash ang bayad. Magiging {{ payment.plan.name }} siya nang isang buwan; kung
+      naka-{{ payment.plan.name }} na siya, idadagdag ito sa dulo ng kasalukuyan niyang buwan.
+    </p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="approve-{{ payment.uuid }}">Huwag muna</button>
+      <button class="primaryBtn" type="submit">Oo, aprubahan</button>
+    </div>
+  </form>
+</div>
+
+<div class="confirmBackdrop hidden" data-modal="reject-{{ payment.uuid }}">
+  <form class="confirmBox settingsFields" method="post" action="{% url 'reject_payment' payment.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="?{{ request.GET.urlencode }}" />
+    <h3>Tanggihan ang ₱{{ payment.amount }} ni {{ payment.guardian.display_name }}?</h3>
+    <label for="rejectNote-{{ payment.uuid }}">{{ reject_form.note.label }}</label>
+    <textarea class="textarea" name="note" id="rejectNote-{{ payment.uuid }}" rows="3" maxlength="300" required
+      placeholder="hal. Malabo ang larawan ng bayad. Pakisubukan muli."></textarea>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="reject-{{ payment.uuid }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, tanggihan</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endfor %}
 {% endblock %}
 
 {% block scripts %}

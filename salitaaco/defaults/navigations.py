@@ -36,6 +36,13 @@ dashboard_items = [
                 "icon": "mic",
                 "roles": [GUARDIAN],
             },
+            {
+                "name": "Sariling Tile",
+                "id": "guardian_words",
+                "route": "guardian_words",
+                "icon": "type",
+                "roles": [GUARDIAN],
+            },
         ],
     },
     {

@@ -8,12 +8,15 @@ from django.utils import timezone
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
 from salitaaco.defaults.family_voice import PREVIEW_WORD, TERMS_VERSION, WORDS_PER_REQUEST
+from salitaaco.defaults.plans import FREE_FAMILY_VOICE_LIMIT
 from salitaaco.forms.family_voices.add_family_voice import AddFamilyVoiceForm
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.family_voice import FamilyVoice
+from salitaaco.tests.payments_base import make_payment
 from salitaaco.tests.users_base import UserBase, make_guardian, sound_upload
 from salitaaco.utils.account import delete_user_account
 from salitaaco.utils.family_voice import family_voice_directory, family_voice_progress
+from salitaaco.utils.plans import approve_payment
 from salitaaco.utils.tile_audio import tile_audio_file_name, tile_word_slug, tile_words
 
 ELEVENLABS = "salitaaco.utils.family_voice.ElevenLabs"
@@ -152,6 +155,68 @@ class AddFamilyVoiceTest(FamilyVoiceBase):
         voice = FamilyVoice.objects.get()
         self.assertFalse(family_voice_directory(voice).exists())
         self.assertFalse(any(field.name == "sample" for field in FamilyVoice._meta.get_fields()))
+
+
+class FamilyVoiceLimitTest(FamilyVoiceBase):
+    def add(self):
+        return self.client.post(reverse("family_voices"), {"name": "Tito", "consent": "on", "sample": sound_upload()})
+
+    def test_on_free_the_page_says_how_many_are_allowed(self):
+        self.make_voice(name="Lola")
+        self.login_as("nanay")
+        response = self.client.get(reverse("family_voices"))
+        self.assertEqual((response.context["family_voice_limit"], response.context["at_family_voice_limit"]), (FREE_FAMILY_VOICE_LIMIT, False))
+        self.assertContains(response, "hanggang 2 boses ng pamilya ang puwede (1 na ang nagawa")
+        self.assertContains(response, 'data-open-modal="add-family-voice"')
+
+    def test_on_free_a_third_voice_is_refused_before_elevenlabs_is_asked(self):
+        self.make_voice(name="Lola")
+        self.make_voice(name="Lolo")
+        self.login_as("nanay")
+
+        response = self.client.get(reverse("family_voices"))
+        self.assertContains(response, "Naabot mo na ang <b>2 boses</b> ng libreng plano.")
+        self.assertContains(response, f'<a class="primaryBtn" href="{reverse("plan")}">Kunin ang Plus para makapagdagdag</a>')
+        self.assertNotContains(response, 'data-open-modal="add-family-voice"')
+        self.assertNotContains(response, 'data-modal="add-family-voice"')
+
+        response = self.add()
+        self.assertRedirects(response, reverse("family_voices"))
+        self.assertEqual(messages_of(response), ["Hanggang 2 boses lang sa libreng plano. Kunin ang Plus para makapagdagdag pa."])
+        self.elevenlabs.add_voice.assert_not_called()
+        self.assertEqual(FamilyVoice.objects.filter(guardian=self.nanay).count(), 2)
+
+    def test_on_plus_there_is_no_limit(self):
+        self.make_voice(name="Lola")
+        self.make_voice(name="Lolo")
+        approve_payment(make_payment(self.nanay), self.developer)
+        self.login_as("nanay")
+
+        response = self.client.get(reverse("family_voices"))
+        self.assertIsNone(response.context["family_voice_limit"])
+        self.assertNotContains(response, "libreng plano")
+
+        self.assertRedirects(self.add(), reverse("family_voices"))
+        self.assertEqual(FamilyVoice.objects.filter(guardian=self.nanay).count(), 3)
+
+    def test_voices_made_on_plus_stay_when_it_ends(self):
+        for name in ["Lola", "Lolo", "Tita"]:
+            self.make_voice(name=name)
+        self.login_as("nanay")
+
+        response = self.client.get(reverse("family_voices"))
+        self.assertEqual(len(response.context["voices"]), 3)
+        self.assertTrue(response.context["at_family_voice_limit"])
+        # The voices stay, to hear and to delete: only adding is closed.
+        self.assertContains(response, 'data-open-modal="delete-voice-', count=3)
+        self.assertContains(response, "▶ Subukan", count=3)
+
+    def test_the_limit_is_each_guardians_own(self):
+        self.make_voice(name="Lola")
+        self.make_voice(name="Lolo")
+        self.login_as("tatay")
+        self.assertRedirects(self.add(), reverse("family_voices"))
+        self.assertEqual(FamilyVoice.objects.filter(guardian=self.tatay).count(), 1)
 
 
 class GenerateWordsTest(FamilyVoiceBase):
@@ -393,7 +458,7 @@ class BoardUsesTheFamilyVoiceTest(FamilyVoiceBase):
         shared = {"opo": "/static/audio/text-to-speech/opo.mp3?v=1", "ako": "/static/audio/text-to-speech/ako.mp3?v=1"}
 
         # A fresh dict per call, as the real tile_audio_urls() returns.
-        with mock.patch("salitaaco.routes.board.board.tile_audio_urls", side_effect=lambda: dict(shared)):
+        with mock.patch("salitaaco.routes.board.board.tile_audio_urls", side_effect=lambda extra_words=(): dict(shared)):
             self.login_as("miguel")
             miguel_audio = self.client.get(reverse("board")).context["board_data"]["tile_audio"]
             self.login_as("ana")

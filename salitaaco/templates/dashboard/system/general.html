@@ -3,6 +3,7 @@
 {% block title %}General - SalitAACo{% endblock %}
 
 {% block heading %}System Settings: General{% endblock %}
+{% comment %}Four forms, told apart by the name of the button that sent them (see routes/system/general.py).{% endcomment %}
 
 {% block main %}
 {% if setting.maintenance_mode %}
@@ -48,6 +49,66 @@
     <small class="fieldError">{{ settings_form.maintenance_message.errors }}</small>
 
     <button class="primaryBtn formActions" type="submit" name="settings_form">I-save ang mga setting</button>
+  </form>
+</section>
+
+<section class="section" id="gcash">
+  <form method="post" enctype="multipart/form-data" class="narrowForm settingsFields" novalidate>
+    {% csrf_token %}
+
+    <h2>Bayaran sa GCash</h2>
+    <p class="desc">
+      Ito ang QR code na ii-scan ng mga tagapag-alaga sa “Plano at Subscription” para magbayad. Habang walang QR code,
+      hindi sila makakapagpadala ng bayad.
+    </p>
+
+    {% if setting.has_gcash_qr %}
+    <img class="qrPreview" src="{% url 'view_gcash_qr' %}?v={{ setting.updated_at|date:'U' }}" alt="Ang kasalukuyang GCash QR code" />
+    {% else %}
+    <p class="pendingNote">Wala pang QR code. Hindi pa makakabayad ang mga tagapag-alaga.</p>
+    {% endif %}
+
+    <label for="{{ payment_form.gcash_qr.id_for_label }}">{% if setting.has_gcash_qr %}Palitan ang QR code (opsiyonal){% else %}{{ payment_form.gcash_qr.label }}{% endif %}</label>
+    {{ payment_form.gcash_qr }}
+    <small class="fieldHelp">JPEG, PNG o WebP, hanggang 5 MB. I-download ang QR code mula sa GCash app (Receive › QR).</small>
+    <small class="fieldError">{{ payment_form.gcash_qr.errors }}</small>
+
+    <label for="{{ payment_form.gcash_name.id_for_label }}">{{ payment_form.gcash_name.label }}</label>
+    {{ payment_form.gcash_name }}
+    <small class="fieldError">{{ payment_form.gcash_name.errors }}</small>
+
+    <label for="{{ payment_form.gcash_number.id_for_label }}">{{ payment_form.gcash_number.label }}</label>
+    {{ payment_form.gcash_number }}
+    <small class="fieldHelp">Ipinapakita sa ilalim ng QR code, para ma-check ng tagapag-alaga kung kanino siya nagbabayad.</small>
+    <small class="fieldError">{{ payment_form.gcash_number.errors }}</small>
+
+    <button class="primaryBtn formActions" type="submit" name="payment_form">I-save ang bayaran sa GCash</button>
+  </form>
+
+  {% if setting.has_gcash_qr %}
+  <form method="post" class="inlineForm narrowForm">
+    {% csrf_token %}
+    <button class="secondaryBtn danger" type="submit" name="remove_gcash_qr">Alisin ang QR code</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="section" id="plus">
+  <form method="post" class="narrowForm settingsFields" novalidate>
+    {% csrf_token %}
+
+    <h2>SalitAACo Plus</h2>
+    <p class="desc">
+      Ang mga tagapag-alagang naka-Plus ay puwedeng magdagdag ng sarili nilang tile sa mga board ng pamilya nila. Hindi
+      binubura ang mga tile na lampas na sa bagong bilang, pero hindi na makakapagdagdag hangga't hindi bumababa rito.
+    </p>
+
+    <label for="{{ plus_form.guardian_word_limit.id_for_label }}">{{ plus_form.guardian_word_limit.label }}</label>
+    {{ plus_form.guardian_word_limit }}
+    <small class="fieldHelp">{{ plus_form.guardian_word_limit.help_text }}</small>
+    <small class="fieldError">{{ plus_form.guardian_word_limit.errors }}</small>
+
+    <button class="primaryBtn formActions" type="submit" name="plus_form">I-save ang mga setting ng Plus</button>
   </form>
 </section>
 {% endblock %}

@@ -1,12 +1,12 @@
 from pathlib import Path
-from unittest import mock
 
 from django.apps import apps
 from django.contrib.staticfiles import finders
 from django.test import TestCase
 from django.urls import resolve, reverse
 
-from salitaaco.defaults.plans import PLANS
+from salitaaco.defaults.plans import FREE, PLUS
+from salitaaco.models.plan import Plan
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.tests.users_base import UserBase, make_guardian
 
@@ -42,26 +42,23 @@ class PublicHomeTest(TestCase):
 
     def test_the_plans_are_the_plan_data_not_words_in_the_page(self):
         response = self.client.get("/")
-        self.assertEqual([plan["name"] for plan in response.context["plans"]], ["Free", "SalitAACo Plus"])
+        self.assertEqual([plan.name for plan in response.context["plans"]], ["Free", "SalitAACo Plus"])
         for text in ["₱0", "₱149", "habambuhay", "kada buwan", "Boses ng pamilya (family voice banking)"]:
             self.assertContains(response, text)
 
         # Change the data, and the page changes with it.
-        changed = [
-            {**PLANS[0], "offered": False},
-            {**PLANS[1], "name": "SalitAACo Pamilya", "price": 199, "features": ["Lahat ng nasa Free", "Bagong kasama"]},
-        ]
-        with mock.patch("salitaaco.utils.plans.PLANS", changed):
-            response = self.client.get("/")
-        self.assertEqual([plan["name"] for plan in response.context["plans"]], ["SalitAACo Pamilya"])
+        Plan.objects.filter(key=FREE).update(offered=False)
+        Plan.objects.filter(key=PLUS).update(name="SalitAACo Pamilya", price=199, features="Lahat ng nasa Free\nBagong kasama")
+        response = self.client.get("/")
+        self.assertEqual([plan.name for plan in response.context["plans"]], ["SalitAACo Pamilya"])
         self.assertContains(response, "₱199")
         self.assertContains(response, "Bagong kasama")
         for gone in ["₱149", "₱0", "SalitAACo Plus", "habambuhay"]:
             self.assertNotContains(response, gone)
 
     def test_with_no_plan_offered_the_page_says_so(self):
-        with mock.patch("salitaaco.utils.plans.PLANS", []):
-            response = self.client.get("/")
+        Plan.objects.update(offered=False)
+        response = self.client.get("/")
         self.assertContains(response, "Inaayos pa ang mga plano.")
 
     def test_the_footer_shows_the_contact_details_an_admin_set(self):

@@ -1,16 +1,33 @@
 """
-The admin's list of payments: each proof of payment a guardian uploaded, to approve or reject.
-
-FRONTEND ONLY FOR NOW: nothing is saved yet, so the list is empty and the
-buttons that approve and reject are shown disabled.
+The admin's list of payments: each picture of a GCash payment a guardian
+uploaded, to approve or reject. Approving one puts the guardian on the plan
+(see utils/plans.py); rejecting one tells the guardian why.
 """
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+import logging
 
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from salitaaco.forms.revenue.reject_payment import RejectPaymentForm
 from salitaaco.forms.revenue.transaction_status import TransactionStatusForm
+from salitaaco.models.payment import Payment
 from salitaaco.utils.active_nav import active_nav
+from salitaaco.utils.pagination import paginate
 from salitaaco.utils.perms_check import is_administrator, multi_user_test
-from salitaaco.utils.plans import examples_can_be_shown, examples_requested, transactions
+from salitaaco.utils.plans import approve_payment as approve, reject_payment as reject
+
+logger = logging.getLogger(__name__)
+
+
+def back_to_list(request):
+    """The list again, on the tab and page the admin was on."""
+    response = redirect('revenue')
+    if request.POST.get("next", "").startswith("?"):
+        response["Location"] += request.POST["next"]
+    return response
 
 
 @active_nav("revenue")
@@ -19,21 +36,51 @@ from salitaaco.utils.plans import examples_can_be_shown, examples_requested, tra
 def view_revenue(request):
     status_form = TransactionStatusForm(request.GET or None)
     status = status_form.chosen()
-    every_transaction = transactions(request)
+
+    payments = Payment.objects.select_related("guardian__user", "plan")
+    counts = dict(payments.values_list("status").annotate(count=Count("payment_id")).order_by())
 
     context = {
-        "transactions": [row for row in every_transaction if not status or row["status"] == status],
+        "payments": paginate(payments.filter(status=status) if status else payments, request.GET.get("page", 1)),
         # Each status as a tab, with how many payments it holds.
         "tabs": [
             {
                 "value": value,
                 "label": label,
-                "count": sum(1 for row in every_transaction if not value or row["status"] == value),
+                "count": counts.get(value, 0) if value else sum(counts.values()),
                 "active": value == status,
             }
             for value, label in status_form.fields["status"].choices
         ],
-        "examples_can_be_shown": examples_can_be_shown(),
-        "showing_examples": examples_requested(request),
+        "reject_form": RejectPaymentForm(),
     }
     return render(request, 'dashboard/revenue/revenue.html', context)
+
+
+@login_required(login_url='/login/')
+@multi_user_test(is_administrator)
+@require_POST
+def approve_payment(request, payment_uuid):
+    payment = get_object_or_404(Payment.objects.select_related("guardian", "plan"), uuid=payment_uuid)
+    if approve(payment, request.user):
+        logger.info("Admin %s approved payment %s of %s", request.user.username, payment.uuid, payment.guardian)
+        messages.success(request, f"Naaprubahan na. Naka-{payment.plan.name} na si {payment.guardian.display_name}.")
+    else:
+        messages.error(request, "Hindi na naghihintay ang bayad na ito.")
+    return back_to_list(request)
+
+
+@login_required(login_url='/login/')
+@multi_user_test(is_administrator)
+@require_POST
+def reject_payment(request, payment_uuid):
+    payment = get_object_or_404(Payment.objects.select_related("guardian"), uuid=payment_uuid)
+    reject_form = RejectPaymentForm(request.POST)
+    if not reject_form.is_valid():
+        messages.error(request, " ".join(reject_form.errors["note"]))
+    elif reject(payment, request.user, reject_form.cleaned_data["note"]):
+        logger.info("Admin %s rejected payment %s of %s", request.user.username, payment.uuid, payment.guardian)
+        messages.success(request, f"Tinanggihan ang bayad ni {payment.guardian.display_name}.")
+    else:
+        messages.error(request, "Hindi na naghihintay ang bayad na ito.")
+    return back_to_list(request)

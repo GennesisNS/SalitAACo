@@ -119,7 +119,7 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | What changes to the vocabulary are | `defaults/vocabulary.py` is never edited. Hidden boards, added words, a child's boards and favorites are database rows on top of it |
 | Account status | Active or inactive only (`User.is_active`). There is no "pending": guardians sign up freely |
 | Language modes (English, Taglish) | Not built: the feature has not been decided |
-| Subscriptions and payments | Frontend only for now: the pages show the design and save nothing. Payment is by QR code and an uploaded proof, with no payment gateway |
+| Subscriptions and payments | Payment is by GCash QR code and an uploaded proof, with no payment gateway. An admin approves or rejects each one; an approved one gives one month of the plan, added to the end of any month still running. A paid plan unlocks more than 2 family voices, and tiles of the guardian's own on their family's boards, up to a limit an admin sets |
 | Audit log | Not built, in keeping with the decision below against an audit trail |
 | New boards | Admins publish, hide and add words to the existing boards; they do not create boards |
 | Reports | CSV only |
@@ -144,7 +144,8 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Which voice a child hears | `voice.choose_child_voice` | `child_voice` `children/<uuid>/voice/` | `ChooseFamilyVoiceForm` | `dashboard/children/voice.html` |
 | A child's usage, by 7 days, 30 days or all time | `usage.view_child_usage` | `child_usage` `children/<uuid>/usage/` | `UsageRangeForm` | `dashboard/children/usage.html` |
 | Family voices, with consent as a step before recording | `family_voices.view_family_voices` | `family_voices` `family-voices/` | `AddFamilyVoiceForm` | `dashboard/family_voices/family_voices.html` |
-| Plans, paying by QR code, history of payments *(frontend only)* | `plan.view_plan`, `plan.view_transactions` | `plan` `plan/`, `plan_transactions` `plan/transactions/` | | `dashboard/plan/` |
+| Plans, paying by GCash QR code, history of payments | `plan.view_plan`, `plan.view_transactions`, `plan.view_payment_proof`, `plan.view_gcash_qr` | `plan` `plan/`, `plan_transactions` `plan/transactions/`, `view_payment_proof` `plan/payments/<uuid>/proof/`, `view_gcash_qr` `plan/gcash-qr/` | `PaymentProofForm` | `dashboard/plan/` |
+| Sariling Tile: a Plus guardian's own tiles on their family's boards | `guardian_words.view_guardian_words`, `guardian_words.remove_guardian_word` | `guardian_words` `tiles/`, `remove_guardian_word` `tiles/<uuid>/delete/` | `GuardianWordForm` | `dashboard/guardian_words/guardian_words.html` |
 | Guides, and writing to support | `support.view_support` | `support` `support/` | `ContactSupportForm` | `dashboard/support/support.html` |
 
 ### Admin
@@ -157,10 +158,10 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Boards: publish or hide (at least one stays published) | `boards.view_admin_boards`, `boards.set_board_status` | `admin_boards` `vocabulary/boards/`, `set_board_status` `vocabulary/boards/status/` | `SetBoardStatusForm` | `dashboard/vocabulary/boards.html` |
 | Words: list, add, edit, delete | `words.view_words`, `words.edit_word`, `words.delete_word` | `words` `vocabulary/words/`, `edit_word` `…/<uuid>/`, `delete_word` `…/<uuid>/delete/` | `SearchWordForm`, `WordForm` | `dashboard/vocabulary/words.html`, `word.html` |
 | Institutions *(may be removed)* | `institutions.view_institutions`, `edit_institution`, `delete_institution` | `institutions` `institutions/`, `edit_institution` `…/<uuid>/`, `delete_institution` `…/<uuid>/delete/` | `InstitutionForm` | `dashboard/institutions/` |
-| Payments to approve *(frontend only)* | `revenue.view_revenue` | `revenue` `revenue/` | `TransactionStatusForm` | `dashboard/revenue/revenue.html` |
-| Subscriptions and plans *(frontend only)* | `subscriptions.view_subscriptions` | `subscriptions` `subscriptions/` | | `dashboard/subscriptions/subscriptions.html` |
+| Payments to approve or reject | `revenue.view_revenue`, `revenue.approve_payment`, `revenue.reject_payment` | `revenue` `revenue/`, `approve_payment` `revenue/<uuid>/approve/`, `reject_payment` `revenue/<uuid>/reject/` | `TransactionStatusForm`, `RejectPaymentForm` | `dashboard/revenue/revenue.html` |
+| Subscriptions, and editing the plans | `subscriptions.view_subscriptions` | `subscriptions` `subscriptions/` | `PlanForm` | `dashboard/subscriptions/subscriptions.html` |
 | Support messages and ratings *(may be removed)* | `feedback.view_feedback`, `feedback.resolve_support_message` | `feedback` `feedback/`, `resolve_support_message` `feedback/messages/<uuid>/resolve/` | | `dashboard/feedback/feedback.html` |
-| System Settings: General (support contact, maintenance mode) | `general.view_general_settings` | `system_general` `system/general/` | `GeneralSettingsForm` | `dashboard/system/general.html` |
+| System Settings: General (support contact, maintenance mode, GCash QR code, the Plus tile limit) | `general.view_general_settings` | `system_general` `system/general/` | `GeneralSettingsForm`, `PaymentSettingsForm`, `PlusSettingsForm` | `dashboard/system/general.html` |
 | System Settings: Access control | `access.view_access_control`, `access.remove_admin` | `system_access` `system/access/`, `remove_admin` `system/access/<id>/remove/` | `AddAdminForm`, `RemoveAdminForm` | `dashboard/system/access.html` |
 | System Settings: Privacy *(may be removed)* | `privacy.view_privacy` | `system_privacy` `system/privacy/` | `PurgeUsageForm` | `dashboard/privacy/privacy.html` |
 | System Settings: Technical status *(may be removed)* | `technical_status.view_technical_status` | `system_status` `system/status/` | | `dashboard/technical_status/technical_status.html` |
@@ -171,7 +172,7 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | --- | --- | --- | --- |
 | Hero with "Magsimula" to sign-up, what the app does, About Us, plans, footer | `public.views.view_home` | `index` `/` | `public/templates/public/home.html` |
 
-It is its own app in the top-level `public/` folder. The project lists it in `INSTALLED_APPS` and includes its URLs; the plans it shows are the same plan data the admin and guardian pages read.
+It is its own app in the top-level `public/` folder. The project lists it in `INSTALLED_APPS` and includes its URLs; the plans it shows are the same `Plan` rows the admin and guardian pages read.
 
 ### Models added
 
@@ -183,8 +184,11 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 | `SupportMessage` | What a guardian wrote to support, and when an admin marked it as dealt with |
 | `BoardStatus` | Whether an admin has hidden a board from everyone |
 | `AddedWord` | A word an admin added to a board |
-| `SiteSetting` | The one row of site settings: support contact details, maintenance mode |
+| `SiteSetting` | The one row of site settings: support contact details, maintenance mode, the GCash QR code and account |
 | `Institution` | The admin's record of a school or centre *(belongs to a page that may be removed)* |
+| `Plan` | A plan guardians can be on, as an admin edited it. Seeded with Free and SalitAACo Plus |
+| `Payment` | A guardian's proof of a GCash payment, its status, and once approved the time on the plan it bought |
+| `GuardianWord` | A tile a guardian on a paid plan added to a board, shown on their family's boards |
 
 ### Rules
 
@@ -196,6 +200,7 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 - No two tiles say the same thing: an added word cannot repeat a word, or the audio file name, of another tile.
 - Family voices ask for consent as a step of its own before anything can be recorded.
 - In maintenance mode everyone but admins gets the maintenance page, children included.
+- A guardian has at most one payment waiting for an admin, and cannot send one while no GCash QR code is set. Only the guardian who sent a proof of payment and admins can open it.
 - Admins see counts of what is used, never the sentences built on a board; reports hold no names or usernames.
 
 Kept from the PHP application against the MYO conventions, because behaviour wins:
@@ -212,5 +217,5 @@ Kept from the PHP application against the MYO conventions, because behaviour win
 - The redesigned pages were driven in a real browser (Edge) at desktop, tablet and phone width, in the light and dark themes, picking and resetting a tile's picture included. Not exercised: playing a sentence aloud, recording a sound, and cloning a family voice with a real ElevenLabs key.
 - The pages have not been tried on an actual tablet, the main device for the board.
 - The migrations were run on SQLite only. They use no database-specific SQL, but have not been run against MySQL.
-- Subscriptions and payments have no backend yet, so nothing about them is tested beyond the pages opening and their controls being disabled.
+- Paying has not been tried with a real GCash QR code and payment, or in a browser; it is covered by the test suite only.
 - The contrast of text was checked by calculation for the palette's colour pairs, not with an accessibility tool on every page.

@@ -40,14 +40,20 @@ def tile_audio_directory():
     return settings.BASE_DIR / "static" / TILE_AUDIO_FOLDER
 
 
-def tile_audio_urls():
+def tile_audio_path(word):
+    """Where the shared voice's audio of a word is, made or not."""
+    return tile_audio_directory() / tile_audio_file_name(word)
+
+
+def tile_audio_urls(extra_words=()):
     """
-    {word: url} for every tile word whose shared-voice audio has been generated.
+    {word: url} for every tile word whose shared-voice audio has been generated,
+    and for `extra_words`: words a board shows beyond the vocabulary, a guardian's own tiles.
     The URL changes when a file is generated again, so browsers fetch the new one.
     """
     directory = tile_audio_directory()
     urls = {}
-    for word in tile_words():
+    for word in dict.fromkeys(tile_words() + list(extra_words)):
         file_name = tile_audio_file_name(word)
         path = directory / file_name
         if path.exists():

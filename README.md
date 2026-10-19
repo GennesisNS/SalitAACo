@@ -100,7 +100,8 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `children/<uuid>/voice/` | Boses: which voice the child hears | The child's guardian |
 | `children/<uuid>/usage/` | Paggamit: boards opened and words tapped, by 7 days, 30 days or all time | The child's guardian |
 | `family-voices/` | Boses ng Pamilya: family members' cloned voices | Guardians |
-| `plan/`, `plan/transactions/` | Plano at Subscription and the history of payments *(frontend only, see [Plans and payments](#plans-and-payments))* | Guardians |
+| `plan/`, `plan/transactions/` | Plano at Subscription: paying by GCash QR code, and the history of payments (see [Plans and payments](#plans-and-payments)) | Guardians |
+| `tiles/` | Sariling Tile: tiles a guardian on Plus adds to their family's boards | Guardians |
 | `support/` | Tulong at Suporta: guides, and a form for writing to the admins | Guardians |
 | `analytics/` | Admin dashboard | Admins |
 | `reports/`, `reports/export/` | Analytics at Ulat, and its CSV reports | Admins |
@@ -108,9 +109,9 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `vocabulary/boards/` | Mga Board: publish a board or hide it from everyone | Admins |
 | `vocabulary/words/` | Mga Salita at Simbolo: every word, and adding words to boards | Admins |
 | `institutions/` | Mga Paaralan at Institusyon *(may be removed)* | Admins |
-| `revenue/`, `subscriptions/` | Kita and Mga Subscription *(frontend only)* | Admins |
+| `revenue/`, `subscriptions/` | Kita: approve or reject payments. Mga Subscription: guardians per plan, and editing the plans | Admins |
 | `feedback/` | Feedback at mga Isyu: support messages and ratings *(may be removed)* | Admins |
-| `system/general/` | Support contact details, maintenance mode | Admins |
+| `system/general/` | Support contact details, maintenance mode, the GCash QR code, how many tiles a Plus guardian can add | Admins |
 | `system/access/` | Who is an admin | Admins |
 | `system/privacy/` | What is kept, consent versions, deleting old usage counts *(may be removed)* | Admins |
 | `system/status/` | Health checks and the latest log errors *(may be removed)* | Admins |
@@ -248,13 +249,20 @@ Language modes (English and Taglish labels) are not built: the feature has not b
 
 ## Plans and payments
 
-**These pages are frontend only for now.** They show the design; nothing is saved.
+Paying is by GCash QR code, with no payment gateway: the guardian scans the code, pays, and uploads a screenshot of the successful payment. An admin checks GCash and approves or rejects it.
 
-- The plans (Free at ₱0, SalitAACo Plus at ₱149 a month) are in `salitaaco/defaults/plans.py`. The guardian's Plano at Subscription page, the admin's Mga Subscription page and the public website all read them from there, so they will follow the database once plans are stored in it.
-- Paying is by QR code: the guardian scans it, pays, and uploads a picture of the successful payment. The page shows a labelled stand-in for the QR code, and the button that sends the picture is disabled.
-- With no payments saved, the lists of payments are empty. To look at the design of a full table during development, open the page with `?halimbawa=1`: it shows made-up payments from `defaults/payment_examples.py` under a notice saying so. This works only while `DJANGO_DEBUG` is on.
+- **The plans** are `Plan` rows. Migration 0017 made Free (₱0) and SalitAACo Plus (₱149 a month). An admin edits their name, price, features and whether they are offered on **Mga Subscription**; Free is always free and always offered. The guardian's Plano at Subscription page and the public website read the same rows.
+- **The QR code** is set on **System Settings › General** under “Bayaran sa GCash”, with the account's name and number. Until one is uploaded, guardians cannot send a payment.
+- **A payment** (`Payment`) starts as Naghihintay. A guardian has at most one waiting at a time. The picture is a private upload, opened only through a logged-in view by the guardian who sent it and by admins.
+- **Approving** on the **Kita** page puts the guardian on the plan for one month. A payment approved while the guardian is still on the plan adds its month to the end, so paying early loses nothing. When the months run out, the guardian is back on Free. **Rejecting** asks for a reason, which the guardian sees in their payment history.
+- A guardian's plan is worked out from their approved payments (`utils/plans.py`); there is no separate subscription record.
 
-Still to build: plan and payment models, saving the proof of payment as a private upload, approving and rejecting, starting the plan on approval, and editing plans.
+What Plus unlocks:
+
+- **More than 2 family voices** (`FREE_FAMILY_VOICE_LIMIT` in `defaults/plans.py`). A guardian on Free with 2 voices is told to get Plus to add more. Voices made while on Plus stay when it ends; only adding stops.
+- **Sariling Tile**: the guardian adds tiles (a word and an emoji, on a board they pick), shown on their own board and on every one of their children's. How many a guardian can have, across all the boards, is set on System Settings › General under “SalitAACo Plus” (20 to start). When Plus ends the tiles are hidden but kept, and come back on renewal. A new tile is voiced with ElevenLabs right away: in the shared voice (`ELEVENLABS_VOICE_ID`, saved next to the other tiles' audio in `static/audio/text-to-speech/`) and in each of the guardian's family voices. If ElevenLabs refuses, the tile speaks in the device's voice and the page offers “Gawin ang boses” to try again; family voices also fill in missing words when the Boses ng Pamilya page is opened. On a server that serves static files from `STATIC_ROOT`, run `collectstatic` (or serve `static/audio/text-to-speech/` directly) so new tiles' audio is reachable.
+
+Every other feature is open to every guardian.
 
 ## Maintenance mode
 

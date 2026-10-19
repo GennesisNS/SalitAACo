@@ -1,42 +1,132 @@
-from django.conf import settings
+import calendar
 
-from salitaaco.defaults.payment_examples import EXAMPLE_TRANSACTIONS
-from salitaaco.defaults.plans import DEFAULT_PLAN, PAYMENT_STATUSES, PLANS
+from django.db import transaction
+from django.db.models import Count, Max, Sum
+from django.utils import timezone
 
-EXAMPLE_PARAMETER = "halimbawa"
+from salitaaco.defaults.plans import APPROVED, DEFAULT_PLAN, FREE_FAMILY_VOICE_LIMIT, PAID_MONTHS, PENDING, REJECTED
+from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.models.payment import Payment
+from salitaaco.models.plan import Plan
 
 
 def offered_plans():
-    """The plans guardians can choose from."""
-    return [plan for plan in PLANS if plan["offered"]]
+    """The plans guardians can choose from, in their order."""
+    return Plan.objects.filter(offered=True)
+
+
+def default_plan():
+    return Plan.objects.get(key=DEFAULT_PLAN)
+
+
+def add_months(moment, months):
+    """
+    The same day and time `months` later. On a shorter month it is that
+    month's last day: a month after 31 January is 28 (or 29) February.
+    """
+    moment = timezone.localtime(moment)
+    month_index = moment.month - 1 + months
+    year = moment.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(moment.day, calendar.monthrange(year, month)[1])
+    return moment.replace(year=year, month=month, day=day)
+
+
+def active_payment(guardian):
+    """The approved payment that has the guardian on a paid plan right now, or None."""
+    now = timezone.now()
+    return (
+        Payment.objects.filter(guardian=guardian, status=APPROVED, starts_at__lte=now, ends_at__gt=now)
+        .select_related("plan")
+        .order_by("starts_at")
+        .first()
+    )
 
 
 def current_plan(guardian):
+    """The plan a guardian is on: the one their payment covers right now, or the default plan."""
+    payment = active_payment(guardian)
+    return payment.plan if payment else default_plan()
+
+
+def family_voice_limit(guardian):
+    """How many family voices the guardian can have: a few on a free plan, None (no limit) on a paid one."""
+    return FREE_FAMILY_VOICE_LIMIT if current_plan(guardian).is_free else None
+
+
+def paid_until(guardian):
     """
-    The plan a guardian is on. Nothing is saved about subscriptions yet, so it
-    is the free plan for everyone; this is where the real answer will come from.
+    When the guardian's paid time ends, counting payments approved ahead of
+    time; None when they have no paid time left.
     """
-    return next(plan for plan in PLANS if plan["key"] == DEFAULT_PLAN)
+    return Payment.objects.filter(
+        guardian=guardian, status=APPROVED, ends_at__gt=timezone.now(),
+    ).aggregate(end=Max("ends_at"))["end"]
 
 
-def examples_can_be_shown():
-    """Made-up payments are for looking at the design during development, never on a live site."""
-    return settings.DEBUG
+def pending_payment(guardian):
+    """The guardian's payment still waiting for an admin, or None. A guardian has at most one."""
+    return Payment.objects.filter(guardian=guardian, status=PENDING).select_related("plan").first()
 
 
-def examples_requested(request):
-    return examples_can_be_shown() and request.GET.get(EXAMPLE_PARAMETER) == "1"
-
-
-def transactions(request, status=None):
+def approve_payment(payment, admin_user):
     """
-    The payments a payment page lists, newest first, each with its status's
-    name. No payment is saved yet, so the list is empty unless the made-up
-    examples were asked for.
+    Approve a pending payment. Its months start now, or, when the guardian
+    still has paid time, where that time ends, so paying early loses nothing.
+    Returns False, changing nothing, when the payment is no longer pending.
     """
-    names = dict(PAYMENT_STATUSES)
-    rows = [
-        {**row, "status_name": names[row["status"]]}
-        for row in (EXAMPLE_TRANSACTIONS if examples_requested(request) else [])
-    ]
-    return [row for row in rows if status is None or row["status"] == status]
+    with transaction.atomic():
+        # Lock the guardian, so that two approvals at once cannot both start from the same end.
+        GuardianAccount.objects.select_for_update().get(pk=payment.guardian_id)
+        payment = Payment.objects.select_for_update().get(pk=payment.pk)
+        if not payment.is_pending:
+            return False
+
+        now = timezone.now()
+        starts_at = max(now, paid_until(payment.guardian) or now)
+        payment.status = APPROVED
+        payment.reviewed_at = now
+        payment.reviewed_by = admin_user
+        payment.starts_at = starts_at
+        payment.ends_at = add_months(starts_at, PAID_MONTHS)
+        payment.save()
+    return True
+
+
+def reject_payment(payment, admin_user, note):
+    """
+    Reject a pending payment, with the reason the guardian is shown. Returns
+    False, changing nothing, when the payment is no longer pending.
+    """
+    with transaction.atomic():
+        payment = Payment.objects.select_for_update().get(pk=payment.pk)
+        if not payment.is_pending:
+            return False
+
+        payment.status = REJECTED
+        payment.note = note
+        payment.reviewed_at = timezone.now()
+        payment.reviewed_by = admin_user
+        payment.save()
+    return True
+
+
+def subscriber_counts():
+    """How many guardians are on each plan right now, by plan key."""
+    now = timezone.now()
+    paying = (
+        Payment.objects.filter(status=APPROVED, starts_at__lte=now, ends_at__gt=now)
+        .values("plan__key")
+        .annotate(guardians=Count("guardian", distinct=True))
+    )
+    counts = {row["plan__key"]: row["guardians"] for row in paying}
+    counts[DEFAULT_PLAN] = GuardianAccount.objects.count() - sum(counts.values())
+    return counts
+
+
+def revenue_this_month():
+    """The pesos of the payments approved since the start of this month."""
+    month_start = timezone.localtime().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    return Payment.objects.filter(
+        status=APPROVED, reviewed_at__gte=month_start,
+    ).aggregate(total=Sum("amount"))["total"] or 0

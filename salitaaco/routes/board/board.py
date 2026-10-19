@@ -18,6 +18,7 @@ from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.board import boards, extra_board_data, quick_words
 from salitaaco.utils.children import guardian_child_or_404
 from salitaaco.utils.family_voice import family_voice_urls
+from salitaaco.utils.guardian_words import add_guardian_words, board_guardian, shown_guardian_words
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.tile_audio import tile_audio_urls
 from salitaaco.utils.uploads import random_upload_name
@@ -115,7 +116,9 @@ def view_board(request, child_uuid=None):
     # The voice for tiles nobody recorded by hand: the child's family voice where it
     # already has the word, otherwise the app's shared voice.
     owner_child = managed_child or ChildAccount.objects.filter(user=owner).select_related("family_voice").first()
-    tile_audio = tile_audio_urls()
+    # The guardian's own tiles, while the guardian is on a paid plan.
+    own_words = shown_guardian_words(board_guardian(owner, owner_child))
+    tile_audio = tile_audio_urls([word.word for word in own_words])
     if owner_child and owner_child.family_voice:
         tile_audio.update(family_voice_urls(owner_child.family_voice))
 
@@ -128,8 +131,9 @@ def view_board(request, child_uuid=None):
         "rating_form": rating_form,
         "show_rating_modal": bool(rating_form.errors),
         "board_data": {
-            # A child's boards are the ones their guardian left on.
-            "categories": boards(owner_child),
+            # A child's boards are the ones their guardian left on, with the
+            # guardian's own tiles while the guardian is on a paid plan.
+            "categories": add_guardian_words(boards(owner_child), own_words),
             "verb_category": VERB_CATEGORY,
             # The Home screen: the quick words, then the board of feelings.
             "quick_words": quick_words(),

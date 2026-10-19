@@ -1,8 +1,4 @@
 {% extends "layouts/dashboard.html" %}
-{% comment %}
-  FRONTEND ONLY FOR NOW: the plans come from defaults/plans.py, and the form
-  that edits a plan is disabled because there is nowhere to save it.
-{% endcomment %}
 
 {% block title %}Mga Subscription - SalitAACo{% endblock %}
 
@@ -19,36 +15,47 @@
   <h2>Mga plano</h2>
   <p class="desc">
     Ito ang mga planong nakikita ng mga tagapag-alaga sa “Plano at Subscription” at sa pampublikong website.
-    Ang planong hindi iniaalok ay hindi na mapipili ng bago, pero mananatili sa mga mayroon na nito.
+    Ang planong hindi iniaalok ay hindi na mapipili ng bago, pero mananatili sa mga mayroon na nito hanggang matapos ang
+    bayad nila. Ang bagong presyo ay para sa mga susunod na bayad; hindi nito binabago ang mga naipadala na.
   </p>
 
   <div class="planGrid">
-    {% for plan in plans %}
-    <!-- Not a form yet: there is nowhere to save a plan to. -->
-    <div class="planCard settingsFields">
-      <p class="planSubscribers"><b>{{ plan.subscribers }}</b> tagapag-alaga sa planong ito</p>
+    {% for item in plans %}
+    <form method="post" class="planCard settingsFields" novalidate>
+      {% csrf_token %}
+      {% with form=item.form %}
+      <p class="planSubscribers"><b>{{ item.subscribers }}</b> tagapag-alaga sa planong ito</p>
 
-      <label for="planName-{{ plan.key }}">Pangalan</label>
-      <input class="input" type="text" id="planName-{{ plan.key }}" value="{{ plan.name }}" disabled />
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      <small class="fieldError">{{ form.name.errors }}</small>
 
-      <label for="planPrice-{{ plan.key }}">Presyo (₱) {{ plan.period }}</label>
-      <input class="input" type="number" id="planPrice-{{ plan.key }}" value="{{ plan.price }}" min="0" disabled />
+      {% if form.price %}
+      <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+      {{ form.price }}
+      <small class="fieldError">{{ form.price.errors }}</small>
+      {% else %}
+      <p class="desc">Libre ang planong ito at laging iniaalok: dito napupunta ang mga tagapag-alagang walang bayad na plano.</p>
+      {% endif %}
 
-      <label for="planFeatures-{{ plan.key }}">Mga kasama (isa kada linya)</label>
-      <textarea class="textarea" id="planFeatures-{{ plan.key }}" rows="{{ plan.features|length }}" disabled>{{ plan.features_text }}</textarea>
+      <label for="{{ form.features.id_for_label }}">{{ form.features.label }}</label>
+      {{ form.features }}
+      <small class="fieldError">{{ form.features.errors }}</small>
 
+      {% if form.offered %}
       <div class="switchRow">
         <label class="switch">
-          <input type="checkbox" aria-label="Iniaalok ang {{ plan.name }}" {% if plan.offered %}checked{% endif %} disabled />
+          {{ form.offered }}
           <span class="slider"></span>
         </label>
-        <span>Iniaalok sa mga tagapag-alaga</span>
+        <span>{{ form.offered.label }}</span>
       </div>
+      {% endif %}
 
-      <button class="primaryBtn formActions" type="button" disabled>I-save ang plano</button>
-    </div>
+      <button class="primaryBtn formActions" type="submit" name="plan_form" value="{{ item.plan.key }}">I-save ang plano</button>
+      {% endwith %}
+    </form>
     {% endfor %}
   </div>
-  <p class="pendingNote">Hindi pa mae-edit ang mga plano: disenyo pa lang ito.</p>
 </section>
 {% endblock %}

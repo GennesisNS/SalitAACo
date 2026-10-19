@@ -1,10 +1,5 @@
 {% extends "layouts/dashboard.html" %}
 {% load static %}
-{% comment %}
-  FRONTEND ONLY FOR NOW: the design of choosing a plan and paying for it.
-  Picking a picture and seeing it works in the browser; sending it does not,
-  so the button that sends it is disabled.
-{% endcomment %}
 
 {% block title %}Plano at Subscription - SalitAACo{% endblock %}
 
@@ -12,27 +7,38 @@
 
 {% block main %}
 <p class="pageIntro">
-  Kasalukuyang plano: <b>{{ current_plan.name }}</b>. Sakop ng isang plano ang lahat ng bata mo. Libre magpakailanman
-  ang mga pangunahing gamit sa pakikipag-usap.
+  Kasalukuyang plano: <b>{{ current_plan.name }}</b>{% if paid_until %}, hanggang <b>{{ paid_until|date:"F j, Y" }}</b>{% endif %}.
+  Sakop ng isang plano ang lahat ng bata mo. Libre magpakailanman ang mga pangunahing gamit sa pakikipag-usap.
 </p>
 
+{% if pending_payment %}
+<p class="pendingNote">
+  May bayad kang naghihintay ng pag-apruba ng admin: <b>₱{{ pending_payment.amount }}</b> para sa
+  {{ pending_payment.plan.name }}, ipinadala noong {{ pending_payment.created_at|date:"F j, Y" }}.
+  <a href="{% url 'plan_transactions' %}">Tingnan</a>
+</p>
+{% endif %}
+
 <div class="planGrid">
-  {% for plan in plans %}
-  <section class="planCard {% if plan.is_current %}current{% endif %}">
-    {% if plan.is_current %}<span class="planTag">Kasalukuyan</span>{% endif %}
-    <h2>{{ plan.name }}</h2>
-    <p class="planPrice">₱{{ plan.price }} <small>{{ plan.period }}</small></p>
+  {% for item in plans %}
+  <section class="planCard {% if item.is_current %}current{% endif %}">
+    {% if item.is_current %}<span class="planTag">Kasalukuyan</span>{% endif %}
+    <h2>{{ item.plan.name }}</h2>
+    <p class="planPrice">₱{{ item.plan.price }} <small>{{ item.plan.period }}</small></p>
     <ul class="planFeatures">
-      {% for feature in plan.features %}
+      {% for feature in item.plan.feature_list %}
       <li>{{ feature }}</li>
       {% endfor %}
     </ul>
-    {% if plan.is_current %}
+    {% if item.needs_payment and item.plan == paid_plan %}
+    <button class="primaryBtn blockBtn" type="button" data-open-modal="pay" {% if pending_payment %}disabled{% endif %}>
+      {% if item.is_current %}Dagdagan ng isang buwan{% else %}Kunin ang {{ item.plan.name }}{% endif %}
+    </button>
+    {% elif item.is_current %}
     <button class="secondaryBtn blockBtn" type="button" disabled>Ito ang plano mo</button>
-    {% elif plan.needs_payment %}
-    <button class="primaryBtn blockBtn" type="button" data-open-modal="pay">Kunin ang {{ plan.name }}</button>
     {% else %}
-    <button class="secondaryBtn blockBtn" type="button" disabled>Lumipat sa {{ plan.name }}</button>
+    <!-- The free plan is where a guardian goes back to when the paid months end. -->
+    <button class="secondaryBtn blockBtn" type="button" disabled>Babalik dito kapag natapos ang bayad na plano</button>
     {% endif %}
   </section>
   {% endfor %}
@@ -50,19 +56,21 @@
 </section>
 
 <p class="note">
-  Kapag natapos ang subscription, mananatili sa iyo ang libreng plano. May hiwalay na kasunduan para sa mga paaralan
-  at institusyon.
+  Kapag natapos ang subscription, mananatili sa iyo ang libreng plano. Kapag nagbayad ka bago ito matapos, idadagdag
+  ang bagong buwan sa dulo nito. May hiwalay na kasunduan para sa mga paaralan at institusyon.
 </p>
 
 {% if paid_plan %}
-<!-- ============== PAY BY QR CODE ============== -->
-<div class="settingsBackdrop hidden" data-modal="pay">
-  <div class="settingsBox wide" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+<!-- ============== PAY BY GCASH QR CODE ============== -->
+<div class="settingsBackdrop hidden" data-modal="pay" data-open="{{ show_pay_modal|yesno:'true,false' }}">
+  <div class="settingsBox wide pay" role="dialog" aria-modal="true" aria-labelledby="payTitle">
     <div class="settingsHeader">
       <h2 id="payTitle">Bayaran ang {{ paid_plan.name }}</h2>
       <button class="closeBtn" type="button" data-close-modal="pay" aria-label="Isara">&times;</button>
     </div>
-    <div class="settingsBody">
+    <form method="post" enctype="multipart/form-data" class="settingsBody" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="plan" value="{{ paid_plan.key }}" />
       <div class="payLayout">
         <div class="payCode">
           {% include "components/payments/qr_code.html" %}
@@ -72,32 +80,30 @@
         <div class="paySteps">
           <h3>Paano magbayad</h3>
           <ol>
-            <li>I-scan ang QR code gamit ang e-wallet o banking app mo.</li>
+            <li>I-scan ang QR code gamit ang GCash app mo.</li>
             <li>Bayaran ang eksaktong halaga: <b>₱{{ paid_plan.price }}</b>.</li>
             <li>I-screenshot ang screen na nagsasabing matagumpay ang bayad.</li>
             <li>I-upload ang larawang iyon dito.</li>
           </ol>
 
-          <!-- Not a form yet: there is nowhere to send the picture to. -->
           <div class="settingsFields" id="proofUpload" data-max-megabytes="{{ max_proof_megabytes }}">
-            <label for="proofFile">Larawan ng matagumpay na bayad <span class="required-mark">*</span></label>
-            <input type="file" id="proofFile" accept="image/jpeg,image/png,image/webp" />
+            <label for="proofFile">{{ proof_form.proof.label }}</label>
+            {{ proof_form.proof }}
             <small class="fieldHelp">JPEG, PNG o WebP, hanggang {{ max_proof_megabytes }} MB. Ikaw at ang admin lang ang makakakita nito.</small>
-            <small class="fieldError" id="proofError" role="alert"></small>
+            <small class="fieldError" id="proofError" role="alert">{{ proof_form.proof.errors }}{{ proof_form.plan.errors }}{{ proof_form.non_field_errors }}</small>
             <img class="proofPreview hidden" id="proofPreview" alt="Ang larawang pinili mo" />
           </div>
         </div>
       </div>
 
+      <p class="payNote">
+        Magiging “Naghihintay” ang bayad mo hanggang maaprubahan ng admin, at saka magsisimula ang {{ paid_plan.name }}.
+      </p>
       <div class="confirmRow">
         <button class="secondaryBtn" type="button" data-close-modal="pay">Huwag muna</button>
-        <button class="primaryBtn" type="button" disabled>Ipadala ang patunay ng bayad</button>
+        <button class="primaryBtn" type="submit" name="proof_form" {% if not setting.has_gcash_qr or pending_payment %}disabled{% endif %}>Ipadala ang patunay ng bayad</button>
       </div>
-      <p class="pendingNote">
-        Hindi pa gumagana ang pagpapadala: disenyo pa lang ito. Kapag gumagana na, magiging “Naghihintay” ang bayad mo
-        hanggang maaprubahan ng admin, at saka magsisimula ang {{ paid_plan.name }}.
-      </p>
-    </div>
+    </form>
   </div>
 </div>
 {% endif %}
