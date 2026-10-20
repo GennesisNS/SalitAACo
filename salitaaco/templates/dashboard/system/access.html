@@ -45,7 +45,7 @@
             {% if admin == request.user %}
             <span class="doneNote">Ikaw ito</span>
             {% else %}
-            <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="remove-admin-{{ admin.pk }}">Alisin bilang admin</button>
+            <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="remove-admin-{{ admin.pk }}">Burahin ang account</button>
             {% endif %}
           </td>
         </tr>
@@ -64,29 +64,47 @@
     </div>
     <form method="post" class="settingsBody" novalidate>
       {% csrf_token %}
+      <p class="desc">
+        Bagong account ang bawat admin, hiwalay sa mga account ng tagapag-alaga at bata. Ibigay sa bagong admin ang
+        username at password na ito.
+      </p>
+
+      <label for="{{ add_admin_form.display_name.id_for_label }}">{{ add_admin_form.display_name.label }}</label>
+      {{ add_admin_form.display_name }}
+      <small class="fieldError">{{ add_admin_form.display_name.errors }}</small>
+
       <label for="{{ add_admin_form.username.id_for_label }}">{{ add_admin_form.username.label }}</label>
       {{ add_admin_form.username }}
-      <small class="fieldHelp">{{ add_admin_form.username.help_text }}</small>
       <small class="fieldError">{{ add_admin_form.username.errors }}</small>
-      <button class="primaryBtn blockBtn formActions" type="submit" name="add_admin_form">Gawing admin</button>
+
+      <label for="{{ add_admin_form.password.id_for_label }}">{{ add_admin_form.password.label }}</label>
+      {{ add_admin_form.password }}
+      <small class="fieldHelp">{{ add_admin_form.password.help_text }}</small>
+      <small class="fieldError">{{ add_admin_form.password.errors }}</small>
+
+      <label for="{{ add_admin_form.confirm_password.id_for_label }}">{{ add_admin_form.confirm_password.label }}</label>
+      {{ add_admin_form.confirm_password }}
+      <small class="fieldError">{{ add_admin_form.confirm_password.errors }}</small>
+
+      <button class="primaryBtn blockBtn formActions" type="submit" name="add_admin_form">Gumawa ng admin account</button>
     </form>
   </div>
 </div>
 
-<!-- Taking admin access away is asked twice. -->
+<!-- Deleting an admin's account is asked twice. -->
 {% for admin in admins %}
 {% if admin != request.user %}
 <div class="confirmBackdrop hidden" data-modal="remove-admin-{{ admin.pk }}">
   <form class="confirmBox" method="post" action="{% url 'remove_admin' admin.pk %}" role="dialog" aria-modal="true">
     {% csrf_token %}
-    <h3>Alisin si @{{ admin.username }} bilang admin?</h3>
+    <h3>Burahin ang admin account na @{{ admin.username }}?</h3>
     <p>
-      Hindi na siya makakapasok sa mga pahina ng admin. Kung tagapag-alaga rin siya, mananatili ang account niyang iyon
-      at ang mga bata niya.
+      Permanenteng mabubura ang account at hindi na ito makakapag-log in. Hindi na ito maibabalik; gumawa na lang ng
+      bagong admin account kung kailangan ulit.
     </p>
     <div class="confirmRow">
       <button class="secondaryBtn" type="button" data-close-modal="remove-admin-{{ admin.pk }}">Huwag muna</button>
-      <button class="dangerBtn solid" type="submit">Oo, alisin</button>
+      <button class="dangerBtn solid" type="submit">Oo, burahin</button>
     </div>
   </form>
 </div>

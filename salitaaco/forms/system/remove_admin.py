@@ -4,7 +4,7 @@ from ..helpers import BaseForm
 
 
 class RemoveAdminForm(BaseForm):
-    """Takes admin access away from an account. An admin cannot take away their own."""
+    """Deletes an admin's account. An admin cannot delete their own here."""
 
     def __init__(self, *args, acting_user=None, target_user=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -15,5 +15,5 @@ class RemoveAdminForm(BaseForm):
         cleaned_data = super().clean()
         # Whoever is removing is an admin, so removing only others always leaves one.
         if self.target_user == self.acting_user:
-            raise forms.ValidationError("Hindi mo maaalis ang sarili mong admin access.")
+            raise forms.ValidationError("Hindi mo mabubura ang sarili mong admin account dito.")
         return cleaned_data

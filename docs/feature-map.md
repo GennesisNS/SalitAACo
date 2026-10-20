@@ -57,7 +57,7 @@ URL names are given with their path. Paths without a leading slash are under `/d
 | `admin: users` | `users.view_users` | `users` `users/` | `SearchUserForm`, `UserStatusForm` | `dashboard/users/users.html`, ten rows per page | Done |
 | `admin: ratings` | `feedback.view_feedback` | `feedback` `feedback/` | | `dashboard/feedback/feedback.html`, ten rows per page | Done |
 
-Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python manage.py make_admin <username>`; `database/database.sql` became the migrations.
+Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python manage.py make_admin <new username>`, which makes a new admin account; `database/database.sql` became the migrations.
 
 ## Where the Django project behaves differently on purpose
 
@@ -102,7 +102,7 @@ Rules:
 - A guardian confirms deleting a child with the guardian's own password.
 - A guardian cannot delete their own account while they have children.
 - A child keeps everything an account could do before: their board, edit mode, their profile and password.
-- `make_admin` adds an admin account beside the user's existing one.
+- `make_admin` makes a new admin account of its own; it never turns an existing guardian's or child's account into an admin. Migration 0019 took admin access away from accounts that were both.
 
 ## Added after the conversion: the redesign
 
@@ -195,7 +195,7 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 - Only a child's own guardian reaches the child's pages; anyone else gets 404.
 - Neither a guardian's taps nor the boards they open on a child's board are counted as the child's.
 - An inactive account cannot log in and is logged out where it is logged in. Nothing of it is deleted, and a guardian's children stay active, so that a child is not cut off from their board.
-- An admin cannot make their own account inactive or take away their own admin access.
+- An admin cannot make their own account inactive or delete their own admin account. Removing an admin on Access control deletes their account.
 - A hidden board is shown to nobody, including guardians choosing a child's boards.
 - No two tiles say the same thing: an added word cannot repeat a word, or the audio file name, of another tile.
 - Family voices ask for consent as a step of its own before anything can be recorded.
@@ -207,7 +207,7 @@ Kept from the PHP application against the MYO conventions, because behaviour win
 
 - Records are deleted for real, not soft-deleted. The app tells the user that deleting an account is permanent.
 - Login is by username, not email. The PHP application has no email addresses, so there is no email verification or password reset.
-- The minimum password length is 4 characters.
+- Passwords need at least 8 characters, with an uppercase and a lowercase letter, a number and a special character (`validate_password_strength`), on sign-up and on a child's account alike.
 - `django-auditlog` is not installed. Nothing in the PHP application shows change history, and an audit trail would keep data from accounts the app promises to erase. For the same reason the redesign's "Audit Logs & Security" page was not built.
 - Resetting a tile and removing a profile picture are POST forms, not GET links.
 

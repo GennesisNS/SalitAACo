@@ -25,10 +25,13 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env
 python manage.py migrate
+python manage.py make_admin admin --name "Juan Dela Cruz"
 python manage.py runserver
 ```
 
 On macOS and Linux, use `source .venv/bin/activate` and `cp .env.example .env` instead.
+
+`make_admin` makes the first admin account, on the empty database; pick your own username (here `admin`) and name. It asks for the password twice: at least 8 characters, with an uppercase and a lowercase letter, a number and a special character (for example `Lihim#2026`). Log in with it at <http://localhost:8000/login/> to reach the admin dashboard, where more admins are made on System Settings › Access control. See [Creating each kind of account](#creating-each-kind-of-account) for guardians and children.
 
 Open <http://localhost:8000/>: the public website, with "Magsimula" leading to sign-up. Use `localhost`, not an IP address: recording a sound needs microphone access, and browsers only allow that on `localhost` or HTTPS.
 
@@ -58,7 +61,7 @@ The path in the settings file is the Windows one. On macOS and Linux, choose the
 | --- | --- | --- | --- | --- |
 | Guardian | A parent or carer | Signing up on `/register/` | Create and manage their children's accounts, choose each child's boards, favorite words and voice, see their usage, record family voices, write to support | Buod (`/dashboard/overview/`) |
 | Child | The child who talks with the board | By their guardian, on the "Mga Bata" page | Log in with their own username and password and use their own board | The board (`/dashboard/board/`) |
-| Admin | Whoever runs the app | `python manage.py make_admin` (below), or by another admin on System Settings > Access control | Everything under "Admin" in [URLs](#urls) | Dashboard (`/dashboard/analytics/`) |
+| Admin | Whoever runs the app | A new account, made with `python manage.py make_admin` or `createsuperuser` (below), or by another admin on System Settings > Access control | Everything under "Admin" in [URLs](#urls) | Dashboard (`/dashboard/analytics/`) |
 
 Each kind has its own model (`GuardianAccount`, `ChildAccount`, `AdminAccount`) holding the name and picture, and its own group (`Guardian`, `Child`, `Administrator`) deciding which pages it may open.
 
@@ -67,18 +70,47 @@ Things to know:
 - A guardian cannot delete their own account while they still have children; the children's accounts are deleted first.
 - Accounts that existed before guardians were introduced became child accounts with no guardian. They work as before.
 - An account is active or inactive. An admin makes one inactive on Mga User: it cannot log in, and nothing of it is deleted. Making a guardian inactive leaves their children's accounts active.
+- An admin only runs the site: an admin account is its own account, with only the admin's sidebar and pages. An admin cannot add children, record family voices, pay for a plan and so on (`user_roles` in `utils/perms_check.py`). Migration 0019 took admin access away from accounts that were made admins before this, while also being a guardian's or a child's; they are again only that.
 
-### Make yourself an admin
+### Creating each kind of account
 
-The admin dashboard is only for accounts in the `Administrator` group. Sign up in the app first, then run:
+Every password, a guardian's or a child's, needs at least 8 characters with an uppercase and a lowercase letter, a number and a special character (for example `Lihim#2026`). Names may only have letters, spaces and dashes. A username can be used by one account only, whatever its case.
 
-```
-python manage.py make_admin your_username_here
-```
+#### A guardian
 
-It takes effect on the next page load. `python manage.py make_admin your_username_here --remove` takes it away again.
+1. Open <http://localhost:8000/register/> (or "Magsimula" on the public website).
+2. Fill in **Pangalan mo**, **Username**, **Password** and **Kumpirmahin ang Password**, then sign up.
+3. You are logged in as the new guardian and taken to **Mga Bata**, ready to add a child.
 
-The command adds an admin account next to the one you signed up with, so a guardian who becomes an admin keeps their children. Once there is one admin, more can be added and removed in the app, on System Settings > Access control.
+#### A child
+
+A child's account is always made by their guardian; there is no sign-up for children.
+
+1. Log in as the guardian and open **Mga Bata** in the sidebar (`/dashboard/children/`).
+2. Press **＋ Magdagdag ng bata**.
+3. Fill in **Pangalan ng bata**, **Username ng bata**, **Edad** (optional), **Password ng bata** and **Kumpirmahin ang Password**, then press **Gumawa ng account ng bata**.
+4. The child logs in at `/login/` with that username and password and lands on their board. On Mga Bata, the guardian opens the same board with **Buksan ang board** on the child's row, to set up its tiles, and changes the child's name, age, picture or password with **I-edit**.
+
+#### An admin
+
+An admin is a new account of its own, made as an admin. It is never a guardian's or a child's account given admin access: admins run the site, they do not look after children. Nobody signs up as an admin.
+
+For the first admin, use a terminal:
+
+1. Make the account, with a username no account has yet:
+
+   ```
+   python manage.py make_admin new_admin_username --name "Juan Dela Cruz"
+   ```
+
+   It asks for the password twice (the same rules as above). `--name` is the name shown in the app; without it, the username is shown. In a script, set the password in the `ADMIN_PASSWORD` environment variable instead of typing it.
+2. Log in with that username and password. An admin lands on the admin dashboard (`/dashboard/analytics/`).
+
+`python manage.py createsuperuser` also works: the superuser becomes an admin, with nothing else, on its first page load.
+
+Once there is one admin, they make more in the app: **System Settings › Access control › ＋ Magdagdag ng admin**. Fill in **Pangalan ng admin**, **Username**, **Password** and **Kumpirmahin ang Password**, press **Gumawa ng admin account**, and give the new admin the username and password.
+
+Removing an admin deletes their account, permanently: **Burahin ang account** on the same page, or `python manage.py make_admin their_username --remove`. Nobody can delete their own admin account there. `--staff` makes an admin that can also log in to Django's admin site (see [below](#admin-and-djangos-admin-site)).
 
 ## URLs
 
@@ -134,10 +166,10 @@ What `/admin` does depends on `SHOW_ADMIN_ROUTES` in `.env`:
 | `False` (default) | Redirects to the admin dashboard, as the PHP application's `/admin` address did |
 | `True` | Django's admin site |
 
-To let an account log in to Django's admin site as well, add `--staff`:
+To make an admin that can log in to Django's admin site as well, add `--staff`:
 
 ```
-python manage.py make_admin your_username_here --staff
+python manage.py make_admin new_admin_username --staff
 ```
 
 ## Project layout
@@ -371,7 +403,7 @@ Development and production each have their own `.env`, so nothing is converted: 
 2. In the production `.env`, set `DB_ENGINE=mysql` and the `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT` values.
 3. Run `python manage.py migrate`. This creates every table and the `Administrator`, `Guardian` and `Child` groups.
 
-Production then starts empty. Sign up, and run `make_admin` for your account.
+Production then starts empty. Make the first admin with `python manage.py make_admin new_admin_username`.
 
 ### Bringing data along from SQLite
 
@@ -399,7 +431,7 @@ To bring the PHP application's data to production instead, run `import_php_data`
 | `ModuleNotFoundError: No module named 'django'`           | The virtual environment is not active. Run `.venv\Scripts\activate`, then `pip install -r requirements.txt`. |
 | `no such table` or `Table ... doesn't exist`              | Run `python manage.py migrate`.                                                                         |
 | `pip install` fails on `mysqlclient` (macOS or Linux)     | Install the MySQL client library first, for example `sudo apt install default-libmysqlclient-dev pkg-config`. |
-| An admin page sends you back to your own first page        | The account is not an admin. Run `python manage.py make_admin your_username_here`.                      |
+| An admin page sends you back to your own first page        | The account is not an admin. Log in with an admin account, or make one with `python manage.py make_admin new_admin_username`. |
 | Everyone sees "Inaayos namin ang app"                     | Maintenance mode is on. Log in as an admin and turn it off at System Settings > General.               |
 | "Hindi aktibo ang account na ito" at login                | An admin made the account inactive. An admin makes it active again on Mga User.                        |
 | `no such table` after pulling new code                    | New migrations were added. Run `python manage.py migrate`.                                             |
