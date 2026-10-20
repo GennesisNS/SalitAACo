@@ -5,8 +5,9 @@ from django.conf import settings
 from django.urls import reverse
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
-from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.site_setting import SiteSetting
+from salitaaco.models.word_usage import WordUsage
 from salitaaco.utils.family_voice import elevenlabs_client, elevenlabs_is_set_up, family_voice_directory
 from salitaaco.utils.plans import current_plan
 from salitaaco.utils.tile_audio import tile_audio_file_name, tile_word_slug, tile_words
@@ -18,32 +19,48 @@ from salitaaco.utils.tile_audio import tile_audio_file_name, tile_word_slug, til
 GUARDIAN_WORD_AUDIO_FOLDER = "guardian-tile-audio"
 
 
-def guardian_word_limit():
-    """How many tiles of their own a guardian on a paid plan can have, across all the boards."""
-    return SiteSetting.load().guardian_word_limit
+def on_free_plan(guardian):
+    return current_plan(guardian).is_free
 
 
-def can_add_words(guardian):
-    """Only a guardian on a paid plan adds tiles."""
-    return not current_plan(guardian).is_free
+def word_limit(guardian):
+    """How many tiles of their own the guardian's plan allows, across all of their family's boards."""
+    setting = SiteSetting.load()
+    return setting.free_word_limit if on_free_plan(guardian) else setting.plus_word_limit
 
 
-def board_guardian(owner, owner_child):
+def can_add_word(guardian):
+    return guardian.words.count() < word_limit(guardian)
+
+
+def limit_reached_message(noun, limit, on_free, plus_limit):
     """
-    The guardian whose own tiles a board shows: a child's guardian on the
-    child's board, the guardian themself on their own. None for an admin's
-    board or a child without a guardian.
+    What a guardian is told when they cannot add another tile or board
+    (`noun`): to get Plus when it allows more, otherwise to delete one first.
     """
-    if owner_child is not None:
-        return owner_child.guardian
-    return GuardianAccount.objects.filter(user=owner).first()
+    if on_free and plus_limit > limit:
+        if limit == 0:
+            return f"Para sa SalitAACo Plus ang sariling {noun}: hanggang {plus_limit}. Kunin ang Plus para makapagdagdag."
+        return (f"Hanggang {limit} na sariling {noun} lang sa libreng plano. "
+                f"Kunin ang SalitAACo Plus para makapagdagdag ng hanggang {plus_limit}.")
+    return f"Naabot mo na ang {limit} na sariling {noun}. Magbura muna ng isa para makapagdagdag ng bago."
 
 
 def shown_guardian_words(guardian):
-    """The guardian's tiles that boards show: all of them on a paid plan, none otherwise."""
-    if guardian is None or not can_add_words(guardian):
+    """
+    The guardian's tiles that boards show: the oldest ones, up to their plan's
+    limit. The others are kept, hidden, until the limit allows them again.
+    """
+    if guardian is None:
         return []
-    return list(guardian.words.all())
+    return list(guardian.words.all()[:word_limit(guardian)])
+
+
+def delete_word_usage(guardian, text):
+    """The counts of a word the guardian's family used, once the guardian's tile of it is gone."""
+    users = [guardian.user_id, *guardian.children.values_list("user_id", flat=True)]
+    WordUsage.objects.filter(user__in=users, word=text).delete()
+    DailyUsage.objects.filter(user__in=users, kind=DailyUsage.WORD, name=text).delete()
 
 
 def guardian_word_audio_directory(guardian):

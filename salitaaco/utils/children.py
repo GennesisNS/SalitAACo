@@ -7,7 +7,7 @@ from salitaaco.defaults.navigations import dashboard_items
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.utils.account import request_account
-from salitaaco.utils.board import board_names, boards
+from salitaaco.utils.guardian_boards import child_boards, family_boards
 
 # The pages about one child have the child in their address. The sidebar links
 # to them for the "selected child": the one whose page was opened last, kept in
@@ -50,10 +50,13 @@ def children_with_numbers(children):
 
 
 def add_board_numbers(children):
-    total = len(board_names())
+    """How many of their family's boards, the app's and the guardian's own, each child has on."""
+    totals = {}
     for child in children:
-        child.shown_boards = len(boards(child))
-        child.total_boards = total
+        if child.guardian_id not in totals:
+            totals[child.guardian_id] = len(family_boards(child.guardian))
+        child.shown_boards = len(child_boards(child))
+        child.total_boards = totals[child.guardian_id]
     return children
 
 

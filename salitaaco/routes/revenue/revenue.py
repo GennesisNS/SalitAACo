@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from salitaaco.forms.revenue.reject_payment import RejectPaymentForm
@@ -34,14 +35,42 @@ def back_to_list(request):
 @login_required(login_url='/login/')
 @multi_user_test(is_administrator)
 def view_revenue(request):
+    """
+    The payments, by status. Rejecting one is a form of this page, so that a
+    reason that is not valid reopens its dialog with what was typed.
+    """
     status_form = TransactionStatusForm(request.GET or None)
     status = status_form.chosen()
 
+    reject_form = RejectPaymentForm()
+    rejecting = None
+    rejection_failed = False
+
+    if request.method == "POST" and "reject_form" in request.POST:
+        reject_form = RejectPaymentForm(request.POST)
+        if reject_form.is_valid():
+            payment = get_object_or_404(Payment.objects.select_related("guardian"), uuid=reject_form.cleaned_data["payment"])
+            if reject(payment, request.user, reject_form.cleaned_data["note"]):
+                logger.info("Admin %s rejected payment %s of %s", request.user.username, payment.uuid, payment.guardian)
+                messages.success(request, f"Tinanggihan ang bayad ni {payment.guardian.display_name}.")
+            else:
+                messages.error(request, "Hindi na naghihintay ang bayad na ito.")
+            # Back to the same tab and page.
+            return redirect(f"{reverse('revenue')}?{request.GET.urlencode()}" if request.GET else 'revenue')
+        rejection_failed = True
+        rejecting = reject_form.cleaned_data.get("payment")
+
     payments = Payment.objects.select_related("guardian__user", "plan")
     counts = dict(payments.values_list("status").annotate(count=Count("payment_id")).order_by())
+    payments_page = paginate(payments.filter(status=status) if status else payments, request.GET.get("page", 1))
+
+    # The dialog to reopen is on this page of the list; if the payment is not, say why here.
+    if rejection_failed and not any(payment.uuid == rejecting for payment in payments_page):
+        messages.error(request, " ".join(reject_form.errors.get("note", ["Hindi na-reject ang bayad."])))
+        rejecting = None
 
     context = {
-        "payments": paginate(payments.filter(status=status) if status else payments, request.GET.get("page", 1)),
+        "payments": payments_page,
         # Each status as a tab, with how many payments it holds.
         "tabs": [
             {
@@ -52,7 +81,8 @@ def view_revenue(request):
             }
             for value, label in status_form.fields["status"].choices
         ],
-        "reject_form": RejectPaymentForm(),
+        "reject_form": reject_form,
+        "rejecting": rejecting,
     }
     return render(request, 'dashboard/revenue/revenue.html', context)
 
@@ -65,22 +95,6 @@ def approve_payment(request, payment_uuid):
     if approve(payment, request.user):
         logger.info("Admin %s approved payment %s of %s", request.user.username, payment.uuid, payment.guardian)
         messages.success(request, f"Naaprubahan na. Naka-{payment.plan.name} na si {payment.guardian.display_name}.")
-    else:
-        messages.error(request, "Hindi na naghihintay ang bayad na ito.")
-    return back_to_list(request)
-
-
-@login_required(login_url='/login/')
-@multi_user_test(is_administrator)
-@require_POST
-def reject_payment(request, payment_uuid):
-    payment = get_object_or_404(Payment.objects.select_related("guardian"), uuid=payment_uuid)
-    reject_form = RejectPaymentForm(request.POST)
-    if not reject_form.is_valid():
-        messages.error(request, " ".join(reject_form.errors["note"]))
-    elif reject(payment, request.user, reject_form.cleaned_data["note"]):
-        logger.info("Admin %s rejected payment %s of %s", request.user.username, payment.uuid, payment.guardian)
-        messages.success(request, f"Tinanggihan ang bayad ni {payment.guardian.display_name}.")
     else:
         messages.error(request, "Hindi na naghihintay ang bayad na ito.")
     return back_to_list(request)

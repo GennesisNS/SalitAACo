@@ -7,15 +7,11 @@
 {% block main %}
 <p class="pageIntro">
   Magdagdag ng sarili mong mga tile, hal. pangalan ng kapatid o paboritong pagkain sa bahay. Lalabas ang mga ito sa
-  board mo at sa board ng bawat anak mo, sa dulo ng board na pinili mo. <span class="planTag">Plus</span>
+  board mo at sa board ng bawat anak mo, sa dulo ng board na pinili mo: isa sa mga board ng app, o isa sa
+  <a href="{% url 'guardian_boards' %}">sarili mong board</a>.
 </p>
 
-{% if not on_paid_plan %}
-<p class="pendingNote">
-  Para sa SalitAACo Plus lang ang sariling tile. {% if words %}Nakatago muna sa mga board ang {{ word_count }} tile mo
-  sa ibaba; babalik ang mga ito kapag naka-Plus ka ulit.{% endif %} <a href="{% url 'plan' %}">Kunin ang Plus</a>
-</p>
-{% endif %}
+{% include "components/guardian_words/limit_notice.html" with noun="tile" %}
 
 <section class="section">
   <div class="sectionHead">
@@ -30,6 +26,7 @@
           <th>Simbolo</th>
           <th>Salita</th>
           <th>Board</th>
+          <th>Status</th>
           <th>Boses</th>
           <th>Naidagdag</th>
           <th>Aksyon</th>
@@ -42,10 +39,13 @@
           <td class="symbolCell">{{ word.emoji }}</td>
           <td data-label="Salita"><b>{{ word.word }}</b></td>
           <td data-label="Board">{{ word.board }}</td>
+          <td data-label="Status">
+            {% if item.shown %}<span class="statusBadge approved">Nakikita</span>{% else %}<span class="statusBadge pending">Nakatago</span>{% endif %}
+          </td>
           <td data-label="Boses">
             {% if item.audio_url %}
             <button class="secondaryBtn smallBtn" type="button" data-preview="{{ item.audio_url }}">▶ Pakinggan</button>
-            {% elif can_voice %}
+            {% elif can_voice and item.shown %}
             <form class="inlineForm" method="post" action="{% url 'voice_guardian_word' word.uuid %}">
               {% csrf_token %}
               <button class="secondaryBtn smallBtn" type="submit">Gawin ang boses</button>
@@ -68,14 +68,9 @@
   <p class="emptyState">Wala ka pang sariling tile.</p>
   {% endif %}
 
-  {% if on_paid_plan %}
+  {% if can_add %}
   <hr class="sectionDivider" />
 
-  {% if at_limit %}
-  <p class="pendingNote">
-    Naabot mo na ang {{ limit }} na sariling tile. Magbura muna ng isa para makapagdagdag ng bago.
-  </p>
-  {% else %}
   <h2>Magdagdag ng tile</h2>
   <form method="post" class="narrowForm settingsFields" novalidate>
     {% csrf_token %}
@@ -86,7 +81,6 @@
     Gagawin ang boses ng bagong tile sa boses ng app at sa bawat boses ng pamilya mo. Puwede mo ring lagyan ito ng
     sariling larawan o recording mula sa “Mga Tile”, gaya ng ibang tile.
   </p>
-  {% endif %}
   {% endif %}
 </section>
 

@@ -18,9 +18,14 @@ PAID_MONTHS = 1
 # limit. Voices made while on a paid plan stay when it ends; only adding more stops.
 FREE_FAMILY_VOICE_LIMIT = 2
 
-# How many tiles of their own a guardian on a paid plan can add, across all the
-# boards, until an admin changes it on System Settings > General.
-DEFAULT_GUARDIAN_WORD_LIMIT = 20
+# How many tiles and boards of their own a guardian can add, on the free plan
+# and on a paid one, until an admin changes them on System Settings > General.
+# Each counts across all of the guardian's family's boards. Over a limit, the
+# oldest ones up to it show and the rest are kept, hidden.
+DEFAULT_FREE_WORD_LIMIT = 0
+DEFAULT_PLUS_WORD_LIMIT = 20
+DEFAULT_FREE_BOARD_LIMIT = 0
+DEFAULT_PLUS_BOARD_LIMIT = 5
 
 FREE_PERIOD = "habambuhay"
 PAID_PERIOD = "kada buwan"

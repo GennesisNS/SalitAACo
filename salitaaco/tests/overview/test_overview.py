@@ -98,7 +98,6 @@ class SelectedChildTest(GuardianBase):
         self.assertEqual(response.context["selected_child"], self.ana_account)
         self.assertEqual(self.child_urls(response), {
             "child_boards": reverse("child_boards", args=[self.ana_account.uuid]),
-            "favorites": reverse("favorites", args=[self.ana_account.uuid]),
             "child_voice": reverse("child_voice", args=[self.ana_account.uuid]),
             "child_usage": reverse("child_usage", args=[self.ana_account.uuid]),
         })

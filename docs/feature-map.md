@@ -74,7 +74,7 @@ Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python
 | A tile without a recording used whatever voice the browser had | Each word plays, the first that exists: the family's recording, the child's family voice (a family member's voice cloned with ElevenLabs on the Boses ng Pamilya page, with consent terms), the shared Filipino voice (generated once with ElevenLabs by `manage.py generate_tile_audio`), the browser's voice | Requested after the conversion |
 | Tiles come in one size | Each account chooses small, medium or large tiles on the Settings page, with a demo. The choice is saved on the account (`tile_size`), so it follows the user to any device, unlike the theme, which is remembered per browser. Medium is the original size | Requested after the conversion |
 | Tapping a tile played its recording at once | Tapping only adds the word. The **▶ Patugtugin** button plays the sentence in order: each word's recording if it has one, otherwise the device's Filipino voice. **↩ Ibalik** takes back the last word | Requested after the conversion |
-| One page of tiles with a tab for each category | The board has four screens along the bottom: Home (quick words and feelings), Mga Board (a board is a category), Paborito (favorite and most-used words) and, for a child, Profile. Screens change without reloading, so the sentence carries across them | The redesign |
+| One page of tiles with a tab for each category | The board has four screens along the bottom: Home (quick words and feelings), Mga Board (a board is a category), Paborito (most-used words) and, for a child, Profile. Screens change without reloading, so the sentence carries across them | The redesign |
 | A replaced tile picture could stay cached for a day | The picture's address changes when it is replaced | Bug in the PHP application |
 | Emptying the sentence one word at a time raised a JavaScript error | Fixed | Bug in the PHP application |
 | The dark theme toggle is in the board's header and is forgotten on reload | The toggle is on the Settings page, and the choice is remembered in the browser | Pages reload more often now; moved to Settings on request |
@@ -140,7 +140,6 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Buod: children as a table, the plan | `overview.view_overview` | `overview` `overview/` | | `dashboard/overview/overview.html` |
 | Mga Bata: the table, and the add-a-child modal | `children.view_children` | `children` `children/` | `CreateChildForm` | `dashboard/children/children.html` |
 | Which boards a child sees (at least one stays on) | `boards.manage_child_boards` | `child_boards` `children/<uuid>/boards/` | `ChildBoardsForm` | `dashboard/children/boards.html` |
-| A child's favorite words *(may be removed)* | `favorites.manage_favorites`, `favorites.remove_favorite` | `favorites` `children/<uuid>/favorites/`, `remove_favorite` `…/favorites/<uuid>/remove/` | `AddFavoriteWordForm` | `dashboard/favorites/favorites.html` |
 | Which voice a child hears | `voice.choose_child_voice` | `child_voice` `children/<uuid>/voice/` | `ChooseFamilyVoiceForm` | `dashboard/children/voice.html` |
 | A child's usage, by 7 days, 30 days or all time | `usage.view_child_usage` | `child_usage` `children/<uuid>/usage/` | `UsageRangeForm` | `dashboard/children/usage.html` |
 | Family voices, with consent as a step before recording | `family_voices.view_family_voices` | `family_voices` `family-voices/` | `AddFamilyVoiceForm` | `dashboard/family_voices/family_voices.html` |
@@ -179,7 +178,6 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 | Model | What it holds |
 | --- | --- |
 | `HiddenBoard` | A board a guardian turned off for one child |
-| `FavoriteWord` | A word a guardian put on a child's Paborito screen *(belongs to a page that may be removed)* |
 | `DailyUsage` | How many times, on one day, a user tapped a word or opened a board. Counts only |
 | `SupportMessage` | What a guardian wrote to support, and when an admin marked it as dealt with |
 | `BoardStatus` | Whether an admin has hidden a board from everyone |

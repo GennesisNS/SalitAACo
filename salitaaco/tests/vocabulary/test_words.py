@@ -2,7 +2,6 @@ from django.contrib.messages import get_messages
 from django.urls import reverse
 
 from salitaaco.defaults.vocabulary import CATEGORIES
-from salitaaco.forms.favorites.add_favorite_word import word_choices
 from salitaaco.forms.vocabulary.word import WordForm
 from salitaaco.models.added_word import AddedWord
 from salitaaco.models.child_account import ChildAccount
@@ -179,12 +178,10 @@ class AddedWordEverywhereTest(WordsBase):
         self.assertEqual([[dict(item) for item in category["items"]] for category in CATEGORIES], self.vocabulary_before)
         self.assertEqual(len(next(c for c in CATEGORIES if c["name"] == "Pagkain")["items"]), 4)
 
-    def test_it_is_a_word_to_voice_to_choose_as_a_favorite_and_to_count(self):
+    def test_it_is_a_word_to_voice_and_to_count(self):
         words = tile_words()
         self.assertEqual(len(words), DEFAULT_WORD_COUNT + 2)
         self.assertEqual(words[-2:], ["pandesal", "adobo"])
-
-        self.assertIn(("pandesal", "pandesal"), dict(word_choices())["Pagkain"])
 
         self.login_as("miguel")
         self.assertEqual(self.client.post(reverse("increment_word_usage"), {"word": "pandesal"}).json(), {"ok": True})

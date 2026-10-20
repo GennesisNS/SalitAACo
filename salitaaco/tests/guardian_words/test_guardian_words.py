@@ -8,14 +8,16 @@ from django.utils import timezone
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
 from salitaaco.defaults.family_voice import TERMS_VERSION
-from salitaaco.defaults.plans import DEFAULT_GUARDIAN_WORD_LIMIT
+from salitaaco.defaults.plans import DEFAULT_FREE_WORD_LIMIT, DEFAULT_PLUS_WORD_LIMIT
 from salitaaco.forms.guardian_words.guardian_word import GuardianWordForm
 from salitaaco.models.added_word import AddedWord
 from salitaaco.models.child_account import ChildAccount
+from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.payment import Payment
 from salitaaco.models.site_setting import SiteSetting
+from salitaaco.models.word_usage import WordUsage
 from salitaaco.tests.payments_base import make_payment, messages_of
 from salitaaco.tests.text_to_speech.test_text_to_speech import SharedTileAudioTestMixin
 from salitaaco.tests.users_base import UserBase, make_guardian
@@ -51,9 +53,11 @@ class GuardianWordsBase(UserBase):
         categories = self.client.get(reverse(route, args=args)).context["board_data"]["categories"]
         return {category["name"]: [item["w"] for item in category["items"]] for category in categories}
 
-    def set_limit(self, limit):
+    def set_limits(self, **limits):
+        """Change the plans' limits, as an admin does on System Settings > General."""
         setting = SiteSetting.load()
-        setting.guardian_word_limit = limit
+        for field, value in limits.items():
+            setattr(setting, field, value)
         setting.save()
 
 
@@ -84,7 +88,7 @@ class GuardianWordsPageTest(GuardianWordsBase):
     def test_on_plus_a_tile_is_added_and_counted(self):
         self.login_as("nanay")
         response = self.client.get(self.url)
-        self.assertContains(response, f"0 sa {DEFAULT_GUARDIAN_WORD_LIMIT} na sariling tile")
+        self.assertContains(response, f"0 sa {DEFAULT_PLUS_WORD_LIMIT} na sariling tile")
         self.assertContains(response, 'name="word_form"')
 
         response = self.add()
@@ -92,21 +96,36 @@ class GuardianWordsPageTest(GuardianWordsBase):
         self.assertEqual(messages_of(response), ["Naidagdag na ang “Kuya Jun” sa board na “Tao”."])
         word = GuardianWord.objects.get()
         self.assertEqual((word.guardian, word.board, word.word, word.emoji), (self.nanay, "Tao", "Kuya Jun", "👦"))
-        self.assertContains(self.client.get(self.url), f"1 sa {DEFAULT_GUARDIAN_WORD_LIMIT} na sariling tile")
+        self.assertContains(self.client.get(self.url), f"1 sa {DEFAULT_PLUS_WORD_LIMIT} na sariling tile")
 
-    def test_on_free_nothing_can_be_added(self):
+    def test_on_free_with_no_tiles_allowed_nothing_can_be_added(self):
+        self.assertEqual(DEFAULT_FREE_WORD_LIMIT, 0)
+        expected = f"Para sa SalitAACo Plus ang sariling tile: hanggang {DEFAULT_PLUS_WORD_LIMIT}. Kunin ang Plus para makapagdagdag."
         self.login_as("tatay")
         response = self.client.get(self.url)
-        self.assertContains(response, "Para sa SalitAACo Plus lang ang sariling tile.")
+        self.assertContains(response, expected)
         self.assertContains(response, f'href="{reverse("plan")}"')
         self.assertNotContains(response, 'name="word_form"')
 
         response = self.add()
-        self.assertEqual(messages_of(response), ["Para sa SalitAACo Plus lang ang pagdagdag ng sariling tile."])
+        self.assertEqual(messages_of(response), [expected])
         self.assertFalse(GuardianWord.objects.exists())
 
+    def test_free_has_its_own_limit_an_admin_sets(self):
+        self.set_limits(free_word_limit=1)
+        self.login_as("tatay")
+        self.assertContains(self.client.get(self.url), "0 sa 1 na sariling tile")
+        self.assertRedirects(self.add(word="Lolo Ben"), self.url)
+
+        response = self.client.get(self.url)
+        self.assertContains(response, "Hanggang 1 na sariling tile lang sa libreng plano.")
+        self.assertEqual(messages_of(self.add(word="Lola Nena")), [
+            f"Hanggang 1 na sariling tile lang sa libreng plano. Kunin ang SalitAACo Plus para makapagdagdag ng hanggang {DEFAULT_PLUS_WORD_LIMIT}.",
+        ])
+        self.assertEqual(GuardianWord.objects.filter(guardian=self.tatay).count(), 1)
+
     def test_the_limit_is_shared_by_every_board_and_set_by_an_admin(self):
-        self.set_limit(2)
+        self.set_limits(plus_word_limit=2)
         self.make_word(self.nanay, "Kuya Jun", board="Tao")
         self.make_word(self.nanay, "sinigang", board="Pagkain")
 
@@ -115,15 +134,42 @@ class GuardianWordsPageTest(GuardianWordsBase):
         self.assertContains(response, "2 sa 2 na sariling tile")
         self.assertContains(response, "Naabot mo na ang 2 na sariling tile.")
         self.assertNotContains(response, 'name="word_form"')
+        self.assertNotContains(response, 'href="/dashboard/plan/">Kunin ang Plus')
 
         response = self.add(word="bola", board="Bagay")
-        self.assertEqual(messages_of(response), ["Naabot mo na ang 2 na sariling tile. Magbura muna ng isa para makapagdagdag."])
+        self.assertEqual(messages_of(response), ["Naabot mo na ang 2 na sariling tile. Magbura muna ng isa para makapagdagdag ng bago."])
         self.assertEqual(GuardianWord.objects.filter(guardian=self.nanay).count(), 2)
 
         # Raising the limit opens it again.
-        self.set_limit(3)
+        self.set_limits(plus_word_limit=3)
         self.assertRedirects(self.add(word="bola", board="Bagay"), self.url)
         self.assertEqual(GuardianWord.objects.filter(guardian=self.nanay).count(), 3)
+
+    def test_over_the_limit_the_oldest_show_and_the_rest_are_hidden(self):
+        for word in ["Kuya Jun", "sinigang", "bola"]:
+            self.make_word(self.nanay, word, board="Tao")
+        self.set_limits(plus_word_limit=2)
+
+        self.login_as("miguel")
+        self.assertEqual(self.board_items("board")["Tao"][-2:], ["Kuya Jun", "sinigang"])
+        self.assertNotIn("bola", self.board_items("board")["Tao"])
+        self.login_as("nanay")
+        response = self.client.get(self.url)
+        self.assertContains(response, "Nakatago muna sa mga board ang 1 sa mga sariling tile mo")
+        self.assertEqual([row["shown"] for row in response.context["words"]], [True, True, False])
+        self.assertEqual(GuardianWord.objects.count(), 3)
+
+    def test_deleting_a_tile_takes_its_counts_with_it(self):
+        word = self.make_word(self.nanay, "Kuya Jun")
+        for user in [self.miguel, self.nanay.user]:
+            WordUsage.record_use(user, "Kuya Jun")
+            DailyUsage.record(user, DailyUsage.WORD, "Kuya Jun")
+        WordUsage.record_use(self.ana, "Kuya Jun")  # another family's, untouched
+
+        self.login_as("nanay")
+        self.client.post(reverse("remove_guardian_word", args=[word.uuid]))
+        self.assertEqual(list(WordUsage.objects.filter(word="Kuya Jun").values_list("user__username", flat=True)), ["ana"])
+        self.assertFalse(DailyUsage.objects.filter(name="Kuya Jun").exists())
 
     def test_only_shown_boards_can_be_picked_and_the_word_is_checked(self):
         self.login_as("nanay")
@@ -172,7 +218,7 @@ class GuardianWordsOnBoardsTest(GuardianWordsBase):
         self.assertNotIn("Kuya Jun", self.board_items("board")["Tao"])
         self.login_as("nanay")
         response = self.client.get(self.url)
-        self.assertContains(response, "Nakatago muna sa mga board ang 1 tile mo")
+        self.assertContains(response, "Nakatago muna sa mga board ang 1 sa mga sariling tile mo")
         self.assertTrue(GuardianWord.objects.filter(word="Kuya Jun").exists())
 
         # Renewing brings them back.
@@ -329,30 +375,38 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
         delete_user_account(tito.user)
         self.assertFalse(guardian_word_audio_directory(tito).exists())
 
-    def test_a_tile_on_free_is_not_voiced_again(self):
-        word = self.make_word(self.tatay, "Lolo Ben")
+    def test_a_hidden_tile_is_not_voiced_again(self):
+        word = self.make_word(self.tatay, "Lolo Ben")  # Free allows none, so it is hidden
         self.login_as("tatay")
         response = self.client.post(reverse("voice_guardian_word", args=[word.uuid]))
-        self.assertEqual(messages_of(response), ["Para sa SalitAACo Plus lang ang sariling tile."])
+        self.assertEqual(messages_of(response), ["Nakatago ang tile na ito dahil lampas na ito sa limit ng plano mo."])
         self.elevenlabs.text_to_speech.assert_not_called()
 
 
-class PlusSettingsTest(GuardianWordsBase):
-    def test_an_admin_sets_the_limit(self):
+class PlanLimitsTest(GuardianWordsBase):
+    LIMITS = {"free_word_limit": "3", "plus_word_limit": "30", "free_board_limit": "1", "plus_board_limit": "8"}
+
+    def test_an_admin_sets_the_four_limits(self):
         url = reverse("system_general")
         self.login_as("developer")
-        self.assertContains(self.client.get(url), f'name="guardian_word_limit" value="{DEFAULT_GUARDIAN_WORD_LIMIT}"')
+        page = self.client.get(url)
+        for field, value in [("free_word_limit", 0), ("plus_word_limit", 20), ("free_board_limit", 0), ("plus_board_limit", 5)]:
+            self.assertContains(page, f'name="{field}" value="{value}"')
 
-        response = self.client.post(url, {"plus_form": "", "guardian_word_limit": "5"})
+        response = self.client.post(url, {"limits_form": "", **self.LIMITS})
         self.assertRedirects(response, url)
-        self.assertEqual(messages_of(response), ["Naka-save na ang mga setting ng Plus."])
-        self.assertEqual(SiteSetting.load().guardian_word_limit, 5)
+        self.assertEqual(messages_of(response), ["Naka-save na ang mga limit ng Free at Plus."])
+        setting = SiteSetting.load()
+        self.assertEqual(
+            (setting.free_word_limit, setting.plus_word_limit, setting.free_board_limit, setting.plus_board_limit),
+            (3, 30, 1, 8),
+        )
 
-        response = self.client.post(url, {"plus_form": "", "guardian_word_limit": "-1"})
+        response = self.client.post(url, {"limits_form": "", **self.LIMITS, "plus_board_limit": "-1"})
         self.assertContains(response, "Hindi tama ang bilang.")
-        self.assertEqual(SiteSetting.load().guardian_word_limit, 5)
+        self.assertEqual(SiteSetting.load().plus_board_limit, 8)
 
-    def test_only_admins_set_it(self):
+    def test_only_admins_set_them(self):
         self.login_as("nanay")
-        self.client.post(reverse("system_general"), {"plus_form": "", "guardian_word_limit": "500"})
-        self.assertEqual(SiteSetting.load().guardian_word_limit, DEFAULT_GUARDIAN_WORD_LIMIT)
+        self.client.post(reverse("system_general"), {"limits_form": "", **self.LIMITS})
+        self.assertEqual(SiteSetting.load().plus_word_limit, DEFAULT_PLUS_WORD_LIMIT)

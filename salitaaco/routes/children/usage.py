@@ -21,8 +21,9 @@ def view_child_usage(request, child_uuid):
     range_form = UsageRangeForm(request.GET or None)
     days = range_form.days()
 
-    # A board opened before an admin hid it is still named with its picture.
+    # A board opened before an admin hid it is still named with its picture, as is the family's own.
     icons = {board["name"]: board["icon"] for board in every_board()}
+    icons.update(child.guardian.boards.values_list("name", "emoji"))
     boards = with_bar_widths(usage_in_days(child.user, DailyUsage.BOARD, days))
     for row in boards:
         row["icon"] = icons.get(row["name"], "")

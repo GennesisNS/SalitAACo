@@ -128,7 +128,6 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `children/<uuid>/` | Edit a child: name, age, picture, password, delete | The child's guardian |
 | `children/<uuid>/board/` | The child's board, for setting up tiles | The child's guardian |
 | `children/<uuid>/boards/` | Mga Board: which boards the child sees | The child's guardian |
-| `children/<uuid>/favorites/` | Mga Paborito: words put on the child's Paborito screen *(may be removed)* | The child's guardian |
 | `children/<uuid>/voice/` | Boses: which voice the child hears | The child's guardian |
 | `children/<uuid>/usage/` | Paggamit: boards opened and words tapped, by 7 days, 30 days or all time | The child's guardian |
 | `family-voices/` | Boses ng Pamilya: family members' cloned voices | Guardians |
@@ -188,7 +187,7 @@ salitaaco/
   routes/               The views, one folder per feature
     dashboard/__init__.py   Every address under /dashboard/
     auth.py  board/  account/  settings/  error_handler.py
-    overview/  children/  family_voices/  favorites/  plan/  support/        (guardian)
+    overview/  children/  family_voices/  guardian_words/  plan/  support/   (guardian)
     analytics/  reports/  users/  vocabulary/  institutions/  revenue/
     subscriptions/  feedback/  system/  privacy/  technical_status/          (admin)
   models/               One model per file (account_base.py is shared by the three account models)
@@ -273,7 +272,9 @@ What admins and guardians change is stored in the database on top of it:
 | A board hidden from everyone | Admin, on Mga Board | `BoardStatus` |
 | A word added to a board | Admin, on Mga Salita at Simbolo | `AddedWord` |
 | A board turned off for one child | Guardian, on the child's Mga Board | `HiddenBoard` |
-| A favorite word of one child | Guardian, on Mga Paborito | `FavoriteWord` |
+| A tile of the guardian's own, on their family's boards | Guardian on Plus, on Sariling Tile | `GuardianWord` |
+
+A board's **Paborito** screen shows the words its user taps most, and only those that are tiles on their boards at the time: not a deleted tile, one on a board that is turned off, or a guardian's own tile while it is hidden.
 
 At least one board always stays published, and each child always has at least one board on. An added word appears at the end of its board for everyone. It has no recording in the shared voice until `python manage.py generate_tile_audio` is run again; until then the device's voice speaks it.
 
@@ -306,7 +307,6 @@ Some pages were built so that each can be deleted cleanly. Each is its own route
 
 | Page | Routes folder | Also delete |
 | --- | --- | --- |
-| Mga Paborito (guardian) | `routes/favorites/` | `forms/favorites/`, `models/favorite_word.py` and its line in `models/__init__.py`, migration `0011` |
 | Mga Paaralan at Institusyon | `routes/institutions/` | `forms/institutions/`, `templates/components/institutions/`, `models/institution.py` and its line in `models/__init__.py`, migration `0016` |
 | Feedback at mga Isyu | `routes/feedback/` | Nothing more |
 | Privacy | `routes/privacy/` | `forms/privacy/` |

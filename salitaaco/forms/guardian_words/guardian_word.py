@@ -8,14 +8,16 @@ from ..vocabulary.word import WordForm
 
 class GuardianWordForm(WordForm):
     """
-    A tile a guardian adds to one of the boards: an admin's word form, with
-    only the boards that are shown, and a check against the guardian's own tiles too.
+    A tile a guardian adds to one of the boards: an admin's word form, with the
+    boards that are shown and the guardian's own, and a check against the
+    guardian's own tiles too.
     """
 
     def __init__(self, *args, guardian, **kwargs):
         super().__init__(*args, **kwargs)
         self.guardian = guardian
-        self.fields["board"].choices = [("", "Pumili ng board…")] + [(name, name) for name in board_names()]
+        names = board_names() + list(guardian.boards.values_list("name", flat=True))
+        self.fields["board"].choices = [("", "Pumili ng board…")] + [(name, name) for name in names]
         self.fields["word"].help_text = "Ito mismo ang lalabas sa tile at bibigkasin, sa lahat ng board ng mga anak mo."
 
     def clean_word(self):

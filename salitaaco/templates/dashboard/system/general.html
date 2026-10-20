@@ -93,22 +93,45 @@
   {% endif %}
 </section>
 
-<section class="section" id="plus">
+<section class="section" id="limits">
   <form method="post" class="narrowForm settingsFields" novalidate>
     {% csrf_token %}
 
-    <h2>SalitAACo Plus</h2>
+    <h2>Mga limit ng Free at Plus</h2>
     <p class="desc">
-      Ang mga tagapag-alagang naka-Plus ay puwedeng magdagdag ng sarili nilang tile sa mga board ng pamilya nila. Hindi
-      binubura ang mga tile na lampas na sa bagong bilang, pero hindi na makakapagdagdag hangga't hindi bumababa rito.
+      Ilang sariling tile (sa Sariling Tile) at sariling board (sa Sariling Board) ang puwedeng gawin ng bawat
+      tagapag-alaga, ayon sa plano niya. Para sa lahat ng board ng isang tagapag-alaga at ng mga anak niya ang bawat
+      bilang; 0 para walang makagawa. Hindi binubura ang lampas sa bagong bilang: nakikita pa rin ang mga pinakaluma
+      hanggang sa bilang, at nakatago muna ang iba hanggang payagan ulit.
     </p>
 
-    <label for="{{ plus_form.guardian_word_limit.id_for_label }}">{{ plus_form.guardian_word_limit.label }}</label>
-    {{ plus_form.guardian_word_limit }}
-    <small class="fieldHelp">{{ plus_form.guardian_word_limit.help_text }}</small>
-    <small class="fieldError">{{ plus_form.guardian_word_limit.errors }}</small>
+    <div class="row">
+      <div>
+        <label for="{{ limits_form.free_word_limit.id_for_label }}">{{ limits_form.free_word_limit.label }}</label>
+        {{ limits_form.free_word_limit }}
+        <small class="fieldError">{{ limits_form.free_word_limit.errors }}</small>
+      </div>
+      <div>
+        <label for="{{ limits_form.plus_word_limit.id_for_label }}">{{ limits_form.plus_word_limit.label }}</label>
+        {{ limits_form.plus_word_limit }}
+        <small class="fieldError">{{ limits_form.plus_word_limit.errors }}</small>
+      </div>
+    </div>
 
-    <button class="primaryBtn formActions" type="submit" name="plus_form">I-save ang mga setting ng Plus</button>
+    <div class="row">
+      <div>
+        <label for="{{ limits_form.free_board_limit.id_for_label }}">{{ limits_form.free_board_limit.label }}</label>
+        {{ limits_form.free_board_limit }}
+        <small class="fieldError">{{ limits_form.free_board_limit.errors }}</small>
+      </div>
+      <div>
+        <label for="{{ limits_form.plus_board_limit.id_for_label }}">{{ limits_form.plus_board_limit.label }}</label>
+        {{ limits_form.plus_board_limit }}
+        <small class="fieldError">{{ limits_form.plus_board_limit.errors }}</small>
+      </div>
+    </div>
+
+    <button class="primaryBtn formActions" type="submit" name="limits_form">I-save ang mga limit</button>
   </form>
 </section>
 {% endblock %}

@@ -95,17 +95,19 @@
   </form>
 </div>
 
-<div class="confirmBackdrop hidden" data-modal="reject-{{ payment.uuid }}">
-  <form class="confirmBox settingsFields" method="post" action="{% url 'reject_payment' payment.uuid %}" role="dialog" aria-modal="true">
+<!-- Sent to this page, on this tab and page; a reason that is not valid reopens this dialog with it. -->
+<div class="confirmBackdrop hidden" data-modal="reject-{{ payment.uuid }}" data-open="{% if payment.uuid == rejecting %}true{% else %}false{% endif %}">
+  <form class="confirmBox settingsFields" method="post" action="{% url 'revenue' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" role="dialog" aria-modal="true">
     {% csrf_token %}
-    <input type="hidden" name="next" value="?{{ request.GET.urlencode }}" />
+    <input type="hidden" name="payment" value="{{ payment.uuid }}" />
     <h3>Tanggihan ang ₱{{ payment.amount }} ni {{ payment.guardian.display_name }}?</h3>
     <label for="rejectNote-{{ payment.uuid }}">{{ reject_form.note.label }}</label>
     <textarea class="textarea" name="note" id="rejectNote-{{ payment.uuid }}" rows="3" maxlength="300" required
-      placeholder="hal. Malabo ang larawan ng bayad. Pakisubukan muli."></textarea>
+      placeholder="hal. Malabo ang larawan ng bayad. Pakisubukan muli.">{% if payment.uuid == rejecting %}{{ reject_form.note.value|default:"" }}{% endif %}</textarea>
+    {% if payment.uuid == rejecting %}<small class="fieldError">{{ reject_form.note.errors }}</small>{% endif %}
     <div class="confirmRow">
       <button class="secondaryBtn" type="button" data-close-modal="reject-{{ payment.uuid }}">Huwag muna</button>
-      <button class="dangerBtn solid" type="submit">Oo, tanggihan</button>
+      <button class="dangerBtn solid" type="submit" name="reject_form">Oo, tanggihan</button>
     </div>
   </form>
 </div>

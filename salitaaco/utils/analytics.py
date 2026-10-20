@@ -10,6 +10,7 @@ from django.utils import timezone
 from salitaaco.models.customization import Customization
 from salitaaco.models.account_base import AccountBase
 from salitaaco.models.rating import Rating
+from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.word_usage import WordUsage
 from salitaaco.templatetags.format_bytes import format_bytes
 
@@ -114,9 +115,13 @@ def rating_distribution():
 
 
 def top_words(limit=TOP_WORDS_LIMIT):
-    """The most-used words across all users."""
+    """
+    The most-used words across all users. A family's own tiles are theirs (a
+    name, a place at home), and are not counted here.
+    """
     words = list(
-        WordUsage.objects.values("word")
+        WordUsage.objects.exclude(word__in=GuardianWord.objects.values("word"))
+        .values("word")
         .annotate(total_uses=Sum("use_count"), user_count=Count("user", distinct=True))
         .order_by("-total_uses", "word")[:limit]
     )

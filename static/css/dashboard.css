@@ -483,41 +483,6 @@
   font-size: 20px;
   letter-spacing: 2px;
 }
-/* Words with a button to take each away. */
-.chipList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.chipList li {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 4px 4px 14px;
-  border-radius: 999px;
-  background: var(--soft);
-  color: var(--on-soft);
-  font-size: 15px;
-  font-weight: 600;
-}
-.chipList button {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: var(--on-soft);
-  font-size: 20px;
-  line-height: 1;
-}
-.chipList button:hover {
-  background: var(--card);
-  color: var(--danger);
-}
-
 /* ---------- Admin pages: a bar for each day, what happened lately, the log ---------- */
 .dayBars {
   display: flex;

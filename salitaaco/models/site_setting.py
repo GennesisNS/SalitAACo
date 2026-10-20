@@ -1,6 +1,11 @@
 from django.db import models
 
-from salitaaco.defaults.plans import DEFAULT_GUARDIAN_WORD_LIMIT
+from salitaaco.defaults.plans import (
+    DEFAULT_FREE_BOARD_LIMIT,
+    DEFAULT_FREE_WORD_LIMIT,
+    DEFAULT_PLUS_BOARD_LIMIT,
+    DEFAULT_PLUS_WORD_LIMIT,
+)
 
 
 class SiteSetting(models.Model):
@@ -24,8 +29,12 @@ class SiteSetting(models.Model):
     gcash_qr_mime = models.CharField(max_length=50, blank=True)
     gcash_name = models.CharField(max_length=100, blank=True)
     gcash_number = models.CharField(max_length=20, blank=True)
-    # How many tiles of their own a guardian on a paid plan can add, across all the boards.
-    guardian_word_limit = models.PositiveSmallIntegerField(default=DEFAULT_GUARDIAN_WORD_LIMIT)
+    # How many tiles and boards of their own a guardian can add on each plan,
+    # across all of their family's boards (utils/guardian_words.py).
+    free_word_limit = models.PositiveSmallIntegerField(default=DEFAULT_FREE_WORD_LIMIT)
+    plus_word_limit = models.PositiveSmallIntegerField(default=DEFAULT_PLUS_WORD_LIMIT)
+    free_board_limit = models.PositiveSmallIntegerField(default=DEFAULT_FREE_BOARD_LIMIT)
+    plus_board_limit = models.PositiveSmallIntegerField(default=DEFAULT_PLUS_BOARD_LIMIT)
     updated_at = models.DateTimeField(auto_now=True)
 
     @classmethod

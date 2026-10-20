@@ -42,7 +42,10 @@
                 <span class="slider"></span>
               </label>
             </td>
-            <td><label class="boardName" for="{{ row.switch.id_for_label }}">{{ row.board.icon }} {{ row.board.name }}</label></td>
+            <td>
+              <label class="boardName" for="{{ row.switch.id_for_label }}">{{ row.board.icon }} {{ row.board.name }}</label>
+              {% if row.is_own %}<span class="planTag">Sarili</span>{% endif %}
+            </td>
             <td>{{ row.word_count }}</td>
             <td class="boardPreview" aria-hidden="true">{{ row.preview|join:" " }}</td>
           </tr>
@@ -55,7 +58,11 @@
     <button class="primaryBtn formActions" type="submit" name="boards_form">I-save ang mga board</button>
   </form>
 
-  <p class="note">Ang mga salita sa bawat board ay inaasikaso ng mga nagpapatakbo ng SalitAACo, kaya pareho ito sa lahat ng bata.</p>
+  <p class="note">
+    Ang mga salita sa mga board ng app ay inaasikaso ng mga nagpapatakbo ng SalitAACo, kaya pareho ito sa lahat ng bata.
+    Ang may tatak na “Sarili” ay board na ginawa mo sa <a href="{% url 'guardian_boards' %}">Sariling Board</a>; lalabas
+    ito rito kapag may tile na ito.
+  </p>
 </section>
 {% endblock %}
 

@@ -10,7 +10,7 @@ from salitaaco.tests.users_base import UserBase, make_guardian
 from salitaaco.utils.perms_check import is_administrator
 
 # A guardian's pages with no child in their address, each its own sidebar item.
-GUARDIAN_PAGES = {"overview", "children", "family_voices", "guardian_words", "plan", "support"}
+GUARDIAN_PAGES = {"overview", "children", "family_voices", "guardian_boards", "guardian_words", "plan", "support"}
 
 NEW_ADMIN = {
     "display_name": "Juan Dela Cruz",

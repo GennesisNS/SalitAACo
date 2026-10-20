@@ -34,18 +34,20 @@ class ChildBoardsBase(UserBase):
 
 
 class ChildBoardsFormTest(ChildBoardsBase):
-    def test_the_choices_are_the_boards_of_the_vocabulary(self):
+    def test_the_choices_are_the_boards_it_is_given(self):
+        # The page gives it the family's boards: the vocabulary's, then the guardian's own.
         self.assertEqual(board_names(), ALL_BOARDS)
-        self.assertEqual([value for value, label in ChildBoardsForm().fields["boards"].choices], ALL_BOARDS)
+        form = ChildBoardsForm(names=ALL_BOARDS + ["Bahay ni Lola"])
+        self.assertEqual([value for value, label in form.fields["boards"].choices], ALL_BOARDS + ["Bahay ni Lola"])
 
     def test_at_least_one_board_has_to_stay_on(self):
-        form = ChildBoardsForm({"boards": []})
+        form = ChildBoardsForm({"boards": []}, names=ALL_BOARDS)
         self.assertFalse(form.is_valid())
         self.assertEqual(form.errors["boards"], ["Kailangang may kahit isang board na naka-on para sa bata."])
-        self.assertTrue(ChildBoardsForm({"boards": ["Tao"]}).is_valid())
+        self.assertTrue(ChildBoardsForm({"boards": ["Tao"]}, names=ALL_BOARDS).is_valid())
 
     def test_a_board_that_does_not_exist_is_refused(self):
-        form = ChildBoardsForm({"boards": ["Tao", "Wala Nito"]})
+        form = ChildBoardsForm({"boards": ["Tao", "Wala Nito"]}, names=ALL_BOARDS)
         self.assertFalse(form.is_valid())
         self.assertEqual(form.errors["boards"], ["Walang ganitong board."])
 

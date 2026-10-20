@@ -3,6 +3,7 @@ from salitaaco.forms.account.delete_account import DeleteAccountForm
 from salitaaco.forms.account.profile_information import ProfileInformationForm
 from salitaaco.forms.account.upload_avatar import UploadAvatarForm
 from salitaaco.tests.users_base import GUARDIAN_PASSWORD, UserBase, image_upload, make_guardian
+from salitaaco.utils.account import create_admin
 from salitaaco.utils.uploads import MAX_UPLOAD_SIZE
 
 
@@ -99,3 +100,14 @@ class DeleteAccountFormTest(UserBase):
 
         childless = make_guardian("tatay", "Tatay Ben")
         self.assertTrue(DeleteAccountForm({"password": GUARDIAN_PASSWORD}, user=childless.user).is_valid())
+
+    def test_the_only_admin_cannot_delete_their_account(self):
+        form = DeleteAccountForm({"password": "dev-password"}, user=self.developer)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.non_field_errors(), [
+            "Ikaw ang nag-iisang admin. Gumawa muna ng isa pang admin sa Access control bago burahin ang account mo.",
+        ])
+
+        # With another admin, they can.
+        create_admin("juan", "Juan Dela Cruz", "Lihim#2026")
+        self.assertTrue(DeleteAccountForm({"password": "dev-password"}, user=self.developer).is_valid())

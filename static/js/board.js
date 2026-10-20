@@ -15,9 +15,6 @@ boardData.categories.forEach((board) => {
   boards[board.name] = board;
 });
 
-// Words the child's guardian put on the Paborito screen. The page may not send any.
-const favoriteWords = boardData.favorite_words || [];
-
 const customList = {}; // { word: {has_image, has_sound, image_url, sound_url, reset_url} }
 boardData.customizations.forEach((it) => {
   customList[it.word] = it;
@@ -197,19 +194,20 @@ window.addEventListener("hashchange", () => {
   if (board) recordBoardOpen(board.name);
 });
 
-function findEmojiForWord(word) {
+// The tile on this user's boards that says `word` (a verb in any of its forms), or null.
+function findTile(word) {
   for (const board of Object.values(boards)) {
     for (const item of board.items) {
-      const baseLabel = item.verb ? item.verb[currentAspect] : item.w;
-      if (item.w === word || baseLabel === word) return item.e || "📝";
-      if (item.verb) {
-        if (item.verb.past === word || item.verb.present === word || item.verb.future === word) {
-          return item.e || "📝";
-        }
-      }
+      if (item.w === word) return item;
+      if (item.verb && [item.verb.past, item.verb.present, item.verb.future].includes(word)) return item;
     }
   }
-  return "📝";
+  return null;
+}
+
+function findEmojiForWord(word) {
+  const tile = findTile(word);
+  return (tile && tile.e) || "📝";
 }
 
 function el(tag, className, text) {
@@ -247,11 +245,12 @@ function renderBoards() {
   });
 }
 
-// The words the guardian chose, then the words used most, most used first.
+// The words used most, most used first. Only words that are tiles on these boards
+// now: not a tile that was deleted, on a board that was turned off, or a
+// guardian's own tile while it is hidden.
 function renderFavorites() {
-  const chosen = favoriteWords.map((word) => ({ w: word, e: findEmojiForWord(word), _chosen: true }));
-  const frequent = frequentItems.filter((it) => !favoriteWords.includes(it.word));
-  if (chosen.length === 0 && frequent.length === 0) {
+  const frequent = frequentItems.filter((it) => findTile(it.word));
+  if (frequent.length === 0) {
     const empty = el("div", "emptyBoard");
     empty.append(
       el("div", "emoji", "⭐"),
@@ -261,19 +260,17 @@ function renderFavorites() {
     gridEl.appendChild(empty);
     return;
   }
-  hintEl.textContent = chosen.length
-    ? "Ang mga salitang pinili para sa iyo (⭐), at ang mga pinakamadalas mong gamitin."
-    : "Ang mga salitang pinakamadalas mong gamitin, ayon sa kung ilang beses mo na itong nagamit.";
+  hintEl.textContent = "Ang mga salitang pinakamadalas mong gamitin, ayon sa kung ilang beses mo na itong nagamit.";
   hintEl.classList.remove("hidden");
-  renderTiles(gridEl, [
-    ...chosen,
-    ...frequent.map((it) => ({
+  renderTiles(
+    gridEl,
+    frequent.map((it) => ({
       w: it.word,
       e: findEmojiForWord(it.word),
       _useCount: it.use_count,
       _fromFrequent: true,
     })),
-  ]);
+  );
 }
 
 function renderTiles(grid, items) {
@@ -284,7 +281,6 @@ function renderTiles(grid, items) {
     // In edit mode the tile holds buttons, so it cannot be a button itself.
     const c = el(editMode ? "div" : "button", "cell");
 
-    if (item._chosen) c.appendChild(el("span", "pinmark", "⭐"));
     if (item._fromFrequent && item._useCount) {
       const useCountMark = el("span", "usecount", `×${item._useCount}`);
       useCountMark.title = `Ginamit nang ${item._useCount} na beses`;

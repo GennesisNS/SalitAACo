@@ -42,6 +42,14 @@ def validate_voice_sample_size(file):
         raise ValidationError("Masyadong malaki ang recording (max 10MB).")
 
 
+def clean_symbol(value):
+    """A tile's or a board's picture: an emoji. Letters and digits would be a second label, not a picture."""
+    symbol = value.strip()
+    if re.search(r"[A-Za-z0-9<>&]", symbol):
+        raise ValidationError("Emoji ang ilagay, hindi titik o numero.")
+    return symbol
+
+
 def name_validator(value):
     # only allow a-z, A-Z, dash, and space
     if not re.match(r'^[a-zA-Z\s-]+$', value):

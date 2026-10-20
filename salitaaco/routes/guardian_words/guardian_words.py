@@ -1,8 +1,9 @@
 """
-The "Sariling Tile" page: tiles a guardian on a paid plan adds to the boards,
-which show on their own board and on every one of their children's. How many
-a guardian can have is set on System Settings > General. While the guardian
-is not on a paid plan, their tiles are kept but not shown, and none can be added.
+The "Sariling Tile" page: tiles a guardian adds to the boards (the app's or
+their own, see routes/guardian_boards/), which show on their own board and on
+every one of their children's. How many a guardian can have depends on their
+plan, as an admin sets it on System Settings > General; over it, the oldest
+up to it show and the rest are kept, hidden.
 
 A tile is voiced with ElevenLabs when it is added: in the shared voice, kept in
 the guardian's own folder under media/ apart from the vocabulary's audio in
@@ -18,15 +19,20 @@ from django.views.decorators.http import require_POST
 from salitaaco.forms.guardian_words.guardian_word import GuardianWordForm
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.models.guardian_word import GuardianWord
+from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.family_voice import elevenlabs_is_set_up
+from salitaaco.utils.guardian_boards import shown_guardian_boards
 from salitaaco.utils.guardian_words import (
-    can_add_words,
     delete_guardian_word_audio,
+    delete_word_usage,
     guardian_word_audio_path,
     guardian_word_audio_urls,
-    guardian_word_limit,
+    limit_reached_message,
+    on_free_plan,
+    shown_guardian_words,
     voice_guardian_word,
+    word_limit,
 )
 from salitaaco.utils.perms_check import is_app_user, is_guardian, multi_user_test
 
@@ -38,19 +44,18 @@ NOT_VOICED = "Hindi pa nagawa ang boses nito, kaya boses muna ng device ang gaga
 @multi_user_test(is_guardian)
 def view_guardian_words(request):
     guardian = get_object_or_404(GuardianAccount, user=request.user)
-    words = guardian.words.all()
-    limit = guardian_word_limit()
-    on_paid_plan = can_add_words(guardian)
-    at_limit = words.count() >= limit
+    words = list(guardian.words.all())
+    limit = word_limit(guardian)
+    on_free = on_free_plan(guardian)
+    plus_limit = SiteSetting.load().plus_word_limit
+    can_add = len(words) < limit
+    limit_message = limit_reached_message("tile", limit, on_free, plus_limit)
 
     word_form = GuardianWordForm(guardian=guardian)
 
     if request.method == "POST":
-        if not on_paid_plan:
-            messages.error(request, "Para sa SalitAACo Plus lang ang pagdagdag ng sariling tile.")
-            return redirect('guardian_words')
-        if at_limit:
-            messages.error(request, f"Naabot mo na ang {limit} na sariling tile. Magbura muna ng isa para makapagdagdag.")
+        if not can_add:
+            messages.error(request, limit_message)
             return redirect('guardian_words')
 
         word_form = GuardianWordForm(request.POST, guardian=guardian)
@@ -66,15 +71,29 @@ def view_guardian_words(request):
                 messages.error(request, NOT_VOICED)
             return redirect('guardian_words')
 
+    # A tile shows when it is within the limit and, on a board of the guardian's own, that board shows too.
+    shown = {word.pk for word in shown_guardian_words(guardian)}
+    own_boards = set(guardian.boards.values_list("name", flat=True))
+    shown_boards = {board.name for board in shown_guardian_boards(guardian)}
     audio_urls = guardian_word_audio_urls(words)
+    rows = [
+        {
+            "word": word,
+            "audio_url": audio_urls.get(word.word),
+            "shown": word.pk in shown and (word.board not in own_boards or word.board in shown_boards),
+        }
+        for word in words
+    ]
 
     context = {
-        "words": [{"word": word, "audio_url": audio_urls.get(word.word)} for word in words],
-        "word_count": words.count(),
+        "words": rows,
+        "word_count": len(words),
+        "hidden_count": sum(1 for row in rows if not row["shown"]),
         "limit": limit,
-        "on_paid_plan": on_paid_plan,
-        "at_limit": at_limit,
-        "can_voice": on_paid_plan and elevenlabs_is_set_up(),
+        "can_add": can_add,
+        "limit_message": limit_message,
+        "offer_plus": on_free and plus_limit > limit,
+        "can_voice": elevenlabs_is_set_up(),
         "word_form": word_form,
     }
     return render(request, 'dashboard/guardian_words/guardian_words.html', context)
@@ -84,11 +103,12 @@ def view_guardian_words(request):
 @multi_user_test(is_guardian)
 @require_POST
 def remove_guardian_word(request, word_uuid):
-    """A guardian removes one of their tiles, on a paid plan or not."""
+    """A guardian removes one of their tiles, shown or not, with its audio and its counts."""
     word = get_object_or_404(GuardianWord, uuid=word_uuid, guardian__user=request.user)
     guardian, text = word.guardian, word.word
     word.delete()
     delete_guardian_word_audio(guardian, text)
+    delete_word_usage(guardian, text)
     messages.success(request, f"Nabura na ang “{text}”. Wala na ito sa mga board.")
     return redirect('guardian_words')
 
@@ -113,10 +133,10 @@ def play_guardian_word(request, word_uuid):
 @multi_user_test(is_guardian)
 @require_POST
 def voice_word(request, word_uuid):
-    """Try again to voice a tile whose audio ElevenLabs did not make when it was added."""
+    """Try again to voice a tile whose audio ElevenLabs did not make when it was added. Only a tile that shows."""
     word = get_object_or_404(GuardianWord.objects.select_related("guardian"), uuid=word_uuid, guardian__user=request.user)
-    if not can_add_words(word.guardian):
-        messages.error(request, "Para sa SalitAACo Plus lang ang sariling tile.")
+    if word.pk not in {shown.pk for shown in shown_guardian_words(word.guardian)}:
+        messages.error(request, "Nakatago ang tile na ito dahil lampas na ito sa limit ng plano mo.")
     elif voice_guardian_word(word):
         messages.success(request, f"Nagawa na ang boses ng “{word.word}”.")
     else:

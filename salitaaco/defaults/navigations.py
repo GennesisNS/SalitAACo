@@ -37,6 +37,13 @@ dashboard_items = [
                 "roles": [GUARDIAN],
             },
             {
+                "name": "Sariling Board",
+                "id": "guardian_boards",
+                "route": "guardian_boards",
+                "icon": "grid",
+                "roles": [GUARDIAN],
+            },
+            {
                 "name": "Sariling Tile",
                 "id": "guardian_words",
                 "route": "guardian_words",
@@ -54,15 +61,6 @@ dashboard_items = [
                 "id": "child_boards",
                 "route": "child_boards",
                 "icon": "grid",
-                "roles": [GUARDIAN],
-                "child": True,
-            },
-            # May be removed, with routes/favorites/.
-            {
-                "name": "Mga Paborito",
-                "id": "favorites",
-                "route": "favorites",
-                "icon": "star",
                 "roles": [GUARDIAN],
                 "child": True,
             },
