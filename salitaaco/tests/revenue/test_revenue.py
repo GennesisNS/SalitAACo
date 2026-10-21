@@ -1,15 +1,14 @@
 from django.test import SimpleTestCase
 from django.urls import reverse
 
-from salitaaco.defaults.plans import APPROVED, FREE, PENDING, PLUS, REJECTED
-from salitaaco.forms.revenue.reject_payment import RejectPaymentForm
+from salitaaco.defaults.plans import APPROVED, PENDING, REJECTED
 from salitaaco.forms.revenue.transaction_status import ALL_STATUSES, TransactionStatusForm
-from salitaaco.tests.payments_base import make_payment, messages_of
+from salitaaco.tests.payments_base import make_payment
 from salitaaco.tests.users_base import UserBase, make_guardian
-from salitaaco.utils.plans import current_plan
+from salitaaco.utils.plans import approve_payment
 
 
-class RevenueFormsTest(SimpleTestCase):
+class TransactionStatusFormTest(SimpleTestCase):
     def test_no_status_or_an_unknown_one_means_all_of_them(self):
         for data in [None, {}, {"status": ""}, {"status": "wala-nito"}]:
             self.assertEqual(TransactionStatusForm(data).chosen(), ALL_STATUSES, data)
@@ -18,18 +17,9 @@ class RevenueFormsTest(SimpleTestCase):
         for status in [PENDING, APPROVED, REJECTED]:
             self.assertEqual(TransactionStatusForm({"status": status}).chosen(), status)
 
-    def test_rejecting_needs_a_reason(self):
-        self.assertEqual(RejectPaymentForm({}).errors["note"], ["Ilagay kung bakit tinanggihan ang bayad."])
-        self.assertEqual(
-            RejectPaymentForm({"note": "a" * 301}).errors["note"],
-            ["Masyadong mahaba ang dahilan (hanggang 300 character)."],
-        )
-        payment = "6f1c2b8e-3a4d-4c5e-9f00-112233445566"
-        self.assertTrue(RejectPaymentForm({"payment": payment, "note": "Malabo ang larawan."}).is_valid())
-        self.assertIn("payment", RejectPaymentForm({"payment": "hindi-uuid", "note": "Malabo ang larawan."}).errors)
 
-
-class RevenueBase(UserBase):
+class RevenuePageTest(UserBase):
+    """Kita: the record of every payment and what became of it, to look at only."""
     url = reverse("revenue")
 
     @classmethod
@@ -38,8 +28,6 @@ class RevenueBase(UserBase):
         cls.nanay = make_guardian("nanay", "Nanay Rosa", children=[cls.miguel])
         cls.tatay = make_guardian("tatay", "Tatay Ben")
 
-
-class RevenuePageTest(RevenueBase):
     def tabs(self, response):
         return [(tab["label"], tab["count"], tab["active"]) for tab in response.context["tabs"]]
 
@@ -78,100 +66,33 @@ class RevenuePageTest(RevenueBase):
 
         response = self.client.get(self.url, {"status": "rejected"})
         self.assertEqual([payment.status for payment in response.context["payments"]], [REJECTED])
-        self.assertContains(response, "Mali ang halaga.")
 
         # An unknown status shows them all.
         self.assertEqual(len(self.client.get(self.url, {"status": "wala-nito"}).context["payments"]), 3)
 
-    def test_only_a_waiting_payment_has_the_buttons(self):
+    def test_it_only_shows_payments_with_their_proof_and_the_time_they_bought(self):
         waiting = make_payment(self.tatay)
-        make_payment(self.nanay, status=APPROVED)
+        approved = make_payment(self.nanay)
+        approve_payment(approved, self.developer)
+        approved.refresh_from_db()
 
         self.login_as("developer")
         response = self.client.get(self.url)
-        self.assertContains(response, f'data-open-modal="approve-{waiting.uuid}">Aprubahan</button>', count=1)
-        self.assertContains(response, f'data-open-modal="reject-{waiting.uuid}">Tanggihan</button>', count=1)
-        self.assertContains(response, f'action="{reverse("approve_payment", args=[waiting.uuid])}"', count=1)
-        self.assertContains(response, f'<input type="hidden" name="payment" value="{waiting.uuid}" />', count=1)
+        for column in ["Petsa", "Tagapag-alaga", "Plano", "Halaga", "Status", "Patunay", "Sakop"]:
+            self.assertContains(response, f"<th>{column}</th>")
+        self.assertNotContains(response, "<th>Aksyon</th>")
+        # Approving and rejecting are on Mga Subscription, not here.
+        for gone in ["Aprubahan", "Tanggihan", 'name="reject_form"', reverse("approve_payment", args=[waiting.uuid])]:
+            self.assertNotContains(response, gone)
+        self.assertContains(response, f'href="{reverse("subscriptions")}"')
+
         self.assertContains(response, 'data-open-modal="proof"', count=2)
         self.assertContains(response, reverse("view_payment_proof", args=[waiting.uuid]))
+        self.assertContains(response, f'{approved.starts_at:%Y-%m-%d} hanggang {approved.ends_at:%Y-%m-%d}')
 
-
-class ApproveAndRejectTest(RevenueBase):
-    def test_approving_puts_the_guardian_on_the_plan(self):
+    def test_posting_changes_nothing(self):
         payment = make_payment(self.nanay)
         self.login_as("developer")
-        response = self.client.post(reverse("approve_payment", args=[payment.uuid]), {"next": "?status=pending"})
-
-        self.assertRedirects(response, f"{self.url}?status=pending")
-        self.assertEqual(messages_of(response), ["Naaprubahan na. Naka-SalitAACo Plus na si Nanay Rosa."])
-        payment.refresh_from_db()
-        self.assertEqual((payment.status, payment.reviewed_by), (APPROVED, self.developer))
-        self.assertEqual(current_plan(self.nanay).key, PLUS)
-
-        # Approving it again changes nothing.
-        response = self.client.post(reverse("approve_payment", args=[payment.uuid]))
-        self.assertEqual(messages_of(response), ["Hindi na naghihintay ang bayad na ito."])
-
-    def reject(self, payment, note, query=""):
-        return self.client.post(f"{self.url}{query}", {"reject_form": "", "payment": payment.uuid, "note": note})
-
-    def test_rejecting_keeps_the_guardian_on_free_and_returns_to_the_same_tab(self):
-        payment = make_payment(self.nanay)
-        self.login_as("developer")
-
-        response = self.reject(payment, "Malabo ang larawan.", query="?status=pending")
-        self.assertRedirects(response, f"{self.url}?status=pending")
-        self.assertEqual(messages_of(response), ["Tinanggihan ang bayad ni Nanay Rosa."])
-        payment.refresh_from_db()
-        self.assertEqual((payment.status, payment.note, payment.reviewed_by), (REJECTED, "Malabo ang larawan.", self.developer))
-        self.assertEqual(current_plan(self.nanay).key, FREE)
-
-        # Rejecting it again changes nothing.
-        self.assertEqual(messages_of(self.reject(payment, "Huli na.")), ["Hindi na naghihintay ang bayad na ito."])
-
-    def test_a_reason_that_is_not_valid_reopens_the_dialog_with_what_was_typed(self):
-        payment = make_payment(self.nanay)
-        other = make_payment(self.tatay)
-        self.login_as("developer")
-
-        too_long = "Malabo ang larawan. " + "a" * 300
-        response = self.reject(payment, too_long, query="?status=pending")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["rejecting"], payment.uuid)
-        self.assertContains(response, f'data-modal="reject-{payment.uuid}" data-open="true"')
-        self.assertContains(response, f'data-modal="reject-{other.uuid}" data-open="false"')
-        self.assertContains(response, f">{too_long}</textarea>")
-        self.assertContains(response, "Masyadong mahaba ang dahilan (hanggang 300 character).")
-        # Still on the tab it was sent from.
-        self.assertEqual([tab["label"] for tab in response.context["tabs"] if tab["active"]], ["Naghihintay"])
-        self.assertContains(response, f'action="{self.url}?status=pending"')
+        self.client.post(self.url, {"reject_form": "", "payment": payment.uuid, "note": "Malabo."})
         payment.refresh_from_db()
         self.assertEqual(payment.status, PENDING)
-
-        response = self.reject(payment, "")
-        self.assertContains(response, "Ilagay kung bakit tinanggihan ang bayad.")
-
-    def test_a_payment_not_on_the_page_shows_why_as_a_message(self):
-        payment = make_payment(self.nanay)
-        self.login_as("developer")
-        response = self.reject(payment, "", query="?status=approved")
-        self.assertEqual(messages_of(response), ["Ilagay kung bakit tinanggihan ang bayad."])
-        self.assertIsNone(response.context["rejecting"])
-
-    def test_only_admins_approve_or_reject(self):
-        payment = make_payment(self.nanay)
-        approve_url = reverse("approve_payment", args=[payment.uuid])
-        self.login_as("nanay")
-        self.assertEqual(self.client.post(approve_url).status_code, 302)
-        self.assertEqual(self.reject(payment, "x").status_code, 302)
-        self.login_as("developer")
-        self.assertEqual(self.client.get(approve_url).status_code, 405)
-        payment.refresh_from_db()
-        self.assertEqual(payment.status, PENDING)
-
-    def test_the_way_back_stays_on_this_page(self):
-        payment = make_payment(self.nanay)
-        self.login_as("developer")
-        response = self.client.post(reverse("approve_payment", args=[payment.uuid]), {"next": "https://iba.example/"})
-        self.assertRedirects(response, self.url)

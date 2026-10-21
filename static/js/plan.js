@@ -1,6 +1,18 @@
 // The payment pages: picking the picture of a payment and seeing it before it
 // is sent, and showing a sent one in the "Patunay ng bayad" window.
 
+/* ---------- Which plan the pay window is for: the one whose button was pressed ---------- */
+const payPlan = document.getElementById("payPlan");
+document.querySelectorAll("[data-pay-plan]").forEach((button) => {
+  button.addEventListener("click", () => {
+    payPlan.value = button.dataset.payPlan;
+    const texts = { name: button.dataset.payName, price: button.dataset.payPrice, period: button.dataset.payPeriod };
+    document.querySelectorAll("[data-pay-text]").forEach((el) => {
+      el.textContent = texts[el.dataset.payText];
+    });
+  });
+});
+
 /* ---------- The proof of payment a guardian picks ---------- */
 const proofUpload = document.getElementById("proofUpload");
 if (proofUpload) {

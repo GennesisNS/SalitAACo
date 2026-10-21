@@ -45,11 +45,20 @@ class PlanForm(BaseForm):
         label="Iniaalok sa mga tagapag-alaga",
     )
 
-    def __init__(self, *args, include_price=True, **kwargs):
+    def __init__(self, *args, include_price=True, taken_names=(), **kwargs):
+        """taken_names: the names of the other plans, which this one may not repeat."""
         super().__init__(*args, **kwargs)
+        self.taken_names = {name.lower() for name in taken_names}
         if not include_price:
             del self.fields["price"]
             del self.fields["offered"]
+
+    def clean_name(self):
+        """A name no other plan has, so that guardians and admins can tell the plans apart."""
+        name = " ".join(self.cleaned_data["name"].split())
+        if name.lower() in self.taken_names:
+            raise forms.ValidationError("May plano nang may ganitong pangalan.")
+        return name
 
     def clean_features(self):
         """One feature per line, without the blank lines."""

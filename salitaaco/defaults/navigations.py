@@ -174,6 +174,13 @@ dashboard_items = [
                 "roles": [ADMINISTRATOR],
             },
             {
+                "name": "Mga Plano",
+                "id": "system_plans",
+                "route": "system_plans",
+                "icon": "card",
+                "roles": [ADMINISTRATOR],
+            },
+            {
                 "name": "Access control",
                 "id": "system_access",
                 "route": "system_access",

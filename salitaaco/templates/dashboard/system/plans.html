@@ -1,0 +1,113 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Mga Plano - SalitAACo{% endblock %}
+
+{% block heading %}System Settings: Mga Plano{% endblock %}
+
+{% block main %}
+<section class="section">
+  <div class="sectionHead">
+    <h2>Mga plano</h2>
+    <button class="primaryBtn" type="button" data-open-modal="new-plan">＋ Magdagdag ng plano</button>
+  </div>
+  <p class="desc">
+    Ito ang mga planong nakikita ng mga tagapag-alaga sa “Plano at Subscription” at sa pampublikong website.
+    Ang planong hindi iniaalok ay hindi na mapipili ng bago, pero mananatili sa mga mayroon na nito hanggang matapos ang
+    bayad nila. Ang bagong presyo ay para sa mga susunod na bayad; hindi nito binabago ang mga naipadala na. Ang planong
+    may bayad na ay hindi mabubura; i-off na lang ang “Iniaalok”.
+  </p>
+
+  <div class="planGrid">
+    {% for item in plans %}
+    <form method="post" class="planCard settingsFields" novalidate>
+      {% csrf_token %}
+      {% with form=item.form %}
+
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      <small class="fieldError">{{ form.name.errors }}</small>
+
+      {% if form.price %}
+      <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+      {{ form.price }}
+      <small class="fieldError">{{ form.price.errors }}</small>
+      {% else %}
+      <p class="desc">Libre ang planong ito at laging iniaalok: dito napupunta ang mga tagapag-alagang walang bayad na plano.</p>
+      {% endif %}
+
+      <label for="{{ form.features.id_for_label }}">{{ form.features.label }}</label>
+      {{ form.features }}
+      <small class="fieldError">{{ form.features.errors }}</small>
+
+      {% if form.offered %}
+      <div class="switchRow">
+        <label class="switch">
+          {{ form.offered }}
+          <span class="slider"></span>
+        </label>
+        <span>{{ form.offered.label }}</span>
+      </div>
+      {% endif %}
+
+      <button class="primaryBtn formActions" type="submit" name="plan_form" value="{{ item.plan.key }}">I-save ang plano</button>
+      {% if item.can_delete %}
+      <button class="secondaryBtn danger blockBtn" type="button" data-open-modal="delete-plan-{{ item.plan.plan_id }}">Burahin ang plano</button>
+      {% endif %}
+      {% endwith %}
+    </form>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ============== ADD A PLAN ============== -->
+<div class="settingsBackdrop hidden" data-modal="new-plan" data-open="{{ show_new_plan_modal|yesno:'true,false' }}">
+  <div class="settingsBox narrow" role="dialog" aria-modal="true" aria-labelledby="newPlanTitle">
+    <div class="settingsHeader">
+      <h2 id="newPlanTitle">Magdagdag ng plano</h2>
+      <button class="closeBtn" type="button" data-close-modal="new-plan" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" class="settingsBody" novalidate>
+      {% csrf_token %}
+      {% with form=new_plan_form %}
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      <small class="fieldError">{{ form.name.errors }}</small>
+
+      <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+      {{ form.price }}
+      <small class="fieldError">{{ form.price.errors }}</small>
+
+      <label for="{{ form.features.id_for_label }}">{{ form.features.label }}</label>
+      {{ form.features }}
+      <small class="fieldError">{{ form.features.errors }}</small>
+
+      <div class="switchRow">
+        <label class="switch">
+          {{ form.offered }}
+          <span class="slider"></span>
+        </label>
+        <span>{{ form.offered.label }}</span>
+      </div>
+      {% endwith %}
+      <button class="primaryBtn blockBtn formActions" type="submit" name="new_plan_form">Idagdag ang plano</button>
+    </form>
+  </div>
+</div>
+
+<!-- Deleting a plan is asked twice. -->
+{% for item in plans %}
+{% if item.can_delete %}
+<div class="confirmBackdrop hidden" data-modal="delete-plan-{{ item.plan.plan_id }}">
+  <form class="confirmBox" method="post" action="{% url 'remove_plan' item.plan.plan_id %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <h3>Burahin ang {{ item.plan.name }}?</h3>
+    <p>Mawawala ito sa “Plano at Subscription” at sa pampublikong website. Hindi na ito maibabalik.</p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-plan-{{ item.plan.plan_id }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, burahin</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}
