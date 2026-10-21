@@ -15,8 +15,8 @@ def view_home(request):
         return redirect(home_route(get_user_account(request.user)))
 
     context = {
-        # The same plans the admin sees on Mga Subscription and guardians on Plano at Subscription.
-        "plans": [{**plan, "is_free": plan["price"] == 0} for plan in offered_plans()],
+        # The same plans the admin edits on Mga Subscription and guardians see on Plano at Subscription.
+        "plans": offered_plans(),
         # The support email and telephone an admin set on System Settings > General.
         "site_setting": SiteSetting.load(),
         "year": timezone.localdate().year,

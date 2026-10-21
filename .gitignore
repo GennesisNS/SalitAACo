@@ -21,3 +21,6 @@ db.sqlite3
 # Uploads: keep the folders, ignore what users put in them
 /media/*/*
 !/media/*/.gitkeep
+
+# Claude Code
+/CLAUDE.md

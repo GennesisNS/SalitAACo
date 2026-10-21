@@ -57,7 +57,7 @@ URL names are given with their path. Paths without a leading slash are under `/d
 | `admin: users` | `users.view_users` | `users` `users/` | `SearchUserForm`, `UserStatusForm` | `dashboard/users/users.html`, ten rows per page | Done |
 | `admin: ratings` | `feedback.view_feedback` | `feedback` `feedback/` | | `dashboard/feedback/feedback.html`, ten rows per page | Done |
 
-Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python manage.py make_admin <username>`; `database/database.sql` became the migrations.
+Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python manage.py make_admin <new username>`, which makes a new admin account; `database/database.sql` became the migrations.
 
 ## Where the Django project behaves differently on purpose
 
@@ -74,7 +74,7 @@ Not routes, but replaced: the SQL `UPDATE users SET is_admin = 1` became `python
 | A tile without a recording used whatever voice the browser had | Each word plays, the first that exists: the family's recording, the child's family voice (a family member's voice cloned with ElevenLabs on the Boses ng Pamilya page, with consent terms), the shared Filipino voice (generated once with ElevenLabs by `manage.py generate_tile_audio`), the browser's voice | Requested after the conversion |
 | Tiles come in one size | Each account chooses small, medium or large tiles on the Settings page, with a demo. The choice is saved on the account (`tile_size`), so it follows the user to any device, unlike the theme, which is remembered per browser. Medium is the original size | Requested after the conversion |
 | Tapping a tile played its recording at once | Tapping only adds the word. The **▶ Patugtugin** button plays the sentence in order: each word's recording if it has one, otherwise the device's Filipino voice. **↩ Ibalik** takes back the last word | Requested after the conversion |
-| One page of tiles with a tab for each category | The board has four screens along the bottom: Home (quick words and feelings), Mga Board (a board is a category), Paborito (favorite and most-used words) and, for a child, Profile. Screens change without reloading, so the sentence carries across them | The redesign |
+| One page of tiles with a tab for each category | The board has four screens along the bottom: Home (quick words and feelings), Mga Board (a board is a category), Paborito (most-used words) and, for a child, Profile. Screens change without reloading, so the sentence carries across them | The redesign |
 | A replaced tile picture could stay cached for a day | The picture's address changes when it is replaced | Bug in the PHP application |
 | Emptying the sentence one word at a time raised a JavaScript error | Fixed | Bug in the PHP application |
 | The dark theme toggle is in the board's header and is forgotten on reload | The toggle is on the Settings page, and the choice is remembered in the browser | Pages reload more often now; moved to Settings on request |
@@ -102,7 +102,7 @@ Rules:
 - A guardian confirms deleting a child with the guardian's own password.
 - A guardian cannot delete their own account while they have children.
 - A child keeps everything an account could do before: their board, edit mode, their profile and password.
-- `make_admin` adds an admin account beside the user's existing one.
+- `make_admin` makes a new admin account of its own; it never turns an existing guardian's or child's account into an admin. Migration 0019 took admin access away from accounts that were both.
 
 ## Added after the conversion: the redesign
 
@@ -119,7 +119,7 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | What changes to the vocabulary are | `defaults/vocabulary.py` is never edited. Hidden boards, added words, a child's boards and favorites are database rows on top of it |
 | Account status | Active or inactive only (`User.is_active`). There is no "pending": guardians sign up freely |
 | Language modes (English, Taglish) | Not built: the feature has not been decided |
-| Subscriptions and payments | Frontend only for now: the pages show the design and save nothing. Payment is by QR code and an uploaded proof, with no payment gateway |
+| Subscriptions and payments | Payment is by GCash QR code and an uploaded proof, with no payment gateway. An admin approves or rejects each one; an approved one gives one month of the plan, added to the end of any month still running. A paid plan unlocks more than 2 family voices. How many tiles and boards of their own a guardian can make is set by an admin for Free and for Plus; over a limit, the oldest up to it show |
 | Audit log | Not built, in keeping with the decision below against an audit trail |
 | New boards | Admins publish, hide and add words to the existing boards; they do not create boards |
 | Reports | CSV only |
@@ -140,11 +140,12 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Buod: children as a table, the plan | `overview.view_overview` | `overview` `overview/` | | `dashboard/overview/overview.html` |
 | Mga Bata: the table, and the add-a-child modal | `children.view_children` | `children` `children/` | `CreateChildForm` | `dashboard/children/children.html` |
 | Which boards a child sees (at least one stays on) | `boards.manage_child_boards` | `child_boards` `children/<uuid>/boards/` | `ChildBoardsForm` | `dashboard/children/boards.html` |
-| A child's favorite words *(may be removed)* | `favorites.manage_favorites`, `favorites.remove_favorite` | `favorites` `children/<uuid>/favorites/`, `remove_favorite` `…/favorites/<uuid>/remove/` | `AddFavoriteWordForm` | `dashboard/favorites/favorites.html` |
 | Which voice a child hears | `voice.choose_child_voice` | `child_voice` `children/<uuid>/voice/` | `ChooseFamilyVoiceForm` | `dashboard/children/voice.html` |
 | A child's usage, by 7 days, 30 days or all time | `usage.view_child_usage` | `child_usage` `children/<uuid>/usage/` | `UsageRangeForm` | `dashboard/children/usage.html` |
 | Family voices, with consent as a step before recording | `family_voices.view_family_voices` | `family_voices` `family-voices/` | `AddFamilyVoiceForm` | `dashboard/family_voices/family_voices.html` |
-| Plans, paying by QR code, history of payments *(frontend only)* | `plan.view_plan`, `plan.view_transactions` | `plan` `plan/`, `plan_transactions` `plan/transactions/` | | `dashboard/plan/` |
+| Plans, paying by GCash QR code, history of payments | `plan.view_plan`, `plan.view_transactions`, `plan.view_payment_proof`, `plan.view_gcash_qr` | `plan` `plan/`, `plan_transactions` `plan/transactions/`, `view_payment_proof` `plan/payments/<uuid>/proof/`, `view_gcash_qr` `plan/gcash-qr/` | `PaymentProofForm` | `dashboard/plan/` |
+| Sariling Board: a guardian's own boards for their family | `guardian_boards.view_guardian_boards`, `guardian_boards.remove_guardian_board` | `guardian_boards` `own-boards/`, `remove_guardian_board` `own-boards/<uuid>/delete/` | `GuardianBoardForm` | `dashboard/guardian_boards/guardian_boards.html` |
+| Sariling Tile: a guardian's own tiles on their family's boards | `guardian_words.view_guardian_words`, `guardian_words.remove_guardian_word`, `voice_word`, `play_guardian_word` | `guardian_words` `tiles/`, `remove_guardian_word` `tiles/<uuid>/delete/`, `voice_guardian_word` `tiles/<uuid>/voice/`, `play_guardian_word` `tiles/<uuid>/audio.mp3` | `GuardianWordForm` | `dashboard/guardian_words/guardian_words.html` |
 | Guides, and writing to support | `support.view_support` | `support` `support/` | `ContactSupportForm` | `dashboard/support/support.html` |
 
 ### Admin
@@ -157,10 +158,10 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Boards: publish or hide (at least one stays published) | `boards.view_admin_boards`, `boards.set_board_status` | `admin_boards` `vocabulary/boards/`, `set_board_status` `vocabulary/boards/status/` | `SetBoardStatusForm` | `dashboard/vocabulary/boards.html` |
 | Words: list, add, edit, delete | `words.view_words`, `words.edit_word`, `words.delete_word` | `words` `vocabulary/words/`, `edit_word` `…/<uuid>/`, `delete_word` `…/<uuid>/delete/` | `SearchWordForm`, `WordForm` | `dashboard/vocabulary/words.html`, `word.html` |
 | Institutions *(may be removed)* | `institutions.view_institutions`, `edit_institution`, `delete_institution` | `institutions` `institutions/`, `edit_institution` `…/<uuid>/`, `delete_institution` `…/<uuid>/delete/` | `InstitutionForm` | `dashboard/institutions/` |
-| Payments to approve *(frontend only)* | `revenue.view_revenue` | `revenue` `revenue/` | `TransactionStatusForm` | `dashboard/revenue/revenue.html` |
-| Subscriptions and plans *(frontend only)* | `subscriptions.view_subscriptions` | `subscriptions` `subscriptions/` | | `dashboard/subscriptions/subscriptions.html` |
+| Payments to approve or reject | `revenue.view_revenue`, `revenue.approve_payment`, `revenue.reject_payment` | `revenue` `revenue/`, `approve_payment` `revenue/<uuid>/approve/`, `reject_payment` `revenue/<uuid>/reject/` | `TransactionStatusForm`, `RejectPaymentForm` | `dashboard/revenue/revenue.html` |
+| Subscriptions, and editing the plans | `subscriptions.view_subscriptions` | `subscriptions` `subscriptions/` | `PlanForm` | `dashboard/subscriptions/subscriptions.html` |
 | Support messages and ratings *(may be removed)* | `feedback.view_feedback`, `feedback.resolve_support_message` | `feedback` `feedback/`, `resolve_support_message` `feedback/messages/<uuid>/resolve/` | | `dashboard/feedback/feedback.html` |
-| System Settings: General (support contact, maintenance mode) | `general.view_general_settings` | `system_general` `system/general/` | `GeneralSettingsForm` | `dashboard/system/general.html` |
+| System Settings: General (support contact, maintenance mode, GCash QR code, the Free and Plus limits of own tiles and boards) | `general.view_general_settings` | `system_general` `system/general/` | `GeneralSettingsForm`, `PaymentSettingsForm`, `PlanLimitsForm` | `dashboard/system/general.html` |
 | System Settings: Access control | `access.view_access_control`, `access.remove_admin` | `system_access` `system/access/`, `remove_admin` `system/access/<id>/remove/` | `AddAdminForm`, `RemoveAdminForm` | `dashboard/system/access.html` |
 | System Settings: Privacy *(may be removed)* | `privacy.view_privacy` | `system_privacy` `system/privacy/` | `PurgeUsageForm` | `dashboard/privacy/privacy.html` |
 | System Settings: Technical status *(may be removed)* | `technical_status.view_technical_status` | `system_status` `system/status/` | | `dashboard/technical_status/technical_status.html` |
@@ -171,38 +172,42 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | --- | --- | --- | --- |
 | Hero with "Magsimula" to sign-up, what the app does, About Us, plans, footer | `public.views.view_home` | `index` `/` | `public/templates/public/home.html` |
 
-It is its own app in the top-level `public/` folder. The project lists it in `INSTALLED_APPS` and includes its URLs; the plans it shows are the same plan data the admin and guardian pages read.
+It is its own app in the top-level `public/` folder. The project lists it in `INSTALLED_APPS` and includes its URLs; the plans it shows are the same `Plan` rows the admin and guardian pages read.
 
 ### Models added
 
 | Model | What it holds |
 | --- | --- |
 | `HiddenBoard` | A board a guardian turned off for one child |
-| `FavoriteWord` | A word a guardian put on a child's Paborito screen *(belongs to a page that may be removed)* |
 | `DailyUsage` | How many times, on one day, a user tapped a word or opened a board. Counts only |
 | `SupportMessage` | What a guardian wrote to support, and when an admin marked it as dealt with |
 | `BoardStatus` | Whether an admin has hidden a board from everyone |
 | `AddedWord` | A word an admin added to a board |
-| `SiteSetting` | The one row of site settings: support contact details, maintenance mode |
+| `SiteSetting` | The one row of site settings: support contact details, maintenance mode, the GCash QR code and account |
 | `Institution` | The admin's record of a school or centre *(belongs to a page that may be removed)* |
+| `Plan` | A plan guardians can be on, as an admin edited it. Seeded with Free and SalitAACo Plus |
+| `Payment` | A guardian's proof of a GCash payment, its status, and once approved the time on the plan it bought |
+| `GuardianBoard` | A board a guardian made for their family, shown after the app's boards once it has a tile |
+| `GuardianWord` | A tile a guardian added to a board (the app's or their own), shown on their family's boards |
 
 ### Rules
 
 - Only a child's own guardian reaches the child's pages; anyone else gets 404.
 - Neither a guardian's taps nor the boards they open on a child's board are counted as the child's.
 - An inactive account cannot log in and is logged out where it is logged in. Nothing of it is deleted, and a guardian's children stay active, so that a child is not cut off from their board.
-- An admin cannot make their own account inactive or take away their own admin access.
+- An admin cannot make their own account inactive or delete their own admin account. Removing an admin on Access control deletes their account.
 - A hidden board is shown to nobody, including guardians choosing a child's boards.
 - No two tiles say the same thing: an added word cannot repeat a word, or the audio file name, of another tile.
 - Family voices ask for consent as a step of its own before anything can be recorded.
 - In maintenance mode everyone but admins gets the maintenance page, children included.
-- Admins see counts of what is used, never the sentences built on a board; reports hold no names or usernames.
+- A guardian has at most one payment waiting for an admin, and cannot send one while no GCash QR code is set. Only the guardian who sent a proof of payment and admins can open it.
+- Admins see counts of what is used, never the sentences built on a board; reports hold no names or usernames. A family's own boards and tiles are left out of the admin's counts.
 
 Kept from the PHP application against the MYO conventions, because behaviour wins:
 
 - Records are deleted for real, not soft-deleted. The app tells the user that deleting an account is permanent.
 - Login is by username, not email. The PHP application has no email addresses, so there is no email verification or password reset.
-- The minimum password length is 4 characters.
+- Passwords need at least 8 characters, with an uppercase and a lowercase letter, a number and a special character (`validate_password_strength`), on sign-up and on a child's account alike.
 - `django-auditlog` is not installed. Nothing in the PHP application shows change history, and an audit trail would keep data from accounts the app promises to erase. For the same reason the redesign's "Audit Logs & Security" page was not built.
 - Resetting a tile and removing a profile picture are POST forms, not GET links.
 
@@ -212,5 +217,5 @@ Kept from the PHP application against the MYO conventions, because behaviour win
 - The redesigned pages were driven in a real browser (Edge) at desktop, tablet and phone width, in the light and dark themes, picking and resetting a tile's picture included. Not exercised: playing a sentence aloud, recording a sound, and cloning a family voice with a real ElevenLabs key.
 - The pages have not been tried on an actual tablet, the main device for the board.
 - The migrations were run on SQLite only. They use no database-specific SQL, but have not been run against MySQL.
-- Subscriptions and payments have no backend yet, so nothing about them is tested beyond the pages opening and their controls being disabled.
+- Paying has not been tried with a real GCash QR code and payment, or in a browser; it is covered by the test suite only.
 - The contrast of text was checked by calculation for the palette's colour pairs, not with an accessibility tool on every page.

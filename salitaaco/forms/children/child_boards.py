@@ -1,7 +1,5 @@
 from django import forms
 
-from salitaaco.utils.board import board_names
-
 from ..helpers import BaseForm
 
 
@@ -14,9 +12,10 @@ class ChildBoardsForm(BaseForm):
         label="Mga board na ipinapakita",
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, names=(), **kwargs):
+        """names: every board the child's family has, the app's and the guardian's own."""
         super().__init__(*args, **kwargs)
-        self.fields["boards"].choices = [(name, name) for name in board_names()]
+        self.fields["boards"].choices = [(name, name) for name in names]
 
     def clean_boards(self):
         boards = self.cleaned_data["boards"]

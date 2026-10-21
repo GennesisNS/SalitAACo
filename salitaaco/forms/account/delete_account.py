@@ -1,4 +1,8 @@
 from django import forms
+from django.contrib.auth.models import User
+
+from salitaaco.defaults.administrator_roles import ADMINISTRATOR
+from salitaaco.utils.perms_check import is_administrator
 
 from ..helpers import BaseForm
 
@@ -35,5 +39,10 @@ class DeleteAccountForm(BaseForm):
         if guardian_account is not None and guardian_account.children.exists():
             raise forms.ValidationError(
                 "May mga account ng bata pa sa ilalim mo. Burahin muna ang mga iyon sa pahinang Mga Bata."
+            )
+        # Without an admin nobody could run the site, or make a new admin in the app.
+        if is_administrator(self.user) and not User.objects.filter(groups__name=ADMINISTRATOR).exclude(pk=self.user.pk).exists():
+            raise forms.ValidationError(
+                "Ikaw ang nag-iisang admin. Gumawa muna ng isa pang admin sa Access control bago burahin ang account mo."
             )
         return cleaned_data

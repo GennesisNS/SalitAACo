@@ -30,10 +30,15 @@ def family_voice_directory(voice):
     return Path(settings.MEDIA_ROOT) / FAMILY_VOICE_FOLDER / str(voice.uuid)
 
 
+def family_voice_words(voice):
+    """The words a family voice says: every tile word, then its guardian's own tiles."""
+    return list(dict.fromkeys(tile_words() + list(voice.guardian.words.values_list("word", flat=True))))
+
+
 def family_voice_progress(voice):
-    """(words generated so far, all tile words)"""
+    """(words generated so far, all the words the voice says)"""
     directory = family_voice_directory(voice)
-    words = tile_words()
+    words = family_voice_words(voice)
     done = sum(1 for word in words if (directory / tile_audio_file_name(word)).exists())
     return done, len(words)
 
@@ -69,14 +74,14 @@ def create_family_voice(guardian, name, sample):
 
 def generate_family_voice_words(voice, limit):
     """
-    Generate up to `limit` tile words that the voice does not have yet.
+    Generate up to `limit` words (family_voice_words) that the voice does not have yet.
     Returns the progress afterwards. Raises ElevenLabsError if ElevenLabs refuses;
     the words made before that are kept.
     """
     directory = family_voice_directory(voice)
     directory.mkdir(parents=True, exist_ok=True)
 
-    missing = [word for word in tile_words() if not (directory / tile_audio_file_name(word)).exists()]
+    missing = [word for word in family_voice_words(voice) if not (directory / tile_audio_file_name(word)).exists()]
     if missing:
         client = elevenlabs_client()
         for word in missing[:limit]:
@@ -93,10 +98,10 @@ def family_voice_preview_url(voice):
 
 
 def family_voice_urls(voice):
-    """{word: url} for the tile words already generated in the voice."""
+    """{word: url} for the words already generated in the voice."""
     directory = family_voice_directory(voice)
     urls = {}
-    for word in tile_words():
+    for word in family_voice_words(voice):
         path = directory / tile_audio_file_name(word)
         if path.exists():
             url = reverse("play_family_voice_word", args=[voice.uuid, tile_word_slug(word)])

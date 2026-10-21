@@ -8,6 +8,7 @@ Every secret and environment-specific value is read from the environment
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import sys
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -193,6 +194,24 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 LOG_FILE = BASE_DIR / "logs" / "salitaaco.log"
 LOG_FILE.parent.mkdir(exist_ok=True)
 
+# The test suite logs to the console only: its made-up errors (an ElevenLabs
+# refusal, a bad request) would otherwise read as real ones in the log file.
+RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == "test"
+
+LOG_HANDLERS = {
+    'console': {
+        'class': 'logging.StreamHandler',
+        'formatter': 'standard',
+    },
+}
+if not RUNNING_TESTS:
+    LOG_HANDLERS['file'] = {
+        'class': 'logging.FileHandler',
+        'filename': LOG_FILE,
+        'formatter': 'standard',
+        'encoding': 'utf-8',
+    }
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -202,20 +221,9 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'standard',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': LOG_FILE,
-            'formatter': 'standard',
-            'encoding': 'utf-8',
-        },
-    },
+    'handlers': LOG_HANDLERS,
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': list(LOG_HANDLERS),
         'level': LOG_LEVEL,
     },
 }

@@ -8,7 +8,8 @@ from salitaaco.utils.tile_audio import tile_audio_directory, tile_audio_file_nam
 class Command(BaseCommand):
     help = (
         "Voice the tile words in the shared ElevenLabs voice (ELEVENLABS_VOICE_ID) and save one MP3 "
-        "per word in static/audio/text-to-speech/. Words that already have a file are skipped."
+        "per word in static/audio/text-to-speech/. Words that already have a file are skipped. "
+        "Guardians' own tiles are not voiced here: theirs are kept under media/ (utils/guardian_words.py)."
     )
 
     def add_arguments(self, parser):

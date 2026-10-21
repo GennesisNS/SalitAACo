@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
-from salitaaco.utils.uploads import IMAGE_MIME_TYPES, MAX_UPLOAD_SIZE, base_mime
+from salitaaco.utils.uploads import IMAGE_MIME_TYPES, MAX_UPLOAD_SIZE, PAYMENT_IMAGE_MIME_TYPES, base_mime
 
 import re
 
@@ -14,6 +14,11 @@ def username_exists(value):
 def validate_image_type(file):
     if base_mime(getattr(file, "content_type", "")) not in IMAGE_MIME_TYPES:
         raise ValidationError("Hindi suportadong file type ng larawan.")
+
+
+def validate_payment_image_type(file):
+    if base_mime(getattr(file, "content_type", "")) not in PAYMENT_IMAGE_MIME_TYPES:
+        raise ValidationError("JPEG, PNG o WebP lang ang puwedeng larawan.")
 
 
 def validate_image_size(file):
@@ -35,6 +40,14 @@ def validate_voice_sample_size(file):
     # A minute or two of speech; an uncompressed WAV of that length is about 10 MB.
     if file.size > 2 * MAX_UPLOAD_SIZE:
         raise ValidationError("Masyadong malaki ang recording (max 10MB).")
+
+
+def clean_symbol(value):
+    """A tile's or a board's picture: an emoji. Letters and digits would be a second label, not a picture."""
+    symbol = value.strip()
+    if re.search(r"[A-Za-z0-9<>&]", symbol):
+        raise ValidationError("Emoji ang ilagay, hindi titik o numero.")
+    return symbol
 
 
 def name_validator(value):

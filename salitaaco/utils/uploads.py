@@ -2,6 +2,8 @@ import mimetypes
 import uuid
 
 IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+# A screenshot of a payment or a QR code: still pictures only.
+PAYMENT_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
 
 MIME_EXTENSIONS = {

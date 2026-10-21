@@ -4,6 +4,7 @@ from ..defaults.navigations import child_items, dashboard_items
 from ..models.child_account import ChildAccount
 from ..utils.account import request_account
 from ..utils.children import selected_child
+from ..utils.perms_check import user_roles
 
 
 def item_url(item, child):
@@ -14,15 +15,16 @@ def item_url(item, child):
 def navigation_items(request):
     """
     The navigation for the current user: a child's bottom navigation or the
-    sidebar of guardians and admins. Only the items their groups may see, with
-    each route resolved to a URL and one item marked active.
+    sidebar of guardians and admins. Only the items their roles may see (an
+    admin's are only the admin's, see user_roles), with each route resolved to
+    a URL and one item marked active.
     """
     user = getattr(request, "user", None)
     if user is None or not user.is_authenticated:
         return {"navigation_items": []}
 
     items = child_items if isinstance(request_account(request), ChildAccount) else dashboard_items
-    groups = list(user.groups.values_list("name", flat=True))
+    groups = user_roles(user)
     child = selected_child(request)
     results = []
 

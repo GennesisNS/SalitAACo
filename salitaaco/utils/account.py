@@ -1,6 +1,6 @@
 import logging
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.core.files.storage import default_storage
 from django.db import transaction
 
@@ -10,7 +10,9 @@ from salitaaco.models.admin_account import AdminAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.models.payment import Payment
 from salitaaco.utils.family_voice import delete_family_voice
+from salitaaco.utils.guardian_words import delete_guardian_audio_folder
 
 logger = logging.getLogger(__name__)
 
@@ -52,34 +54,19 @@ def get_user_account(user):
     return GuardianAccount.objects.create(user=user, display_name=user.username)
 
 
-def grant_admin(user):
+def create_admin(username, display_name, password, staff=False):
     """
-    Give an account access to the admin pages. An admin account is added next
-    to whatever account the user already has, which keeps a guardian's
-    children and a child's guardian in place.
+    Make a new admin: an account of its own, never an existing guardian's or
+    child's, since an admin runs the site and does not look after children.
+    With staff, it can log in to Django's admin site too. Taking an admin away
+    is deleting the account (delete_user_account).
     """
-    if not AdminAccount.objects.filter(user=user).exists():
-        existing_account = find_user_account(user)
-        AdminAccount.objects.create(
-            user=user,
-            display_name=existing_account.display_name if existing_account else user.username,
-        )
-    add_to_group(user, ADMINISTRATOR)
-
-
-def revoke_admin(user):
-    """
-    Take admin access away, with access to Django's admin site. The admin
-    account goes too; a guardian or child account the user also has is left as
-    it is, and is what they are from now on.
-    """
-    user.groups.remove(*Group.objects.filter(name=ADMINISTRATOR))
-    user.is_staff = False
-    user.is_superuser = False
-    user.save()
-    for admin_account in AdminAccount.objects.filter(user=user):
-        admin_account.remove_avatar(save=False)
-        admin_account.delete()
+    with transaction.atomic():
+        user = User.objects.create_user(username=username, password=password, is_staff=staff, is_superuser=staff)
+        AdminAccount.objects.create(user=user, display_name=display_name)
+        add_to_group(user, ADMINISTRATOR)
+    logger.info("New admin account: %s", user.username)
+    return user
 
 
 def home_route(account):
@@ -102,8 +89,9 @@ def delete_user_account(user):
     """
     Permanently delete an account with everything it owns: its admin, guardian
     or child account, custom pictures and recordings, usage counts and rating,
-    and a guardian's family voices (at ElevenLabs too). The rows go through the
-    database cascade; the uploaded files are removed from storage afterwards.
+    and a guardian's family voices (at ElevenLabs too) and payments. The rows
+    go through the database cascade; the uploaded files are removed from
+    storage afterwards.
     """
     # The account is going regardless, so an ElevenLabs refusal is logged, not raised.
     for voice in FamilyVoice.objects.filter(guardian__user=user):
@@ -112,6 +100,10 @@ def delete_user_account(user):
     file_names = []
     for customization in Customization.objects.filter(user=user):
         file_names += [customization.image.name, customization.sound.name]
+    for payment in Payment.objects.filter(guardian__user=user):
+        file_names.append(payment.proof.name)
+    # A guardian's own tiles go with the account, and their folder of audio after it.
+    guardian = GuardianAccount.objects.filter(user=user).first()
     for relation in ACCOUNT_RELATIONS:
         account = getattr(user, relation, None)
         if account is not None:
@@ -126,5 +118,7 @@ def delete_user_account(user):
             default_storage.delete(file_name)
         except OSError:
             logger.exception("Could not delete upload %s of deleted account %s", file_name, username)
+    if guardian is not None:
+        delete_guardian_audio_folder(guardian)
 
     logger.info("Deleted account %s", username)

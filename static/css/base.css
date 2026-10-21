@@ -818,12 +818,6 @@ a.cell:active {
   font-size: 12px;
 }
 /* A word the guardian chose for the Paborito screen. */
-.cell .pinmark {
-  position: absolute;
-  top: 5px;
-  left: 8px;
-  font-size: 14px;
-}
 .cell .usecount {
   position: absolute;
   top: 6px;

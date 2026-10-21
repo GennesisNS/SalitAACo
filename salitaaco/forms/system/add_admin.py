@@ -1,29 +1,19 @@
 from django import forms
-from django.contrib.auth.models import User
 
-from salitaaco.utils.perms_check import is_administrator
-
-from ..helpers import BaseForm
+from ..authentication import RegisterForm
+from ..validators import name_validator
 
 
-class AddAdminForm(BaseForm):
-    """The username of an account that already exists, to give admin access to."""
-    username = forms.CharField(
+class AddAdminForm(RegisterForm):
+    """
+    A new admin account: a name, a username no account has, and a password, as
+    signing up asks for. An admin is never made from an existing account.
+    """
+    display_name = forms.CharField(
         required=True,
-        max_length=150,
-        widget=forms.TextInput(attrs={"class": "input", "autocomplete": "off", "placeholder": "username"}),
-        error_messages={"required": "Ilagay ang username."},
-        label="Username ng gagawing admin",
-        help_text="Dapat may account na ang taong ito. Mananatili ang account niya bilang tagapag-alaga kung mayroon.",
+        max_length=100,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. Juan Dela Cruz"}),
+        error_messages={"required": "Ilagay ang pangalan ng admin."},
+        label="Pangalan ng admin",
+        validators=[name_validator],
     )
-
-    def clean_username(self):
-        username = self.cleaned_data["username"].strip()
-        self.user = User.objects.filter(username__iexact=username).first()
-        if self.user is None:
-            raise forms.ValidationError("Walang account na may ganitong username.")
-        if is_administrator(self.user):
-            raise forms.ValidationError("Admin na ang account na ito.")
-        if not self.user.is_active:
-            raise forms.ValidationError("Hindi aktibo ang account na ito.")
-        return username

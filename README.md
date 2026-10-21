@@ -25,10 +25,13 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env
 python manage.py migrate
+python manage.py make_admin admin --name "Juan Dela Cruz"
 python manage.py runserver
 ```
 
 On macOS and Linux, use `source .venv/bin/activate` and `cp .env.example .env` instead.
+
+`make_admin` makes the first admin account, on the empty database; pick your own username (here `admin`) and name. It asks for the password twice: at least 8 characters, with an uppercase and a lowercase letter, a number and a special character (for example `Lihim#2026`). Log in with it at <http://localhost:8000/login/> to reach the admin dashboard, where more admins are made on System Settings › Access control. See [Creating each kind of account](#creating-each-kind-of-account) for guardians and children.
 
 Open <http://localhost:8000/>: the public website, with "Magsimula" leading to sign-up. Use `localhost`, not an IP address: recording a sound needs microphone access, and browsers only allow that on `localhost` or HTTPS.
 
@@ -58,7 +61,7 @@ The path in the settings file is the Windows one. On macOS and Linux, choose the
 | --- | --- | --- | --- | --- |
 | Guardian | A parent or carer | Signing up on `/register/` | Create and manage their children's accounts, choose each child's boards, favorite words and voice, see their usage, record family voices, write to support | Buod (`/dashboard/overview/`) |
 | Child | The child who talks with the board | By their guardian, on the "Mga Bata" page | Log in with their own username and password and use their own board | The board (`/dashboard/board/`) |
-| Admin | Whoever runs the app | `python manage.py make_admin` (below), or by another admin on System Settings > Access control | Everything under "Admin" in [URLs](#urls) | Dashboard (`/dashboard/analytics/`) |
+| Admin | Whoever runs the app | A new account, made with `python manage.py make_admin` or `createsuperuser` (below), or by another admin on System Settings > Access control | Everything under "Admin" in [URLs](#urls) | Dashboard (`/dashboard/analytics/`) |
 
 Each kind has its own model (`GuardianAccount`, `ChildAccount`, `AdminAccount`) holding the name and picture, and its own group (`Guardian`, `Child`, `Administrator`) deciding which pages it may open.
 
@@ -67,18 +70,47 @@ Things to know:
 - A guardian cannot delete their own account while they still have children; the children's accounts are deleted first.
 - Accounts that existed before guardians were introduced became child accounts with no guardian. They work as before.
 - An account is active or inactive. An admin makes one inactive on Mga User: it cannot log in, and nothing of it is deleted. Making a guardian inactive leaves their children's accounts active.
+- An admin only runs the site: an admin account is its own account, with only the admin's sidebar and pages. An admin cannot add children, record family voices, pay for a plan and so on (`user_roles` in `utils/perms_check.py`). Migration 0019 took admin access away from accounts that were made admins before this, while also being a guardian's or a child's; they are again only that.
 
-### Make yourself an admin
+### Creating each kind of account
 
-The admin dashboard is only for accounts in the `Administrator` group. Sign up in the app first, then run:
+Every password, a guardian's or a child's, needs at least 8 characters with an uppercase and a lowercase letter, a number and a special character (for example `Lihim#2026`). Names may only have letters, spaces and dashes. A username can be used by one account only, whatever its case.
 
-```
-python manage.py make_admin your_username_here
-```
+#### A guardian
 
-It takes effect on the next page load. `python manage.py make_admin your_username_here --remove` takes it away again.
+1. Open <http://localhost:8000/register/> (or "Magsimula" on the public website).
+2. Fill in **Pangalan mo**, **Username**, **Password** and **Kumpirmahin ang Password**, then sign up.
+3. You are logged in as the new guardian and taken to **Mga Bata**, ready to add a child.
 
-The command adds an admin account next to the one you signed up with, so a guardian who becomes an admin keeps their children. Once there is one admin, more can be added and removed in the app, on System Settings > Access control.
+#### A child
+
+A child's account is always made by their guardian; there is no sign-up for children.
+
+1. Log in as the guardian and open **Mga Bata** in the sidebar (`/dashboard/children/`).
+2. Press **＋ Magdagdag ng bata**.
+3. Fill in **Pangalan ng bata**, **Username ng bata**, **Edad** (optional), **Password ng bata** and **Kumpirmahin ang Password**, then press **Gumawa ng account ng bata**.
+4. The child logs in at `/login/` with that username and password and lands on their board. On Mga Bata, the guardian opens the same board with **Buksan ang board** on the child's row, to set up its tiles, and changes the child's name, age, picture or password with **I-edit**.
+
+#### An admin
+
+An admin is a new account of its own, made as an admin. It is never a guardian's or a child's account given admin access: admins run the site, they do not look after children. Nobody signs up as an admin.
+
+For the first admin, use a terminal:
+
+1. Make the account, with a username no account has yet:
+
+   ```
+   python manage.py make_admin new_admin_username --name "Juan Dela Cruz"
+   ```
+
+   It asks for the password twice (the same rules as above). `--name` is the name shown in the app; without it, the username is shown. In a script, set the password in the `ADMIN_PASSWORD` environment variable instead of typing it.
+2. Log in with that username and password. An admin lands on the admin dashboard (`/dashboard/analytics/`).
+
+`python manage.py createsuperuser` also works: the superuser becomes an admin, with nothing else, on its first page load.
+
+Once there is one admin, they make more in the app: **System Settings › Access control › ＋ Magdagdag ng admin**. Fill in **Pangalan ng admin**, **Username**, **Password** and **Kumpirmahin ang Password**, press **Gumawa ng admin account**, and give the new admin the username and password.
+
+Removing an admin deletes their account, permanently: **Burahin ang account** on the same page, or `python manage.py make_admin their_username --remove`. Nobody can delete their own admin account there. `--staff` makes an admin that can also log in to Django's admin site (see [below](#admin-and-djangos-admin-site)).
 
 ## URLs
 
@@ -96,11 +128,12 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `children/<uuid>/` | Edit a child: name, age, picture, password, delete | The child's guardian |
 | `children/<uuid>/board/` | The child's board, for setting up tiles | The child's guardian |
 | `children/<uuid>/boards/` | Mga Board: which boards the child sees | The child's guardian |
-| `children/<uuid>/favorites/` | Mga Paborito: words put on the child's Paborito screen *(may be removed)* | The child's guardian |
 | `children/<uuid>/voice/` | Boses: which voice the child hears | The child's guardian |
 | `children/<uuid>/usage/` | Paggamit: boards opened and words tapped, by 7 days, 30 days or all time | The child's guardian |
 | `family-voices/` | Boses ng Pamilya: family members' cloned voices | Guardians |
-| `plan/`, `plan/transactions/` | Plano at Subscription and the history of payments *(frontend only, see [Plans and payments](#plans-and-payments))* | Guardians |
+| `plan/`, `plan/transactions/` | Plano at Subscription: paying by GCash QR code, and the history of payments (see [Plans and payments](#plans-and-payments)) | Guardians |
+| `own-boards/` | Sariling Board: boards a guardian makes for their family, up to their plan's limit | Guardians |
+| `tiles/` | Sariling Tile: tiles a guardian adds to their family's boards, up to their plan's limit | Guardians |
 | `support/` | Tulong at Suporta: guides, and a form for writing to the admins | Guardians |
 | `analytics/` | Admin dashboard | Admins |
 | `reports/`, `reports/export/` | Analytics at Ulat, and its CSV reports | Admins |
@@ -108,9 +141,9 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `vocabulary/boards/` | Mga Board: publish a board or hide it from everyone | Admins |
 | `vocabulary/words/` | Mga Salita at Simbolo: every word, and adding words to boards | Admins |
 | `institutions/` | Mga Paaralan at Institusyon *(may be removed)* | Admins |
-| `revenue/`, `subscriptions/` | Kita and Mga Subscription *(frontend only)* | Admins |
+| `revenue/`, `subscriptions/` | Kita: approve or reject payments. Mga Subscription: guardians per plan, and editing the plans | Admins |
 | `feedback/` | Feedback at mga Isyu: support messages and ratings *(may be removed)* | Admins |
-| `system/general/` | Support contact details, maintenance mode | Admins |
+| `system/general/` | Support contact details, maintenance mode, the GCash QR code, how many tiles and boards a guardian can add on Free and on Plus | Admins |
 | `system/access/` | Who is an admin | Admins |
 | `system/privacy/` | What is kept, consent versions, deleting old usage counts *(may be removed)* | Admins |
 | `system/status/` | Health checks and the latest log errors *(may be removed)* | Admins |
@@ -133,10 +166,10 @@ What `/admin` does depends on `SHOW_ADMIN_ROUTES` in `.env`:
 | `False` (default) | Redirects to the admin dashboard, as the PHP application's `/admin` address did |
 | `True` | Django's admin site |
 
-To let an account log in to Django's admin site as well, add `--staff`:
+To make an admin that can log in to Django's admin site as well, add `--staff`:
 
 ```
-python manage.py make_admin your_username_here --staff
+python manage.py make_admin new_admin_username --staff
 ```
 
 ## Project layout
@@ -155,7 +188,7 @@ salitaaco/
   routes/               The views, one folder per feature
     dashboard/__init__.py   Every address under /dashboard/
     auth.py  board/  account/  settings/  error_handler.py
-    overview/  children/  family_voices/  favorites/  plan/  support/        (guardian)
+    overview/  children/  family_voices/  guardian_boards/  guardian_words/  plan/  support/   (guardian)
     analytics/  reports/  users/  vocabulary/  institutions/  revenue/
     subscriptions/  feedback/  system/  privacy/  technical_status/          (admin)
   models/               One model per file (account_base.py is shared by the three account models)
@@ -240,7 +273,10 @@ What admins and guardians change is stored in the database on top of it:
 | A board hidden from everyone | Admin, on Mga Board | `BoardStatus` |
 | A word added to a board | Admin, on Mga Salita at Simbolo | `AddedWord` |
 | A board turned off for one child | Guardian, on the child's Mga Board | `HiddenBoard` |
-| A favorite word of one child | Guardian, on Mga Paborito | `FavoriteWord` |
+| A board of the guardian's own, for their family | Guardian, on Sariling Board | `GuardianBoard` |
+| A tile of the guardian's own, on their family's boards | Guardian, on Sariling Tile | `GuardianWord` |
+
+A board's **Paborito** screen shows the words its user taps most, and only those that are tiles on their boards at the time: not a deleted tile, one on a board that is turned off, or a guardian's own tile while it is hidden.
 
 At least one board always stays published, and each child always has at least one board on. An added word appears at the end of its board for everyone. It has no recording in the shared voice until `python manage.py generate_tile_audio` is run again; until then the device's voice speaks it.
 
@@ -248,13 +284,22 @@ Language modes (English and Taglish labels) are not built: the feature has not b
 
 ## Plans and payments
 
-**These pages are frontend only for now.** They show the design; nothing is saved.
+Paying is by GCash QR code, with no payment gateway: the guardian scans the code, pays, and uploads a screenshot of the successful payment. An admin checks GCash and approves or rejects it.
 
-- The plans (Free at ₱0, SalitAACo Plus at ₱149 a month) are in `salitaaco/defaults/plans.py`. The guardian's Plano at Subscription page, the admin's Mga Subscription page and the public website all read them from there, so they will follow the database once plans are stored in it.
-- Paying is by QR code: the guardian scans it, pays, and uploads a picture of the successful payment. The page shows a labelled stand-in for the QR code, and the button that sends the picture is disabled.
-- With no payments saved, the lists of payments are empty. To look at the design of a full table during development, open the page with `?halimbawa=1`: it shows made-up payments from `defaults/payment_examples.py` under a notice saying so. This works only while `DJANGO_DEBUG` is on.
+- **The plans** are `Plan` rows. Migration 0017 made Free (₱0) and SalitAACo Plus (₱149 a month). An admin edits their name, price, features and whether they are offered on **Mga Subscription**; Free is always free and always offered. The guardian's Plano at Subscription page and the public website read the same rows.
+- **The QR code** is set on **System Settings › General** under “Bayaran sa GCash”, with the account's name and number. Until one is uploaded, guardians cannot send a payment.
+- **A payment** (`Payment`) starts as Naghihintay. A guardian has at most one waiting at a time. The picture is a private upload, opened only through a logged-in view by the guardian who sent it and by admins.
+- **Approving** on the **Kita** page puts the guardian on the plan for one month. A payment approved while the guardian is still on the plan adds its month to the end, so paying early loses nothing. When the months run out, the guardian is back on Free. **Rejecting** asks for a reason, which the guardian sees in their payment history.
+- A guardian's plan is worked out from their approved payments (`utils/plans.py`); there is no separate subscription record.
 
-Still to build: plan and payment models, saving the proof of payment as a private upload, approving and rejecting, starting the plan on approval, and editing plans.
+What the plans allow:
+
+- **Family voices:** 2 on Free (`FREE_FAMILY_VOICE_LIMIT` in `defaults/plans.py`), any number on Plus. A guardian on Free with 2 voices is told to get Plus to add more. Voices made while on Plus stay when it ends; only adding stops.
+- **Own tiles and boards:** how many tiles (Sariling Tile) and boards (Sariling Board) a guardian can make, each across all of their family's boards, is set for Free and for Plus on System Settings › General under “Mga limit ng Free at Plus”. They start at 0 tiles and 0 boards on Free, 20 tiles and 5 boards on Plus. Over a limit (Plus ended, or an admin lowered it), the oldest ones up to the limit keep showing and the rest are kept, hidden, until the limit allows them again. A guardian who has reached the limit is told to get Plus when Plus would allow more, or to delete one first.
+- **Sariling Board:** a board of the family's own (a name and an emoji), shown after the app's boards on the guardian's own board and on every one of their children's, once it has a tile. The guardian turns it on and off for each child on the child's Mga Board, as any other board. Deleting it deletes its tiles.
+- **Sariling Tile:** a tile of the family's own (a word and an emoji), on one of the app's boards or one of the family's own, shown on the guardian's own board and on every one of their children's. A new tile is voiced with ElevenLabs right away: in the shared voice (`ELEVENLABS_VOICE_ID`) and in each of the guardian's family voices. The shared voice's audio of a guardian's tile is kept in `media/guardian-tile-audio/<guardian>/`, apart from the vocabulary's audio in `static/audio/text-to-speech/`, and like every upload it is played only through a login-protected view, to the guardian and their children. If ElevenLabs refuses, the tile speaks in the device's voice and the page offers “Gawin ang boses” to try again; family voices also fill in missing words when the Boses ng Pamilya page is opened.
+
+Every other feature is open to every guardian. A family's own boards and tiles, which can be names and places, are left out of the admin's lists of most-opened boards and most-used words; deleting one deletes its counts too.
 
 ## Maintenance mode
 
@@ -266,7 +311,6 @@ Some pages were built so that each can be deleted cleanly. Each is its own route
 
 | Page | Routes folder | Also delete |
 | --- | --- | --- |
-| Mga Paborito (guardian) | `routes/favorites/` | `forms/favorites/`, `models/favorite_word.py` and its line in `models/__init__.py`, migration `0011` |
 | Mga Paaralan at Institusyon | `routes/institutions/` | `forms/institutions/`, `templates/components/institutions/`, `models/institution.py` and its line in `models/__init__.py`, migration `0016` |
 | Feedback at mga Isyu | `routes/feedback/` | Nothing more |
 | Privacy | `routes/privacy/` | `forms/privacy/` |
@@ -363,7 +407,7 @@ Development and production each have their own `.env`, so nothing is converted: 
 2. In the production `.env`, set `DB_ENGINE=mysql` and the `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT` values.
 3. Run `python manage.py migrate`. This creates every table and the `Administrator`, `Guardian` and `Child` groups.
 
-Production then starts empty. Sign up, and run `make_admin` for your account.
+Production then starts empty. Make the first admin with `python manage.py make_admin new_admin_username`.
 
 ### Bringing data along from SQLite
 
@@ -391,7 +435,7 @@ To bring the PHP application's data to production instead, run `import_php_data`
 | `ModuleNotFoundError: No module named 'django'`           | The virtual environment is not active. Run `.venv\Scripts\activate`, then `pip install -r requirements.txt`. |
 | `no such table` or `Table ... doesn't exist`              | Run `python manage.py migrate`.                                                                         |
 | `pip install` fails on `mysqlclient` (macOS or Linux)     | Install the MySQL client library first, for example `sudo apt install default-libmysqlclient-dev pkg-config`. |
-| An admin page sends you back to your own first page        | The account is not an admin. Run `python manage.py make_admin your_username_here`.                      |
+| An admin page sends you back to your own first page        | The account is not an admin. Log in with an admin account, or make one with `python manage.py make_admin new_admin_username`. |
 | Everyone sees "Inaayos namin ang app"                     | Maintenance mode is on. Log in as an admin and turn it off at System Settings > General.               |
 | "Hindi aktibo ang account na ito" at login                | An admin made the account inactive. An admin makes it active again on Mga User.                        |
 | `no such table` after pulling new code                    | New migrations were added. Run `python manage.py migrate`.                                             |

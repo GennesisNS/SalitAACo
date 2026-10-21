@@ -1,24 +1,19 @@
 {% comment %}
-  The QR code a guardian scans to pay.
-
-  FRONTEND ONLY FOR NOW: this is a drawing that stands in for the real code and
-  says so, so that nobody tries to pay with it. When the real QR code is ready,
-  this becomes its picture.
+  The GCash QR code a guardian scans to pay, with the account it pays into.
+  setting: the SiteSetting, where an admin sets them on System Settings > General.
 {% endcomment %}
 <figure class="qrCode">
-  <svg viewBox="0 0 200 200" role="img" aria-label="Lugar ng QR code. Wala pang totoong QR code.">
-    <rect class="qrPaper" x="0" y="0" width="200" height="200" rx="12" />
-    <!-- The three corner squares every QR code has, and nothing a phone could read. -->
-    <g class="qrInk">
-      <path d="M16 16h52v52H16zM28 28v28h28V28z" fill-rule="evenodd" />
-      <rect x="36" y="36" width="12" height="12" />
-      <path d="M132 16h52v52h-52zM144 28v28h28V28z" fill-rule="evenodd" />
-      <rect x="152" y="36" width="12" height="12" />
-      <path d="M16 132h52v52H16zM28 144v28h28v-28z" fill-rule="evenodd" />
-      <rect x="36" y="152" width="12" height="12" />
-    </g>
-    <text class="qrLabel" x="100" y="96" text-anchor="middle">QR code</text>
-    <text class="qrSub" x="100" y="116" text-anchor="middle">ilalagay dito</text>
-  </svg>
-  <figcaption>Halimbawa lang ito. Hindi pa ito mababayaran.</figcaption>
+  {% if setting.has_gcash_qr %}
+  <img src="{% url 'view_gcash_qr' %}?v={{ setting.updated_at|date:'U' }}" alt="GCash QR code ng SalitAACo" />
+  <figcaption>
+    {% if setting.gcash_name %}<b>{{ setting.gcash_name }}</b>{% endif %}
+    {% if setting.gcash_number %}<span>GCash {{ setting.gcash_number }}</span>{% endif %}
+  </figcaption>
+  {% else %}
+  <div class="qrMissing" role="img" aria-label="Wala pang QR code">
+    <span aria-hidden="true">🔳</span>
+    <p>Wala pang QR code</p>
+  </div>
+  <figcaption>Hindi pa makakabayad. Pakisubukan muli mamaya.</figcaption>
+  {% endif %}
 </figure>

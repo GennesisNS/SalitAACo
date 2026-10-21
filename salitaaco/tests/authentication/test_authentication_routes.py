@@ -1,5 +1,6 @@
 import importlib
 from io import StringIO
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -182,45 +183,58 @@ class AdminAddressTest(UserBase):
 
 
 class MakeAdminCommandTest(UserBase):
-    def is_admin(self, username):
-        return User.objects.get(username=username).groups.filter(name="Administrator").exists()
+    PASSWORD = "Lihim#2026"
 
-    def test_grants_and_removes_admin_access(self):
-        call_command("make_admin", "Miguel", stdout=StringIO())
-        self.assertTrue(self.is_admin("miguel"))
+    def make_admin(self, *args, passwords=(PASSWORD, PASSWORD)):
+        """Run the command, typing `passwords` when it asks."""
+        with mock.patch("salitaaco.management.commands.make_admin.getpass.getpass", side_effect=list(passwords)):
+            output = StringIO()
+            call_command("make_admin", *args, stdout=output)
+            return output.getvalue()
 
-        call_command("make_admin", "miguel", "--remove", stdout=StringIO())
-        self.assertFalse(self.is_admin("miguel"))
+    def test_makes_a_new_admin_account_of_its_own(self):
+        output = self.make_admin("juan", "--name", "Juan Dela Cruz")
 
-    def test_admin_account_is_added_beside_the_existing_one(self):
-        call_command("make_admin", "miguel", stdout=StringIO())
-        miguel = User.objects.get(username="miguel")
-        self.assertEqual(miguel.admin_account.display_name, "Miguel")
-        self.assertEqual(miguel.child_account.age, 7)
-        self.assertIsInstance(find_user_account(miguel), AdminAccount)
+        self.assertIn("Made the admin account juan.", output)
+        juan = User.objects.get(username="juan")
+        self.assertIsInstance(find_user_account(juan), AdminAccount)
+        self.assertEqual(juan.admin_account.display_name, "Juan Dela Cruz")
+        self.assertEqual(list(juan.groups.values_list("name", flat=True)), ["Administrator"])
+        self.assertFalse(juan.is_staff or juan.is_superuser)
+        self.assertTrue(self.client.login(username="juan", password=self.PASSWORD))
 
-        # Running it again changes nothing.
-        call_command("make_admin", "miguel", stdout=StringIO())
-        self.assertEqual(AdminAccount.objects.filter(user=miguel).count(), 1)
+    def test_an_existing_account_is_never_made_an_admin(self):
+        make_guardian("nanay", "Nanay Rosa")
+        for taken in ["nanay", "Miguel", "developer"]:
+            with self.assertRaisesRegex(CommandError, "is taken"):
+                self.make_admin(taken)
+        nanay = User.objects.get(username="nanay")
+        self.assertFalse(AdminAccount.objects.filter(user=nanay).exists())
+        self.assertIsInstance(find_user_account(User.objects.get(username="miguel")), ChildAccount)
 
-        call_command("make_admin", "miguel", "--remove", stdout=StringIO())
-        miguel = User.objects.get(username="miguel")
-        self.assertFalse(AdminAccount.objects.filter(user=miguel).exists())
-        self.assertIsInstance(find_user_account(miguel), ChildAccount)
+    def test_the_password_is_checked(self):
+        with self.assertRaisesRegex(CommandError, "do not match"):
+            self.make_admin("juan", passwords=(self.PASSWORD, "Iba#2026"))
+        with self.assertRaisesRegex(CommandError, "at least 8 characters"):
+            self.make_admin("juan", passwords=("maikli", "maikli"))
+        self.assertFalse(User.objects.filter(username="juan").exists())
+
+    def test_the_password_can_come_from_the_environment(self):
+        with mock.patch.dict("os.environ", {"ADMIN_PASSWORD": self.PASSWORD}):
+            self.make_admin("juan", passwords=())
+        self.assertTrue(self.client.login(username="juan", password=self.PASSWORD))
 
     def test_staff_flag_also_opens_the_django_admin_site(self):
-        call_command("make_admin", "miguel", stdout=StringIO())
-        miguel = User.objects.get(username="miguel")
-        self.assertFalse(miguel.is_staff or miguel.is_superuser)
+        self.make_admin("juan", "--staff")
+        juan = User.objects.get(username="juan")
+        self.assertTrue(juan.is_staff and juan.is_superuser)
 
-        call_command("make_admin", "miguel", "--staff", stdout=StringIO())
-        miguel = User.objects.get(username="miguel")
-        self.assertTrue(self.is_admin("miguel") and miguel.is_staff and miguel.is_superuser)
+    def test_remove_deletes_an_admin_account_and_nothing_else(self):
+        self.make_admin("juan")
+        self.assertIn("Deleted the admin account juan.", self.make_admin("juan", "--remove"))
+        self.assertFalse(User.objects.filter(username="juan").exists())
 
-        call_command("make_admin", "miguel", "--remove", stdout=StringIO())
-        miguel = User.objects.get(username="miguel")
-        self.assertFalse(self.is_admin("miguel") or miguel.is_staff or miguel.is_superuser)
-
-    def test_unknown_username_fails(self):
-        with self.assertRaises(CommandError):
-            call_command("make_admin", "wala", stdout=StringIO())
+        for not_an_admin in ["miguel", "wala"]:
+            with self.assertRaisesRegex(CommandError, "No admin account"):
+                self.make_admin(not_an_admin, "--remove")
+        self.assertTrue(User.objects.filter(username="miguel").exists())

@@ -1,0 +1,18 @@
+{% comment %}
+  Why a guardian's tiles or boards are hidden, or why no more can be added.
+  noun: "tile" or "board"; hidden_count: how many are hidden for being over
+  the plan's limit; can_add, limit_message, offer_plus: from the view.
+{% endcomment %}
+{% if hidden_count %}
+<p class="pendingNote">
+  Nakatago muna sa mga board ang {{ hidden_count }} sa mga sariling {{ noun }} mo, dahil lampas na ang mga ito sa limit
+  ng plano mo. Babalik ang mga ito kapag pinayagan na ng limit.
+  {% if offer_plus %}<a href="{% url 'plan' %}">Kunin ang Plus</a>{% endif %}
+</p>
+{% endif %}
+{% if not can_add %}
+<p class="pendingNote">
+  {{ limit_message }}
+  {% if offer_plus %}<a href="{% url 'plan' %}">Kunin ang Plus</a>{% endif %}
+</p>
+{% endif %}

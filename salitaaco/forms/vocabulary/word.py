@@ -1,11 +1,10 @@
-import re
-
 from django import forms
 
 from salitaaco.utils.board import every_board_name
 from salitaaco.utils.tile_audio import tile_word_slug, tile_words
 
 from ..helpers import BaseForm
+from ..validators import clean_symbol
 
 
 class WordForm(BaseForm):
@@ -60,8 +59,4 @@ class WordForm(BaseForm):
         return word
 
     def clean_emoji(self):
-        emoji = self.cleaned_data["emoji"].strip()
-        # Letters and digits would be a second label, not a picture.
-        if re.search(r"[A-Za-z0-9<>&]", emoji):
-            raise forms.ValidationError("Emoji ang ilagay, hindi titik o numero.")
-        return emoji
+        return clean_symbol(self.cleaned_data["emoji"])

@@ -1,7 +1,5 @@
 // The payment pages: picking the picture of a payment and seeing it before it
-// is sent, and saying whose proof the "Patunay ng bayad" window is showing.
-//
-// FRONTEND ONLY FOR NOW: the picture is looked at in the browser and goes nowhere.
+// is sent, and showing a sent one in the "Patunay ng bayad" window.
 
 /* ---------- The proof of payment a guardian picks ---------- */
 const proofUpload = document.getElementById("proofUpload");
@@ -33,10 +31,14 @@ if (proofUpload) {
   };
 }
 
-/* ---------- Whose proof of payment is being looked at ---------- */
+/* ---------- The proof of payment being looked at, and whose it is ---------- */
 const proofCaption = document.getElementById("proofCaption");
+const proofImage = document.getElementById("proofImage");
+const proofLink = document.getElementById("proofLink");
 document.querySelectorAll("[data-proof]").forEach((button) => {
   button.addEventListener("click", () => {
     proofCaption.textContent = button.dataset.proof;
+    proofImage.src = button.dataset.proofUrl;
+    proofLink.href = button.dataset.proofUrl;
   });
 });

@@ -24,6 +24,7 @@ from salitaaco.utils.family_voice import (
     generate_family_voice_words,
 )
 from salitaaco.utils.perms_check import is_app_user, is_guardian, multi_user_test
+from salitaaco.utils.plans import family_voice_limit
 from salitaaco.utils.tile_audio import tile_word_slug
 
 logger = logging.getLogger(__name__)
@@ -34,8 +35,16 @@ logger = logging.getLogger(__name__)
 @multi_user_test(is_guardian)
 def view_family_voices(request):
     guardian = get_object_or_404(GuardianAccount, user=request.user)
+    # A free plan allows a few voices; a paid one any number.
+    limit = family_voice_limit(guardian)
+    at_limit = limit is not None and guardian.family_voices.count() >= limit
 
     add_family_voice_form = AddFamilyVoiceForm()
+
+    if request.method == "POST" and at_limit:
+        # Checked before anything is sent to ElevenLabs.
+        messages.error(request, f"Hanggang {limit} boses lang sa libreng plano. Kunin ang Plus para makapagdagdag pa.")
+        return redirect('family_voices')
 
     if request.method == "POST" and elevenlabs_is_set_up():
         add_family_voice_form = AddFamilyVoiceForm(request.POST, request.FILES)
@@ -69,6 +78,8 @@ def view_family_voices(request):
         "add_family_voice_form": add_family_voice_form,
         "show_add_family_voice_modal": bool(add_family_voice_form.errors),
         "voices": voices,
+        "family_voice_limit": limit,
+        "at_family_voice_limit": at_limit,
         "reading_paragraph": READING_PARAGRAPH,
         "terms_version": TERMS_VERSION,
     }

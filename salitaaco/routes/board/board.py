@@ -15,9 +15,11 @@ from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
 from salitaaco.utils.account import get_user_account
 from salitaaco.utils.active_nav import active_nav
-from salitaaco.utils.board import boards, extra_board_data, quick_words
+from salitaaco.utils.board import extra_board_data, quick_words
 from salitaaco.utils.children import guardian_child_or_404
 from salitaaco.utils.family_voice import family_voice_urls
+from salitaaco.utils.guardian_boards import board_guardian, boards_of
+from salitaaco.utils.guardian_words import guardian_word_audio_urls, shown_guardian_words
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.tile_audio import tile_audio_urls
 from salitaaco.utils.uploads import random_upload_name
@@ -115,7 +117,10 @@ def view_board(request, child_uuid=None):
     # The voice for tiles nobody recorded by hand: the child's family voice where it
     # already has the word, otherwise the app's shared voice.
     owner_child = managed_child or ChildAccount.objects.filter(user=owner).select_related("family_voice").first()
+    # The guardian's own tiles that show, up to their plan's limit.
+    own_words = shown_guardian_words(board_guardian(owner, owner_child))
     tile_audio = tile_audio_urls()
+    tile_audio.update(guardian_word_audio_urls(own_words))
     if owner_child and owner_child.family_voice:
         tile_audio.update(family_voice_urls(owner_child.family_voice))
 
@@ -128,8 +133,9 @@ def view_board(request, child_uuid=None):
         "rating_form": rating_form,
         "show_rating_modal": bool(rating_form.errors),
         "board_data": {
-            # A child's boards are the ones their guardian left on.
-            "categories": boards(owner_child),
+            # The app's boards and the family's own, with the family's own tiles;
+            # a child's are the ones their guardian left on.
+            "categories": boards_of(owner, owner_child),
             "verb_category": VERB_CATEGORY,
             # The Home screen: the quick words, then the board of feelings.
             "quick_words": quick_words(),

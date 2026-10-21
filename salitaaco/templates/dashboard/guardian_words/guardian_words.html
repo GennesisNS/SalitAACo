@@ -1,0 +1,102 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Sariling Tile - SalitAACo{% endblock %}
+
+{% block heading %}Sariling Tile{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Magdagdag ng sarili mong mga tile, hal. pangalan ng kapatid o paboritong pagkain sa bahay. Lalabas ang mga ito sa
+  board mo at sa board ng bawat anak mo, sa dulo ng board na pinili mo: isa sa mga board ng app, o isa sa
+  <a href="{% url 'guardian_boards' %}">sarili mong board</a>.
+</p>
+
+{% include "components/guardian_words/limit_notice.html" with noun="tile" %}
+
+<section class="section">
+  <div class="sectionHead">
+    <h2>{{ word_count }} sa {{ limit }} na sariling tile</h2>
+  </div>
+
+  {% if words %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Simbolo</th>
+          <th>Salita</th>
+          <th>Board</th>
+          <th>Status</th>
+          <th>Boses</th>
+          <th>Naidagdag</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in words %}
+        {% with word=item.word %}
+        <tr>
+          <td class="symbolCell">{{ word.emoji }}</td>
+          <td data-label="Salita"><b>{{ word.word }}</b></td>
+          <td data-label="Board">{{ word.board }}</td>
+          <td data-label="Status">
+            {% if item.shown %}<span class="statusBadge approved">Nakikita</span>{% else %}<span class="statusBadge pending">Nakatago</span>{% endif %}
+          </td>
+          <td data-label="Boses">
+            {% if item.audio_url %}
+            <button class="secondaryBtn smallBtn" type="button" data-preview="{{ item.audio_url }}">▶ Pakinggan</button>
+            {% elif can_voice and item.shown %}
+            <form class="inlineForm" method="post" action="{% url 'voice_guardian_word' word.uuid %}">
+              {% csrf_token %}
+              <button class="secondaryBtn smallBtn" type="submit">Gawin ang boses</button>
+            </form>
+            {% else %}
+            <span class="doneNote">Boses ng device</span>
+            {% endif %}
+          </td>
+          <td data-label="Naidagdag">{{ word.created_at|date:"Y-m-d" }}</td>
+          <td>
+            <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="delete-word-{{ word.uuid }}">Burahin</button>
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyState">Wala ka pang sariling tile.</p>
+  {% endif %}
+
+  {% if can_add %}
+  <hr class="sectionDivider" />
+
+  <h2>Magdagdag ng tile</h2>
+  <form method="post" class="narrowForm settingsFields" novalidate>
+    {% csrf_token %}
+    {% include "components/vocabulary/word_fields.html" with word_form=word_form %}
+    <button class="primaryBtn formActions" type="submit" name="word_form">＋ Idagdag ang tile</button>
+  </form>
+  <p class="fieldHelp">
+    Gagawin ang boses ng bagong tile sa boses ng app at sa bawat boses ng pamilya mo. Puwede mo ring lagyan ito ng
+    sariling larawan o recording mula sa “Mga Tile”, gaya ng ibang tile.
+  </p>
+  {% endif %}
+</section>
+
+{% for item in words %}
+{% with word=item.word %}
+<div class="confirmBackdrop hidden" data-modal="delete-word-{{ word.uuid }}">
+  <form class="confirmBox" method="post" action="{% url 'remove_guardian_word' word.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <h3>Burahin ang tile na “{{ word.word }}”?</h3>
+    <p>Mawawala ito sa board mo at sa board ng lahat ng anak mo.</p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-word-{{ word.uuid }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, burahin</button>
+    </div>
+  </form>
+</div>
+{% endwith %}
+{% endfor %}
+{% endblock %}

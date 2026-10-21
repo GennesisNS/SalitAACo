@@ -1,8 +1,7 @@
 {% comment %}
   The window that shows a payment's proof: the picture the guardian uploaded.
-  One per page; plan.js fills in whose payment it is when a "Tingnan" button opens it.
-
-  FRONTEND ONLY FOR NOW: no picture is saved yet, so it shows where the picture will be.
+  One per page; plan.js puts in the picture and whose payment it is when a
+  "Tingnan" button (data-proof, data-proof-url) opens it.
 {% endcomment %}
 <div class="settingsBackdrop hidden" data-modal="proof">
   <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="proofTitle">
@@ -12,10 +11,10 @@
     </div>
     <div class="settingsBody">
       <p class="desc" id="proofCaption"></p>
-      <div class="proofFrame">
-        <span aria-hidden="true">🧾</span>
-        <p>Dito lalabas ang larawan ng bayad na in-upload ng tagapag-alaga.</p>
-      </div>
+      <a class="proofFrame" id="proofLink" target="_blank" rel="noopener">
+        <img id="proofImage" alt="Larawan ng bayad" />
+      </a>
+      <small class="fieldHelp">Pindutin ang larawan para buksan ito nang buo.</small>
     </div>
   </div>
 </div>

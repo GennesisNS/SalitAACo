@@ -45,10 +45,13 @@ def usage_by_day(days=USAGE_CHART_DAYS):
 
 
 def board_opens(limit=TOP_BOARDS):
-    """The boards opened most across every account, with each board's picture."""
+    """
+    The app's boards opened most across every account, with each board's
+    picture. A family's own boards are theirs, and are not counted here.
+    """
     icons = {board["name"]: board["icon"] for board in every_board()}
     totals = (
-        DailyUsage.objects.filter(kind=DailyUsage.BOARD)
+        DailyUsage.objects.filter(kind=DailyUsage.BOARD, name__in=list(icons))
         .values("name").annotate(total=Sum("use_count")).order_by("-total", "name")[:limit]
     )
     rows = [{"name": row["name"], "icon": icons.get(row["name"], ""), "count": row["total"]} for row in totals]

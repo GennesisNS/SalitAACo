@@ -9,7 +9,9 @@
 <div class="pageCard">
   <div class="settingsHeader">
     <h2>🎙️ Boses ng Pamilya <span class="planTag">Plus</span></h2>
-    {% if elevenlabs_is_set_up %}
+    {% if elevenlabs_is_set_up and at_family_voice_limit %}
+    <a class="primaryBtn" href="{% url 'plan' %}">Kunin ang Plus para makapagdagdag</a>
+    {% elif elevenlabs_is_set_up %}
     <button class="primaryBtn" type="button" data-open-modal="add-family-voice">＋ Magdagdag ng boses</button>
     {% endif %}
   </div>
@@ -22,6 +24,16 @@
 
     {% if not elevenlabs_is_set_up %}
     <p class="emptyState">Hindi pa naka-set up ang paggawa ng boses sa app na ito.</p>
+    {% elif at_family_voice_limit %}
+    <p class="pendingNote">
+      Naabot mo na ang <b>{{ family_voice_limit }} boses</b> ng libreng plano. Hindi ka na makakapagdagdag ng boses hangga't
+      hindi ka naka-SalitAACo Plus. <a href="{% url 'plan' %}">Kunin ang Plus</a>
+    </p>
+    {% elif family_voice_limit is not None %}
+    <p class="fieldHelp">
+      Sa libreng plano, hanggang {{ family_voice_limit }} boses ng pamilya ang puwede ({{ voices|length }} na ang nagawa
+      mo). Walang limit sa SalitAACo Plus.
+    </p>
     {% endif %}
 
     {% for item in voices %}
@@ -67,7 +79,7 @@
   </div>
 </div>
 
-{% if elevenlabs_is_set_up %}
+{% if elevenlabs_is_set_up and not at_family_voice_limit %}
 <!-- ============== ADD A FAMILY VOICE ============== -->
 <div class="settingsBackdrop hidden" data-modal="add-family-voice" data-open="{{ show_add_family_voice_modal|yesno:'true,false' }}">
   <div class="settingsBox wide" role="dialog" aria-modal="true" aria-labelledby="addVoiceTitle">
