@@ -1,4 +1,5 @@
 {% extends "layouts/dashboard.html" %}
+{% load static %}
 
 {% block title %}Mga Subscription - SalitAACo{% endblock %}
 
@@ -11,51 +12,96 @@
   {% endfor %}
 </div>
 
-<section class="section">
-  <h2>Mga plano</h2>
+<section class="section" id="pending">
+  <h2>Naghihintay na bayad <span class="tabCount">{{ pending_count }}</span></h2>
   <p class="desc">
-    Ito ang mga planong nakikita ng mga tagapag-alaga sa “Plano at Subscription” at sa pampublikong website.
-    Ang planong hindi iniaalok ay hindi na mapipili ng bago, pero mananatili sa mga mayroon na nito hanggang matapos ang
-    bayad nila. Ang bagong presyo ay para sa mga susunod na bayad; hindi nito binabago ang mga naipadala na.
+    Tingnan ang patunay at i-check sa GCash na natanggap ang bayad, saka aprubahan o tanggihan. Kapag naaprubahan,
+    magsisimula ang plano ng tagapag-alaga. Nasa <a href="{% url 'revenue' %}">Kita</a> ang talaan ng lahat ng bayad, at
+    nasa <a href="{% url 'system_plans' %}">System Settings › Mga Plano</a> ang pag-aayos ng mga plano.
   </p>
 
-  <div class="planGrid">
-    {% for item in plans %}
-    <form method="post" class="planCard settingsFields" novalidate>
-      {% csrf_token %}
-      {% with form=item.form %}
-      <p class="planSubscribers"><b>{{ item.subscribers }}</b> tagapag-alaga sa planong ito</p>
-
-      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-      {{ form.name }}
-      <small class="fieldError">{{ form.name.errors }}</small>
-
-      {% if form.price %}
-      <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
-      {{ form.price }}
-      <small class="fieldError">{{ form.price.errors }}</small>
-      {% else %}
-      <p class="desc">Libre ang planong ito at laging iniaalok: dito napupunta ang mga tagapag-alagang walang bayad na plano.</p>
-      {% endif %}
-
-      <label for="{{ form.features.id_for_label }}">{{ form.features.label }}</label>
-      {{ form.features }}
-      <small class="fieldError">{{ form.features.errors }}</small>
-
-      {% if form.offered %}
-      <div class="switchRow">
-        <label class="switch">
-          {{ form.offered }}
-          <span class="slider"></span>
-        </label>
-        <span>{{ form.offered.label }}</span>
-      </div>
-      {% endif %}
-
-      <button class="primaryBtn formActions" type="submit" name="plan_form" value="{{ item.plan.key }}">I-save ang plano</button>
-      {% endwith %}
-    </form>
-    {% endfor %}
+  {% if pending_payments %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Petsa</th>
+          <th>Tagapag-alaga</th>
+          <th>Plano</th>
+          <th>Halaga</th>
+          <th>Patunay</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in pending_payments %}
+        <tr>
+          <td data-label="Petsa">{{ payment.created_at|date:"Y-m-d H:i" }}</td>
+          <td data-label="Tagapag-alaga">{{ payment.guardian.display_name }} <span class="badge">@{{ payment.guardian.user.username }}</span></td>
+          <td data-label="Plano">{{ payment.plan.name }}</td>
+          <td data-label="Halaga">₱{{ payment.amount }}</td>
+          <td data-label="Patunay">
+            <button class="secondaryBtn smallBtn" type="button" data-open-modal="proof"
+              data-proof="{{ payment.guardian.display_name }}, ₱{{ payment.amount }}, {{ payment.created_at|date:'Y-m-d' }}"
+              data-proof-url="{% url 'view_payment_proof' payment.uuid %}">Tingnan</button>
+          </td>
+          <td>
+            <span class="rowActions">
+              <button class="primaryBtn smallBtn" type="button" data-open-modal="approve-{{ payment.uuid }}">Aprubahan</button>
+              <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="reject-{{ payment.uuid }}">Tanggihan</button>
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
+  {% else %}
+  <p class="emptyState">Walang bayad na naghihintay.</p>
+  {% endif %}
+
+  {% include "components/pagination.html" with page_obj=pending_payments page_param="pending_page" anchor="#pending" %}
 </section>
+
+{% include "components/payments/proof_modal.html" %}
+
+<!-- Approving and rejecting are each asked once more; rejecting asks why, for the guardian. -->
+{% for payment in pending_payments %}
+<div class="confirmBackdrop hidden" data-modal="approve-{{ payment.uuid }}">
+  <form class="confirmBox" method="post" action="{% url 'approve_payment' payment.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="?{{ request.GET.urlencode }}" />
+    <h3>Aprubahan ang ₱{{ payment.amount }} ni {{ payment.guardian.display_name }}?</h3>
+    <p>
+      Gawin lang ito kapag natanggap na sa GCash ang bayad. Magiging {{ payment.plan.name }} siya nang isang buwan; kung
+      naka-{{ payment.plan.name }} na siya, idadagdag ito sa dulo ng kasalukuyan niyang buwan.
+    </p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="approve-{{ payment.uuid }}">Huwag muna</button>
+      <button class="primaryBtn" type="submit">Oo, aprubahan</button>
+    </div>
+  </form>
+</div>
+
+<!-- Sent to this page, on this page of the list; a reason that is not valid reopens this dialog with it. -->
+<div class="confirmBackdrop hidden" data-modal="reject-{{ payment.uuid }}" data-open="{% if payment.uuid == rejecting %}true{% else %}false{% endif %}">
+  <form class="confirmBox settingsFields" method="post" action="{% url 'subscriptions' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <input type="hidden" name="payment" value="{{ payment.uuid }}" />
+    <h3>Tanggihan ang ₱{{ payment.amount }} ni {{ payment.guardian.display_name }}?</h3>
+    <label for="rejectNote-{{ payment.uuid }}">{{ reject_form.note.label }}</label>
+    <textarea class="textarea" name="note" id="rejectNote-{{ payment.uuid }}" rows="3" maxlength="300" required
+      placeholder="hal. Malabo ang larawan ng bayad. Pakisubukan muli.">{% if payment.uuid == rejecting %}{{ reject_form.note.value|default:"" }}{% endif %}</textarea>
+    {% if payment.uuid == rejecting %}<small class="fieldError">{{ reject_form.note.errors }}</small>{% endif %}
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="reject-{{ payment.uuid }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit" name="reject_form">Oo, tanggihan</button>
+    </div>
+  </form>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/plan.js' %}" defer></script>
 {% endblock %}

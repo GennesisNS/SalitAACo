@@ -30,8 +30,10 @@
       <li>{{ feature }}</li>
       {% endfor %}
     </ul>
-    {% if item.needs_payment and item.plan == paid_plan %}
-    <button class="primaryBtn blockBtn" type="button" data-open-modal="pay" {% if pending_payment %}disabled{% endif %}>
+    {% if item.needs_payment %}
+    <button class="primaryBtn blockBtn" type="button" data-open-modal="pay" {% if pending_payment %}disabled{% endif %}
+      data-pay-plan="{{ item.plan.key }}" data-pay-name="{{ item.plan.name }}" data-pay-price="{{ item.plan.price }}"
+      data-pay-period="{{ item.plan.period }}">
       {% if item.is_current %}Dagdagan ng isang buwan{% else %}Kunin ang {{ item.plan.name }}{% endif %}
     </button>
     {% elif item.is_current %}
@@ -60,28 +62,29 @@
   ang bagong buwan sa dulo nito. May hiwalay na kasunduan para sa mga paaralan at institusyon.
 </p>
 
-{% if paid_plan %}
+{% if pay_plan %}
 <!-- ============== PAY BY GCASH QR CODE ============== -->
+<!-- One window for every paid plan: plan.js puts in the plan whose button was pressed. -->
 <div class="settingsBackdrop hidden" data-modal="pay" data-open="{{ show_pay_modal|yesno:'true,false' }}">
   <div class="settingsBox wide pay" role="dialog" aria-modal="true" aria-labelledby="payTitle">
     <div class="settingsHeader">
-      <h2 id="payTitle">Bayaran ang {{ paid_plan.name }}</h2>
+      <h2 id="payTitle">Bayaran ang <span data-pay-text="name">{{ pay_plan.name }}</span></h2>
       <button class="closeBtn" type="button" data-close-modal="pay" aria-label="Isara">&times;</button>
     </div>
     <form method="post" enctype="multipart/form-data" class="settingsBody" novalidate>
       {% csrf_token %}
-      <input type="hidden" name="plan" value="{{ paid_plan.key }}" />
+      <input type="hidden" name="plan" value="{{ pay_plan.key }}" id="payPlan" />
       <div class="payLayout">
         <div class="payCode">
           {% include "components/payments/qr_code.html" %}
-          <p class="payAmount">₱{{ paid_plan.price }} <small>{{ paid_plan.period }}</small></p>
+          <p class="payAmount">₱<span data-pay-text="price">{{ pay_plan.price }}</span> <small data-pay-text="period">{{ pay_plan.period }}</small></p>
         </div>
 
         <div class="paySteps">
           <h3>Paano magbayad</h3>
           <ol>
             <li>I-scan ang QR code gamit ang GCash app mo.</li>
-            <li>Bayaran ang eksaktong halaga: <b>₱{{ paid_plan.price }}</b>.</li>
+            <li>Bayaran ang eksaktong halaga: <b>₱<span data-pay-text="price">{{ pay_plan.price }}</span></b>.</li>
             <li>I-screenshot ang screen na nagsasabing matagumpay ang bayad.</li>
             <li>I-upload ang larawang iyon dito.</li>
           </ol>
@@ -97,7 +100,8 @@
       </div>
 
       <p class="payNote">
-        Magiging “Naghihintay” ang bayad mo hanggang maaprubahan ng admin, at saka magsisimula ang {{ paid_plan.name }}.
+        Magiging “Naghihintay” ang bayad mo hanggang maaprubahan ng admin, at saka magsisimula ang
+        <span data-pay-text="name">{{ pay_plan.name }}</span>.
       </p>
       <div class="confirmRow">
         <button class="secondaryBtn" type="button" data-close-modal="pay">Huwag muna</button>

@@ -2,17 +2,20 @@
 A guardian's plan and payments: the plans, paying for one by GCash QR code
 with a picture of the payment, and what became of each payment.
 
-The admin approves or rejects the payments on the Kita page (routes/revenue/)
-and sets the QR code on System Settings > General.
+The admin approves or rejects the payments on Mga Subscription
+(routes/subscriptions/), sets up the plans on System Settings > Mga Plano and
+the QR code on System Settings > General.
 """
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from salitaaco.forms.plan.payment_proof import PaymentProofForm
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.models.payment import Payment
+from salitaaco.models.plan import Plan
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.pagination import paginate
@@ -54,17 +57,23 @@ def view_plan(request):
         "current_plan": plan,
         "paid_until": paid_until(guardian),
         "pending_payment": waiting,
+        # The plans on offer, and the guardian's own when it is no longer offered:
+        # it stays theirs until their paid time ends, but cannot be paid for again.
         "plans": [
             {
-                "plan": offered,
-                "is_current": offered.pk == plan.pk,
+                "plan": shown,
+                "is_current": shown.pk == plan.pk,
                 # A plan that costs something is paid for before it starts, and paid again to keep it.
-                "needs_payment": not offered.is_free,
+                "needs_payment": not shown.is_free and shown.offered,
             }
-            for offered in offered_plans()
+            for shown in Plan.objects.filter(Q(offered=True) | Q(pk=plan.pk))
         ],
-        # One plan is paid for at a time; it is the first that costs something.
-        "paid_plan": paid_plans[0] if paid_plans else None,
+        # The pay window is for one plan at a time: the one whose button was pressed
+        # (plan.js switches it), or after a refused upload the one it was for.
+        "pay_plan": next(
+            (offered for offered in paid_plans if proof_form.errors and offered.key == request.POST.get("plan")),
+            paid_plans[0] if paid_plans else None,
+        ),
         "setting": setting,
         "proof_form": proof_form,
         "show_pay_modal": bool(proof_form.errors),

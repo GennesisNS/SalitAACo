@@ -42,7 +42,8 @@ class LayoutPerRoleTest(LayoutBase):
             ],
             "developer": [
                 "analytics", "reports", "users", "admin_boards", "words", "institutions", "revenue", "subscriptions",
-                "feedback", "system_general", "system_access", "system_privacy", "system_status", "profile", "settings",
+                "feedback", "system_general", "system_plans", "system_access", "system_privacy", "system_status",
+                "profile", "settings",
             ],
         }
         for username, routes in pages.items():
@@ -102,7 +103,7 @@ class NavigationPerRoleTest(LayoutBase):
         self.assertEqual(self.navigation("analytics"), [
             "analytics", "reports", "users", "admin_boards", "words", "institutions",
             "revenue", "subscriptions", "feedback",
-            "system_general", "system_access", "system_privacy", "system_status",
+            "system_general", "system_plans", "system_access", "system_privacy", "system_status",
             "board", "settings", "profile",
         ])
 

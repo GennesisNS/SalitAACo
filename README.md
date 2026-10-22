@@ -141,9 +141,10 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `vocabulary/boards/` | Mga Board: publish a board or hide it from everyone | Admins |
 | `vocabulary/words/` | Mga Salita at Simbolo: every word, and adding words to boards | Admins |
 | `institutions/` | Mga Paaralan at Institusyon *(may be removed)* | Admins |
-| `revenue/`, `subscriptions/` | Kita: approve or reject payments. Mga Subscription: guardians per plan, and editing the plans | Admins |
+| `revenue/`, `subscriptions/` | Kita: the record of every payment, by status, to look at only. Mga Subscription: guardians per plan, this month's earnings, and approving or rejecting the waiting payments | Admins |
 | `feedback/` | Feedback at mga Isyu: support messages and ratings *(may be removed)* | Admins |
 | `system/general/` | Support contact details, maintenance mode, the GCash QR code, how many tiles and boards a guardian can add on Free and on Plus | Admins |
+| `system/plans/` | Mga Plano: add, edit, offer or not, and delete the plans | Admins |
 | `system/access/` | Who is an admin | Admins |
 | `system/privacy/` | What is kept, consent versions, deleting old usage counts *(may be removed)* | Admins |
 | `system/status/` | Health checks and the latest log errors *(may be removed)* | Admins |
@@ -286,10 +287,10 @@ Language modes (English and Taglish labels) are not built: the feature has not b
 
 Paying is by GCash QR code, with no payment gateway: the guardian scans the code, pays, and uploads a screenshot of the successful payment. An admin checks GCash and approves or rejects it.
 
-- **The plans** are `Plan` rows. Migration 0017 made Free (₱0) and SalitAACo Plus (₱149 a month). An admin edits their name, price, features and whether they are offered on **Mga Subscription**; Free is always free and always offered. The guardian's Plano at Subscription page and the public website read the same rows.
+- **The plans** are `Plan` rows. Migration 0017 made Free (₱0) and SalitAACo Plus (₱149 a month). An admin adds plans, edits their name, price per month and features (one per line), turns them on or off for guardians (“Iniaalok”) and deletes them on **System Settings › Mga Plano**. Free is always free, always offered and never deleted; a plan that has payments is not deleted either, only taken off offer. A plan taken off offer cannot be chosen any more, but stays with the guardians on it until their paid time ends; a new price is for later payments only. No two plans have the same name. The guardian's Plano at Subscription page and the public website read the same rows; a guardian can pay for any paid plan on offer. Every paid plan gets the “Plus” limits below.
 - **The QR code** is set on **System Settings › General** under “Bayaran sa GCash”, with the account's name and number. Until one is uploaded, guardians cannot send a payment.
 - **A payment** (`Payment`) starts as Naghihintay. A guardian has at most one waiting at a time. The picture is a private upload, opened only through a logged-in view by the guardian who sent it and by admins.
-- **Approving** on the **Kita** page puts the guardian on the plan for one month. A payment approved while the guardian is still on the plan adds its month to the end, so paying early loses nothing. When the months run out, the guardian is back on Free. **Rejecting** asks for a reason, which the guardian sees in their payment history.
+- **Approving** a waiting payment on **Mga Subscription** puts the guardian on the plan for one month. A payment approved while the guardian is still on the plan adds its month to the end, so paying early loses nothing. When the months run out, the guardian is back on Free. **Rejecting** asks for a reason, which the guardian sees in their payment history. **Kita** is the record of every payment and what became of it, by status; it only shows them.
 - A guardian's plan is worked out from their approved payments (`utils/plans.py`); there is no separate subscription record.
 
 What the plans allow:
