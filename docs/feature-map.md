@@ -165,7 +165,6 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | System Settings: General (support contact, maintenance mode, GCash QR code, the Free and Plus limits of own tiles and boards) | `general.view_general_settings` | `system_general` `system/general/` | `GeneralSettingsForm`, `PaymentSettingsForm`, `PlanLimitsForm` | `dashboard/system/general.html` |
 | System Settings: Access control | `access.view_access_control`, `access.remove_admin` | `system_access` `system/access/`, `remove_admin` `system/access/<id>/remove/` | `AddAdminForm`, `RemoveAdminForm` | `dashboard/system/access.html` |
 | System Settings: Privacy *(may be removed)* | `privacy.view_privacy` | `system_privacy` `system/privacy/` | `PurgeUsageForm` | `dashboard/privacy/privacy.html` |
-| System Settings: Technical status *(may be removed)* | `technical_status.view_technical_status` | `system_status` `system/status/` | | `dashboard/technical_status/technical_status.html` |
 
 ### Public website
 

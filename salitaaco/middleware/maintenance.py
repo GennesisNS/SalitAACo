@@ -24,7 +24,7 @@ class MaintenanceModeMiddleware:
             response = render(request, 'maintenance.html', context, status=503)
             response["Retry-After"] = "3600"
             # Django logs every 5xx answer as an error. This one is on purpose, and
-            # one line per visitor would bury the real errors on Technical status.
+            # one line per visitor would bury the real errors in the log.
             response._has_been_logged = True
             return response
         return self.get_response(request)
