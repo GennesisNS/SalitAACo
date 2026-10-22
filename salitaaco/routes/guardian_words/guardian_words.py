@@ -9,9 +9,12 @@ up to it show and the rest are kept, hidden.
 A tile is voiced with ElevenLabs when it is added: in the shared voice, kept in
 the guardian's own folder under media/ apart from the vocabulary's audio in
 static/, and in each of the guardian's family voices (utils/guardian_words.py).
+Its symbol is an emoji or, on Plus, an uploaded picture, which only the
+guardian and their children are served.
 """
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -25,8 +28,7 @@ from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.family_voice import elevenlabs_is_set_up
 from salitaaco.utils.guardian_boards import shown_guardian_boards
 from salitaaco.utils.guardian_words import (
-    delete_guardian_word_audio,
-    delete_word_usage,
+    delete_guardian_word,
     guardian_word_audio_path,
     guardian_word_audio_urls,
     limit_reached_message,
@@ -36,6 +38,7 @@ from salitaaco.utils.guardian_words import (
     word_limit,
 )
 from salitaaco.utils.perms_check import is_app_user, is_guardian, multi_user_test
+from salitaaco.utils.uploads import icon_image_url
 
 NOT_VOICED = "Hindi pa nagawa ang boses nito, kaya boses muna ng device ang gagamitin. Subukan muli mamaya."
 
@@ -59,14 +62,15 @@ def view_guardian_words(request):
             messages.error(request, limit_message)
             return redirect('guardian_words')
 
-        word_form = GuardianWordForm(request.POST, guardian=guardian)
+        word_form = GuardianWordForm(request.POST, request.FILES, guardian=guardian)
         if word_form.is_valid():
-            word = GuardianWord.objects.create(
-                guardian=guardian,
-                board=word_form.cleaned_data['board'],
-                word=word_form.cleaned_data['word'],
-                emoji=word_form.cleaned_data['emoji'],
-            )
+            with transaction.atomic():
+                word = GuardianWord.objects.create(
+                    guardian=guardian,
+                    board=word_form.cleaned_data['board'],
+                    word=word_form.cleaned_data['word'],
+                )
+                word_form.save_picture(word)
             messages.success(request, f"Naidagdag na ang “{word.word}” sa board na “{word.board}”.")
             if not voice_guardian_word(word):
                 messages.error(request, NOT_VOICED)
@@ -80,6 +84,7 @@ def view_guardian_words(request):
     rows = [
         {
             "word": word,
+            "icon_url": icon_image_url("guardian_word_image", word),
             "audio_url": audio_urls.get(word.word),
             "shown": word.pk in shown and (word.board not in own_boards or word.board in shown_boards),
         }
@@ -104,28 +109,43 @@ def view_guardian_words(request):
 @multi_user_test(is_guardian)
 @require_POST
 def remove_guardian_word(request, word_uuid):
-    """A guardian removes one of their tiles, shown or not, with its audio and its counts."""
-    word = get_object_or_404(GuardianWord, uuid=word_uuid, guardian__user=request.user)
-    guardian, text = word.guardian, word.word
-    word.delete()
-    delete_guardian_word_audio(guardian, text)
-    delete_word_usage(guardian, text)
+    """A guardian removes one of their tiles, shown or not, with its picture, its audio and its counts."""
+    word = get_object_or_404(GuardianWord.objects.select_related("guardian"), uuid=word_uuid, guardian__user=request.user)
+    text = word.word
+    delete_guardian_word(word)
     messages.success(request, f"Nabura na ang “{text}”. Wala na ito sa mga board.")
     return redirect('guardian_words')
+
+
+def family_word_or_404(request, word_uuid):
+    """A guardian's tile, for the guardian and for the guardian's children only."""
+    allowed = GuardianWord.objects.filter(
+        Q(guardian__user=request.user) | Q(guardian__children__user=request.user)
+    ).distinct()
+    return get_object_or_404(allowed.select_related("guardian"), uuid=word_uuid)
 
 
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
 def play_guardian_word(request, word_uuid):
     """A guardian's tile in the shared voice, for the guardian and for the guardian's children."""
-    allowed = GuardianWord.objects.filter(
-        Q(guardian__user=request.user) | Q(guardian__children__user=request.user)
-    ).distinct()
-    word = get_object_or_404(allowed.select_related("guardian"), uuid=word_uuid)
+    word = family_word_or_404(request, word_uuid)
     path = guardian_word_audio_path(word)
     if not path.is_file():
         raise Http404()
     response = FileResponse(path.open('rb'), content_type="audio/mpeg")
+    response["Cache-Control"] = "private, max-age=86400"
+    return response
+
+
+@login_required(login_url='/login/')
+@multi_user_test(is_app_user)
+def view_guardian_word_image(request, word_uuid):
+    """A guardian's tile's uploaded picture, for the guardian and for the guardian's children."""
+    word = family_word_or_404(request, word_uuid)
+    if not word.has_icon_image:
+        raise Http404()
+    response = FileResponse(word.icon_image.open('rb'), content_type=word.icon_mime or "application/octet-stream")
     response["Cache-Control"] = "private, max-age=86400"
     return response
 

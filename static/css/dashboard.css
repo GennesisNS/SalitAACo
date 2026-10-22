@@ -495,16 +495,17 @@
 .settingsBody .boardEditor > label:first-child {
   margin-top: 0;
 }
+/* The picture of a board or a word (components/picture_choice.html), in a window or on a page. */
 .fieldLabel {
   margin: 20px 0 8px;
   color: var(--ink);
   font-size: 14px;
   font-weight: 600;
 }
-.settingsBody .iconKinds .tileSizeOption {
+.pictureChoice .iconKinds .tileSizeOption {
   min-width: 120px;
 }
-/* As wide as the name field; a little larger so the emoji reads clearly. */
+/* As wide as the field above it; a little larger so the emoji reads clearly. */
 .emojiInput {
   font-size: 20px;
 }
@@ -515,7 +516,7 @@
   gap: 12px;
   margin-top: 14px;
 }
-.settingsBody .filePicker label {
+.pictureChoice .filePicker label {
   margin: 0;
 }
 .fileName {
@@ -526,7 +527,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* The picture picked, or the board's own, beside the button. */
+/* The picture picked, or the one it already has, beside the button. */
 .pickedImage {
   width: 48px;
   height: 48px;
@@ -600,6 +601,14 @@
 }
 .symbolCell {
   font-size: 24px;
+}
+/* A word's uploaded picture, where its emoji would be. */
+.symbolImage {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  vertical-align: middle;
 }
 .logLines {
   margin: 0;

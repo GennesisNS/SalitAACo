@@ -3,14 +3,15 @@ import uuid
 from io import BytesIO
 
 from django.core.files.base import ContentFile
+from django.urls import reverse
 from PIL import Image, ImageOps
 
 IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
-# A picture a user uploads to show (a payment's screenshot, the QR code, a board's icon): still pictures only.
+# A picture a user uploads to show (a payment's screenshot, the QR code, a board's or a word's picture): still pictures only.
 PICTURE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
 
-# A board's picture is shown at most about 76 pixels wide; this is sharp on any screen.
+# A board's or a word's picture is shown at most about 76 pixels wide; this is sharp on any screen.
 ICON_MAX_SIDE = 256
 SHRUNK_MIME = "image/webp"
 
@@ -57,3 +58,14 @@ def shrink_picture(upload, max_side):
         buffer = BytesIO()
         image.save(buffer, "WEBP", quality=85)
     return ContentFile(buffer.getvalue()), SHRUNK_MIME
+
+
+def icon_image_url(route, thing):
+    """
+    Where the uploaded picture of a board or a word (models/icon_picture.py)
+    is served by `route`, or None when its picture is an emoji. A new picture
+    is stored under a new name, so the address changes with it.
+    """
+    if not thing.has_icon_image:
+        return None
+    return f"{reverse(route, args=[thing.uuid])}?v={thing.icon_image.name.rsplit('/', 1)[-1]}"

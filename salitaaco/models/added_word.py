@@ -1,8 +1,10 @@
 from django.db import models
 import uuid
 
+from .icon_picture import IconPicture
 
-class AddedWord(models.Model):
+
+class AddedWord(IconPicture, models.Model):
     """
     A word an admin added to a board, on top of the default vocabulary in
     defaults/vocabulary.py (which is never edited). It is shown after the
@@ -15,10 +17,12 @@ class AddedWord(models.Model):
     # What the tile says. No two tiles say the same thing, so that a word's
     # picture, recording and count always belong to one tile.
     word = models.CharField(max_length=40, unique=True)
-    # The tile's picture: an emoji, as the default words have.
-    emoji = models.CharField(max_length=16)
+    # The tile's picture: an emoji, as the default words have, unless it has an uploaded one.
+    emoji = models.CharField(max_length=16, blank=True)
+    icon_image = models.ImageField(upload_to='word-images/', blank=True)
+    icon_mime = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.emoji} {self.word} ({self.board})"
+        return f"{self.emoji or '🖼️'} {self.word} ({self.board})"

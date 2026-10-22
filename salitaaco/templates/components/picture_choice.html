@@ -1,0 +1,43 @@
+{% comment %}
+  The picture of a board or a word: an emoji, or a picture picked with the "Pumili ng larawan" button, which
+  picture_choice.js shows small beside the button. The page loads static/js/picture_choice.js.
+  form: a PictureChoiceForm (forms/picture_choice.py); icon_url: the uploaded picture it has, when it is being changed.
+  A form whose picture choice is not the user's to make (form.pictures_note) offers only the emoji, and says why.
+{% endcomment %}
+<div class="pictureChoice" data-icon-choice data-max-megabytes="5">
+  <p class="fieldLabel">{{ form.icon_kind.label }}</p>
+  {% if form.pictures_note %}
+  <small class="fieldHelp">{{ form.pictures_note }}</small>
+  <input type="hidden" name="{{ form.icon_kind.html_name }}" value="emoji" />
+  {% else %}
+  <div class="tileSizeOptions iconKinds" role="radiogroup" aria-label="{{ form.icon_kind.label }}">
+    {% for radio in form.icon_kind %}
+    <label class="tileSizeOption" for="{{ radio.id_for_label }}">
+      {{ radio.tag }} {% if radio.data.value == "emoji" %}😀{% else %}🖼️{% endif %} {{ radio.choice_label }}
+    </label>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <small class="fieldError">{{ form.icon_kind.errors }}</small>
+
+  <div class="iconPart" data-icon-for="emoji">
+    <label for="{{ form.emoji.id_for_label }}">{{ form.emoji.label }}</label>
+    {{ form.emoji }}
+    <small class="fieldHelp">{{ form.emoji.help_text }}</small>
+    <small class="fieldError">{{ form.emoji.errors }}</small>
+  </div>
+
+  {% if not form.pictures_note %}
+  <div class="iconPart" data-icon-for="image">
+    <div class="filePicker">
+      <img class="pickedImage hidden" data-picked-image alt="" {% if icon_url %}src="{{ icon_url }}" data-saved-image="{{ icon_url }}"{% endif %} />
+      <label class="secondaryBtn" for="{{ form.icon_image.id_for_label }}">📷 Pumili ng larawan</label>
+      <span class="fileName" data-file-name>{% if icon_url %}Ang kasalukuyang larawan{% else %}Wala pang napili{% endif %}</span>
+      <button class="linkBtn hidden" type="button" data-icon-clear>Alisin</button>
+    </div>
+    {{ form.icon_image }}
+    <small class="fieldHelp">JPG, PNG o WEBP, hanggang 5 MB. Paliliitin ito para hindi lumaki ang espasyong kinakain.</small>
+    <small class="fieldError" data-icon-error>{{ form.icon_image.errors }}</small>
+  </div>
+  {% endif %}
+</div>

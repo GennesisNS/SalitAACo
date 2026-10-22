@@ -8,6 +8,7 @@ from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.models.word_usage import WordUsage
+from salitaaco.utils.board import word_tile
 from salitaaco.utils.family_voice import elevenlabs_client, elevenlabs_is_set_up, family_voice_directory
 from salitaaco.utils.plans import current_plan
 from salitaaco.utils.tile_audio import tile_audio_file_name, tile_word_slug, tile_words
@@ -130,6 +131,15 @@ def delete_guardian_word_audio(guardian, text):
         (family_voice_directory(voice) / tile_audio_file_name(text)).unlink(missing_ok=True)
 
 
+def delete_guardian_word(word):
+    """Delete a guardian's tile, shown or not, with its picture, its audio and its counts."""
+    guardian, text = word.guardian, word.word
+    word.remove_icon_image(save=False)
+    word.delete()
+    delete_guardian_word_audio(guardian, text)
+    delete_word_usage(guardian, text)
+
+
 def delete_guardian_audio_folder(guardian):
     """Remove all of a guardian's tiles in the shared voice, when their account goes."""
     shutil.rmtree(guardian_word_audio_directory(guardian), ignore_errors=True)
@@ -148,7 +158,7 @@ def add_guardian_words(categories, words):
     added = {}
     for word in words:
         if tile_word_slug(word.word) not in taken:
-            added.setdefault(word.board, []).append({"w": word.word, "e": word.emoji})
+            added.setdefault(word.board, []).append(word_tile(word, "guardian_word_image"))
     return [
         {**category, "items": category["items"] + added.get(category["name"], [])}
         for category in categories

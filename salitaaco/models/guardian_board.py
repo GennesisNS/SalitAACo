@@ -1,8 +1,10 @@
 from django.db import models
 import uuid
 
+from .icon_picture import IconPicture
 
-class GuardianBoard(models.Model):
+
+class GuardianBoard(IconPicture, models.Model):
     """
     A board a guardian made for their family, after the app's boards. Its
     tiles are the guardian's own tiles (GuardianWord) put on it, and it shows,
@@ -29,25 +31,6 @@ class GuardianBoard(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['guardian', 'name'], name='unique_guardian_board'),
         ]
-
-    @property
-    def has_icon_image(self):
-        return bool(self.icon_image)
-
-    def set_icon_image(self, file_name, content, mime):
-        """Use an uploaded picture as the board's picture, removing the one before."""
-        self.remove_icon_image(save=False)
-        self.icon_image.save(file_name, content, save=False)
-        self.icon_mime = mime
-        self.emoji = ""
-        self.save()
-
-    def remove_icon_image(self, save=True):
-        if self.icon_image:
-            self.icon_image.delete(save=False)
-        self.icon_mime = ""
-        if save:
-            self.save()
 
     def __str__(self):
         return f"{self.emoji or '🖼️'} {self.name} ({self.guardian})"

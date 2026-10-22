@@ -3,15 +3,19 @@ from django import forms
 from salitaaco.utils.board import every_board_name
 from salitaaco.utils.tile_audio import tile_word_slug, tile_words
 
-from ..helpers import BaseForm
-from ..validators import clean_symbol
+from ..picture_choice import EMOJI_KEYS, PictureChoiceForm
 
 
-class WordForm(BaseForm):
+class WordForm(PictureChoiceForm):
     """
-    A word an admin adds to a board, or changes. `editing` is the AddedWord
-    being changed, so that it is not taken for a copy of itself.
+    A word an admin adds to a board, or changes, with its symbol: an emoji or
+    an uploaded picture. `editing` is the AddedWord being changed, so that it
+    is not taken for a copy of itself and keeps its picture when no new one is chosen.
     """
+    picture_label = "Simbolo"
+    emoji_missing = "Ilagay ang simbolo."
+    image_missing = "Pumili ng larawan ng salita."
+
     board = forms.ChoiceField(
         required=True,
         widget=forms.Select(attrs={"class": "select"}),
@@ -30,19 +34,16 @@ class WordForm(BaseForm):
         help_text="Ito mismo ang lalabas sa tile at bibigkasin.",
     )
     emoji = forms.CharField(
-        required=True,
+        required=False,
         max_length=16,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. 🥖"}),
-        error_messages={
-            "required": "Ilagay ang simbolo.",
-            "max_length": "Isang emoji lang ang simbolo.",
-        },
-        label="Simbolo (emoji)",
+        widget=forms.TextInput(attrs={"class": "input emojiInput"}),
+        error_messages={"max_length": "Isang emoji lang ang simbolo."},
+        label="Emoji",
+        help_text=f"Isang emoji lang, hal. 🥖 para sa pandesal. {EMOJI_KEYS}",
     )
 
     def __init__(self, *args, editing=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.editing = editing
+        super().__init__(*args, editing=editing, **kwargs)
         self.fields["board"].choices = [("", "Pumili ng board…")] + [(name, name) for name in every_board_name()]
 
     def clean_word(self):
@@ -57,6 +58,3 @@ class WordForm(BaseForm):
         if word.lower() in (other.lower() for other in others) or slug in (tile_word_slug(other) for other in others):
             raise forms.ValidationError("May tile na para sa salitang ito.")
         return word
-
-    def clean_emoji(self):
-        return clean_symbol(self.cleaned_data["emoji"])

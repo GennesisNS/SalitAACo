@@ -1,4 +1,5 @@
 {% extends "layouts/dashboard.html" %}
+{% load static %}
 
 {% block title %}{{ added.word }} - SalitAACo{% endblock %}
 
@@ -8,19 +9,23 @@
 <p class="backLink"><a href="{% url 'words' %}">← Mga Salita at Simbolo</a></p>
 
 <section class="section">
-  <h2>{{ added.emoji }} {{ added.word }}</h2>
+  <h2>{% if icon_url %}<img class="symbolImage" src="{{ icon_url }}" alt="" />{% else %}{{ added.emoji }}{% endif %} {{ added.word }}</h2>
   <p class="desc">
     Kapag pinalitan ang salita mismo, magiging bagong tile ito: ang mga larawan, recording at bilang ng lumang
     salita ay hindi lilipat.
   </p>
 
-  <form method="post" class="narrowForm settingsFields" novalidate>
+  <form method="post" enctype="multipart/form-data" class="narrowForm settingsFields" novalidate>
     {% csrf_token %}
-    {% include "components/vocabulary/word_fields.html" %}
+    {% include "components/vocabulary/word_fields.html" with icon_url=icon_url %}
     <div class="confirmRow">
       <a class="secondaryBtn" href="{% url 'words' %}">Huwag muna</a>
       <button class="primaryBtn" type="submit" name="word_form">I-save ang salita</button>
     </div>
   </form>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/picture_choice.js' %}" defer></script>
 {% endblock %}

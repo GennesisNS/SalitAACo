@@ -207,16 +207,23 @@ function findTile(word) {
   return null;
 }
 
-function findEmojiForWord(word) {
-  const tile = findTile(word);
-  return (tile && tile.e) || "📝";
-}
-
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+// The picture of the tile `item` that says `label`: this user's own picture of it,
+// the picture uploaded with the tile (a word an admin or a guardian added), or its emoji.
+function tilePicture(item, label, imageClass, emojiClass) {
+  const custom = customList[label] || {};
+  const url = custom.has_image ? custom.image_url : item && item.img;
+  if (!url) return el("span", emojiClass, (item && item.e) || "📝");
+  const img = el("img", imageClass);
+  img.src = url;
+  img.alt = "";
+  return img;
 }
 
 function renderGrid() {
@@ -274,12 +281,10 @@ function renderFavorites() {
   hintEl.classList.remove("hidden");
   renderTiles(
     gridEl,
-    frequent.map((it) => ({
-      w: it.word,
-      e: findEmojiForWord(it.word),
-      _useCount: it.use_count,
-      _fromFrequent: true,
-    })),
+    frequent.map((it) => {
+      const tile = findTile(it.word);
+      return { w: it.word, e: tile.e, img: tile.img, _useCount: it.use_count, _fromFrequent: true };
+    }),
   );
 }
 
@@ -297,14 +302,7 @@ function renderTiles(grid, items) {
       c.appendChild(useCountMark);
     }
     if (custom.has_sound) c.appendChild(el("span", "soundmark", "🎙️"));
-    if (custom.has_image) {
-      const img = el("img", "customimg");
-      img.src = custom.image_url;
-      img.alt = label;
-      c.appendChild(img);
-    } else {
-      c.appendChild(el("span", "emoji", item.e));
-    }
+    c.appendChild(tilePicture(item, label, "customimg", "emoji"));
     c.appendChild(el("span", "", label));
 
     if (editMode) {
@@ -442,7 +440,7 @@ function renderSentence() {
   }
   words.forEach((w, i) => {
     const t = el("span", i === playingIndex ? "tag playing" : "tag");
-    t.append(el("span", "tagEmoji", findEmojiForWord(w)), w);
+    t.append(tilePicture(findTile(w), w, "tagImage", "tagEmoji"), w);
     t.title = "Pindutin para alisin";
     t.onclick = () => {
       words.splice(i, 1);

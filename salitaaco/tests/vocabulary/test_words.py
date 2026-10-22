@@ -1,11 +1,12 @@
 from django.contrib.messages import get_messages
+from django.core.files.storage import default_storage
 from django.urls import reverse
 
 from salitaaco.defaults.vocabulary import CATEGORIES
 from salitaaco.forms.vocabulary.word import WordForm
 from salitaaco.models.added_word import AddedWord
 from salitaaco.models.child_account import ChildAccount
-from salitaaco.tests.users_base import UserBase, make_guardian
+from salitaaco.tests.users_base import UserBase, image_upload, make_guardian
 from salitaaco.utils.board import all_boards
 from salitaaco.utils.tile_audio import tile_words
 
@@ -186,3 +187,108 @@ class AddedWordEverywhereTest(WordsBase):
         self.login_as("miguel")
         self.assertEqual(self.client.post(reverse("increment_word_usage"), {"word": "pandesal"}).json(), {"ok": True})
         self.assertEqual(self.client.get(reverse("board")).context["board_data"]["frequent_words"], [{"word": "pandesal", "use_count": 1}])
+
+
+class WordPictureTest(WordsBase):
+    """A word's symbol may be an uploaded picture in place of an emoji."""
+
+    def add_with_picture(self, word="kakanin", picture=None):
+        return self.client.post(self.url, {
+            "board": "Pagkain", "word": word, "icon_kind": "image", "emoji": "",
+            "icon_image": picture or image_upload(),
+        })
+
+    def tile(self, word, url=None):
+        board_data = self.client.get(url or reverse("board")).context["board_data"]
+        return next(item for category in board_data["categories"] for item in category["items"] if item["w"] == word)
+
+    def test_the_form_takes_an_emoji_or_a_jpg_png_or_webp_picture(self):
+        form = WordForm({"board": "Pagkain", "word": "kakanin", "icon_kind": "image"})
+        self.assertEqual(form.errors["icon_image"], ["Pumili ng larawan ng salita."])
+        self.assertNotIn("emoji", form.errors)
+        for picture, error in [
+            (image_upload("kakanin.gif", "GIF", "image/gif"), "JPEG, PNG o WebP lang ang puwedeng larawan."),
+            (image_upload(padding=5 * 1024 * 1024), "Masyadong malaki ang larawan (max 5MB)."),
+        ]:
+            form = WordForm({"board": "Pagkain", "word": "kakanin", "icon_kind": "image"}, {"icon_image": picture})
+            self.assertEqual(form.errors["icon_image"], [error])
+        form = WordForm({"board": "Pagkain", "word": "kakanin", "icon_kind": "image"}, {"icon_image": image_upload()})
+        self.assertTrue(form.is_valid(), form.errors)
+        # The board and the word stay required whichever the symbol is.
+        form = WordForm({"icon_kind": "image"}, {"icon_image": image_upload()})
+        self.assertEqual((form.errors["board"], form.errors["word"]), (["Pumili ng board."], ["Ilagay ang salita."]))
+
+    def test_the_add_window_offers_the_choice(self):
+        self.login_as("developer")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'enctype="multipart/form-data"')
+        self.assertContains(response, 'name="icon_kind" value="image"')
+        self.assertContains(response, "📷 Pumili ng larawan")
+        self.assertContains(response, "JPG, PNG o WEBP, hanggang 5 MB.")
+        self.assertContains(response, "js/picture_choice.js")
+
+    def test_a_word_with_a_picture_is_on_everyones_boards(self):
+        self.login_as("developer")
+        self.assertRedirects(self.add_with_picture(), self.url)
+        added = AddedWord.objects.get()
+        self.assertTrue(added.icon_image.name.startswith("word-images/"))
+        self.assertTrue(added.icon_image.name.endswith(".webp"))
+        self.assertEqual((added.emoji, added.icon_mime), ("", "image/webp"))
+
+        image_url = reverse("added_word_image", args=[added.uuid])
+        self.assertContains(self.client.get(self.url, {"query": "kakanin"}), f'<img class="symbolImage" src="{image_url}?v=')
+        for username in ["miguel", "nanay", "developer"]:
+            self.login_as(username)
+            self.assertTrue(self.tile("kakanin")["img"].startswith(image_url), username)
+            self.assertEqual(self.client.get(image_url).status_code, 200, username)
+        self.login_as("nanay")
+        self.assertTrue(self.tile("kakanin", reverse("child_board", args=[self.miguel_account.uuid]))["img"].startswith(image_url))
+        # A tile with an emoji has no picture to load.
+        AddedWord.objects.create(board="Pagkain", word="pandesal", emoji="🥖")
+        self.assertNotIn("img", self.tile("pandesal"))
+
+        self.client.logout()
+        self.assertEqual(self.client.get(image_url).status_code, 302)
+
+    def test_editing_keeps_replaces_or_drops_the_picture(self):
+        self.login_as("developer")
+        self.add_with_picture()
+        added = AddedWord.objects.get()
+        edit_url = reverse("edit_word", args=[added.uuid])
+        first = added.icon_image.name
+
+        response = self.client.get(edit_url)
+        self.assertContains(response, 'value="image" class="iconKind" id="id_icon_kind_1" checked')
+        self.assertContains(response, "Ang kasalukuyang larawan")
+
+        # Saved without a new picture, it keeps its own.
+        self.client.post(edit_url, {"board": "Bagay", "word": "kakanin", "icon_kind": "image", "emoji": ""})
+        added.refresh_from_db()
+        self.assertEqual((added.board, added.icon_image.name), ("Bagay", first))
+
+        # A new picture takes the old one's place.
+        self.client.post(edit_url, {"board": "Bagay", "word": "kakanin", "icon_kind": "image", "icon_image": image_upload()})
+        added.refresh_from_db()
+        self.assertNotEqual(added.icon_image.name, first)
+        self.assertFalse(default_storage.exists(first))
+
+        # An emoji in its place removes the picture.
+        second = added.icon_image.name
+        self.client.post(edit_url, {"board": "Bagay", "word": "kakanin", "icon_kind": "emoji", "emoji": "🍡"})
+        added.refresh_from_db()
+        self.assertEqual((added.emoji, added.has_icon_image), ("🍡", False))
+        self.assertFalse(default_storage.exists(second))
+
+        # An emoji word becomes a picture one only with a picture.
+        response = self.client.post(edit_url, {"board": "Bagay", "word": "kakanin", "icon_kind": "image", "emoji": "🍡"})
+        self.assertContains(response, "Pumili ng larawan ng salita.")
+
+    def test_deleting_a_word_deletes_its_picture(self):
+        self.login_as("developer")
+        self.add_with_picture()
+        added = AddedWord.objects.get()
+        name = added.icon_image.name
+        self.assertTrue(default_storage.exists(name))
+        self.client.post(reverse("delete_word", args=[added.uuid]))
+        self.assertFalse(default_storage.exists(name))
+        self.assertEqual(self.client.get(reverse("added_word_image", args=[added.uuid])).status_code, 404)

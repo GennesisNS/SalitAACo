@@ -74,6 +74,7 @@ urlpatterns = [
     path('tiles/<uuid:word_uuid>/delete/', guardian_words.remove_guardian_word, name='remove_guardian_word'),
     path('tiles/<uuid:word_uuid>/voice/', guardian_words.voice_word, name='voice_guardian_word'),
     path('tiles/<uuid:word_uuid>/audio.mp3', guardian_words.play_guardian_word, name='play_guardian_word'),
+    path('tiles/<uuid:word_uuid>/image/', guardian_words.view_guardian_word_image, name='guardian_word_image'),
 
     path('support/', support.view_support, name='support'),
 
@@ -98,6 +99,8 @@ urlpatterns = [
     path('vocabulary/words/', words.view_words, name='words'),
     path('vocabulary/words/<uuid:word_uuid>/', words.edit_word, name='edit_word'),
     path('vocabulary/words/<uuid:word_uuid>/delete/', words.delete_word, name='delete_word'),
+    # An added word's uploaded picture is on everyone's boards, so every account is served it.
+    path('vocabulary/words/<uuid:word_uuid>/image/', words.view_added_word_image, name='added_word_image'),
 
     # Schools and centres. May be removed, with routes/institutions/.
     path('institutions/', institutions.view_institutions, name='institutions'),

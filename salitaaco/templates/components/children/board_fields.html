@@ -2,39 +2,12 @@
   The fields of a guardian's own board, in the window that adds one and in the one that changes one.
   form: a GuardianBoardForm; icon_url: the board's uploaded picture, when it is being changed and has one.
 
-  The board's name, then its picture: an emoji, or a picture picked with the "Pumili ng larawan" button,
-  which child_boards.js shows small beside the button.
+  The board's name, then its picture: an emoji or an uploaded picture (components/picture_choice.html).
 {% endcomment %}
-<div class="boardEditor" data-icon-choice data-max-megabytes="5">
+<div class="boardEditor">
   <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
   {{ form.name }}
   <small class="fieldError">{{ form.name.errors }}</small>
 
-  <p class="fieldLabel">{{ form.icon_kind.label }}</p>
-  <div class="tileSizeOptions iconKinds" role="radiogroup" aria-label="Larawan ng board">
-    {% for radio in form.icon_kind %}
-    <label class="tileSizeOption" for="{{ radio.id_for_label }}">
-      {{ radio.tag }} {% if radio.data.value == "emoji" %}😀{% else %}🖼️{% endif %} {{ radio.choice_label }}
-    </label>
-    {% endfor %}
-  </div>
-
-  <div class="iconPart" data-icon-for="emoji">
-    <label for="{{ form.emoji.id_for_label }}">{{ form.emoji.label }}</label>
-    {{ form.emoji }}
-    <small class="fieldHelp">{{ form.emoji.help_text }}</small>
-    <small class="fieldError">{{ form.emoji.errors }}</small>
-  </div>
-
-  <div class="iconPart" data-icon-for="image">
-    <div class="filePicker">
-      <img class="pickedImage hidden" data-picked-image alt="" {% if icon_url %}src="{{ icon_url }}" data-saved-image="{{ icon_url }}"{% endif %} />
-      <label class="secondaryBtn" for="{{ form.icon_image.id_for_label }}">📷 Pumili ng larawan</label>
-      <span class="fileName" data-file-name>{% if icon_url %}Ang kasalukuyang larawan{% else %}Wala pang napili{% endif %}</span>
-      <button class="linkBtn hidden" type="button" data-icon-clear>Alisin</button>
-    </div>
-    {{ form.icon_image }}
-    <small class="fieldHelp">JPG, PNG o WEBP, hanggang 5 MB. Paliliitin ito para hindi lumaki ang espasyong kinakain.</small>
-    <small class="fieldError" data-icon-error>{{ form.icon_image.errors }}</small>
-  </div>
+  {% include "components/picture_choice.html" with form=form icon_url=icon_url %}
 </div>

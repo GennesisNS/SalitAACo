@@ -1,5 +1,3 @@
-from django.urls import reverse
-
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.models.guardian_word import GuardianWord
@@ -8,11 +6,11 @@ from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.board import all_boards
 from salitaaco.utils.guardian_words import (
     add_guardian_words,
-    delete_guardian_word_audio,
-    delete_word_usage,
+    delete_guardian_word,
     on_free_plan,
     shown_guardian_words,
 )
+from salitaaco.utils.uploads import icon_image_url
 
 
 def board_limit(guardian):
@@ -37,10 +35,7 @@ def shown_guardian_boards(guardian):
 
 def board_icon_url(board):
     """Where a guardian's board's uploaded picture is, or None when its picture is an emoji."""
-    if not board.has_icon_image:
-        return None
-    # A new picture is stored under a new name, so the address changes with it.
-    return f"{reverse('guardian_board_icon', args=[board.uuid])}?v={board.icon_image.name.rsplit('/', 1)[-1]}"
+    return icon_image_url("guardian_board_icon", board)
 
 
 def board_data(board):
@@ -120,15 +115,13 @@ def rename_guardian_board(board, name):
 
 def delete_guardian_board(board):
     """
-    Delete a guardian's board with its picture, its tiles (and their audio),
-    the switches that turned it off for the children, and the counts of its openings.
+    Delete a guardian's board with its picture, its tiles (and their pictures
+    and audio), the switches that turned it off for the children, and the
+    counts of its openings.
     """
     guardian = board.guardian
     for word in guardian.words.filter(board=board.name):
-        text = word.word
-        word.delete()
-        delete_guardian_word_audio(guardian, text)
-        delete_word_usage(guardian, text)
+        delete_guardian_word(word)
     HiddenBoard.objects.filter(child__guardian=guardian, board=board.name).delete()
     DailyUsage.objects.filter(user__in=family_users(guardian), kind=DailyUsage.BOARD, name=board.name).delete()
     board.remove_icon_image(save=False)
