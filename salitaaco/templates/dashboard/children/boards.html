@@ -8,17 +8,30 @@
 {% block main %}
 {% include "components/children/selected_child.html" with child=child %}
 
+{% include "components/guardian_words/limit_notice.html" with noun="board" %}
+
 <section class="section">
   <div class="sectionHead">
     <h2>Mga board na nakikita ni {{ child.display_name }}</h2>
-    <form class="inlineForm" method="post">
-      {% csrf_token %}
-      <button class="secondaryBtn" type="submit" name="restore_boards_form">I-on muli ang lahat</button>
-    </form>
+    <span class="rowActions">
+      {% if can_add %}
+      <button class="primaryBtn" type="button" data-open-modal="new-board">＋ Magdagdag ng board</button>
+      {% endif %}
+      <form class="inlineForm" method="post">
+        {% csrf_token %}
+        <button class="secondaryBtn" type="submit" name="restore_boards_form">I-on muli ang lahat</button>
+      </form>
+    </span>
   </div>
   <p class="desc">
     I-off ang board na hindi kailangan ni {{ child.display_name }} para mas kaunti ang pagpipilian niya. Ang naka-off na
     board ay hindi lalabas sa “Mga Board” niya. Kailangang may kahit isang board na naka-on.
+  </p>
+  <p class="desc">
+    Ang mga board ng app ay inaasikaso ng SalitAACo. Ang may tatak na “Custom” ay board na ginawa mo: makikita ito ng
+    lahat ng anak mo (i-off ito rito para sa isang bata) at hindi ng ibang pamilya, at lalabas ito sa board nila kapag
+    may tile na ito mula sa <a href="{% url 'guardian_words' %}">Sariling Tile</a>.
+    {{ own_count }} sa {{ limit }} na custom board ang nagawa mo.
   </p>
 
   <form method="post" id="boardsForm" novalidate>
@@ -31,23 +44,41 @@
             <th>Board</th>
             <th>Mga salita</th>
             <th class="boardPreviewHead">Silip</th>
+            <th>Aksyon</th>
           </tr>
         </thead>
         <tbody>
           {% for row in rows %}
           <tr>
             <td>
+              {% if row.switch %}
               <label class="switch">
                 {{ row.switch.tag }}
                 <span class="slider"></span>
               </label>
+              {% else %}
+              <span class="statusBadge pending" title="Lampas sa limit ng plano mo">Nakatago</span>
+              {% endif %}
             </td>
             <td>
-              <label class="boardName" for="{{ row.switch.id_for_label }}">{{ row.board.icon }} {{ row.board.name }}</label>
-              {% if row.is_own %}<span class="planTag">Sarili</span>{% endif %}
+              <label class="boardName" {% if row.switch %}for="{{ row.switch.id_for_label }}"{% endif %}>
+                {% if row.board.icon_url %}<img class="boardIcon" src="{{ row.board.icon_url }}" alt="" />{% else %}{{ row.board.icon }}{% endif %}
+                {{ row.board.name }}
+              </label>
+              {% if row.own %}<span class="planTag">Custom</span>{% endif %}
             </td>
             <td>{{ row.word_count }}</td>
             <td class="boardPreview" aria-hidden="true">{{ row.preview|join:" " }}</td>
+            <td>
+              {% if row.own %}
+              <span class="rowActions">
+                <button class="secondaryBtn smallBtn" type="button" data-open-modal="edit-board-{{ row.own.uuid }}">I-edit</button>
+                <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="delete-board-{{ row.own.uuid }}">Burahin</button>
+              </span>
+              {% else %}
+              <span class="doneNote">Board ng app</span>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -57,13 +88,70 @@
 
     <button class="primaryBtn formActions" type="submit" name="boards_form">I-save ang mga board</button>
   </form>
-
-  <p class="note">
-    Ang mga salita sa mga board ng app ay inaasikaso ng mga nagpapatakbo ng SalitAACo, kaya pareho ito sa lahat ng bata.
-    Ang may tatak na “Sarili” ay board na ginawa mo sa <a href="{% url 'guardian_boards' %}">Sariling Board</a>; lalabas
-    ito rito kapag may tile na ito.
-  </p>
 </section>
+
+<!-- ============== ADD A BOARD ============== -->
+{% if can_add %}
+<div class="settingsBackdrop hidden" data-modal="new-board" data-open="{% if open_modal == 'new-board' %}true{% else %}false{% endif %}">
+  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="newBoardTitle">
+    <div class="settingsHeader">
+      <h2 id="newBoardTitle">Magdagdag ng board</h2>
+      <button class="closeBtn" type="button" data-close-modal="new-board" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="settingsBody" novalidate>
+      {% csrf_token %}
+      <p class="desc">Para sa lahat ng anak mo ang bagong board. Lalabas ito sa board nila kapag nilagyan mo ng tile sa Sariling Tile.</p>
+      {% include "components/children/board_fields.html" with form=new_board_form icon_url=None %}
+      <div class="confirmRow">
+        <button class="secondaryBtn" type="button" data-close-modal="new-board">Kanselahin</button>
+        <button class="primaryBtn" type="submit" name="new_board_form">I-save</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% for row in rows %}
+{% if row.own %}
+<!-- ============== CHANGE "{{ row.own.name }}" ============== -->
+<div class="settingsBackdrop hidden" data-modal="edit-board-{{ row.own.uuid }}" data-open="{{ row.reopen|yesno:'true,false' }}">
+  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="editBoardTitle-{{ row.own.uuid }}">
+    <div class="settingsHeader">
+      <h2 id="editBoardTitle-{{ row.own.uuid }}">I-edit ang “{{ row.own.name }}”</h2>
+      <button class="closeBtn" type="button" data-close-modal="edit-board-{{ row.own.uuid }}" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="settingsBody" novalidate>
+      {% csrf_token %}
+      {% include "components/children/board_fields.html" with form=row.edit_form icon_url=row.board.icon_url %}
+      <div class="confirmRow">
+        <button class="secondaryBtn" type="button" data-close-modal="edit-board-{{ row.own.uuid }}">Kanselahin</button>
+        <button class="primaryBtn" type="submit" name="edit_board_form" value="{{ row.own.uuid }}">I-save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Deleting a board is asked twice, and says what becomes of its tiles. -->
+<div class="confirmBackdrop hidden" data-modal="delete-board-{{ row.own.uuid }}">
+  <form class="confirmBox" method="post" action="{% url 'remove_own_board' child.uuid row.own.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <h3>Burahin ang board na “{{ row.own.name }}”?</h3>
+    <p>
+      {% if row.own_tile_count %}
+      Mabubura rin ang {{ row.own_tile_count }} tile nito, kasama ang boses nila.
+      {% else %}
+      Wala pa itong tile.
+      {% endif %}
+      Mawawala ito sa board mo at sa board ng lahat ng anak mo. Hindi na ito maibabalik.
+    </p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-board-{{ row.own.uuid }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, burahin</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endfor %}
 {% endblock %}
 
 {% block scripts %}

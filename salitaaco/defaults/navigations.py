@@ -37,13 +37,6 @@ dashboard_items = [
                 "roles": [GUARDIAN],
             },
             {
-                "name": "Sariling Board",
-                "id": "guardian_boards",
-                "route": "guardian_boards",
-                "icon": "grid",
-                "roles": [GUARDIAN],
-            },
-            {
                 "name": "Sariling Tile",
                 "id": "guardian_words",
                 "route": "guardian_words",

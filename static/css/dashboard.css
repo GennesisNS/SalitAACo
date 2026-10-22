@@ -483,6 +483,56 @@
   font-size: 20px;
   letter-spacing: 2px;
 }
+/* A custom board's uploaded picture, where its emoji would be. */
+.boardIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  vertical-align: middle;
+}
+/* The window that adds or changes a custom board: its name, then its picture, an emoji or a picture. */
+.settingsBody .boardEditor > label:first-child {
+  margin-top: 0;
+}
+.fieldLabel {
+  margin: 20px 0 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.settingsBody .iconKinds .tileSizeOption {
+  min-width: 120px;
+}
+/* As wide as the name field; a little larger so the emoji reads clearly. */
+.emojiInput {
+  font-size: 20px;
+}
+.filePicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.settingsBody .filePicker label {
+  margin: 0;
+}
+.fileName {
+  overflow: hidden;
+  max-width: 220px;
+  color: var(--sub);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The picture picked, or the board's own, beside the button. */
+.pickedImage {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-m);
+  object-fit: cover;
+}
 /* ---------- Admin pages: a bar for each day, what happened lately, the log ---------- */
 .dayBars {
   display: flex;

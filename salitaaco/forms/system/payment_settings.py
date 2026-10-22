@@ -1,7 +1,7 @@
 from django import forms
 
 from ..helpers import BaseForm
-from ..validators import validate_image_size, validate_payment_image_type
+from ..validators import validate_image_size, validate_picture_type
 
 
 class PaymentSettingsForm(BaseForm):
@@ -25,6 +25,6 @@ class PaymentSettingsForm(BaseForm):
         required=False,
         widget=forms.FileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
         error_messages={"invalid_image": "Hindi mabuksan ang larawan. Pumili ng iba."},
-        validators=[validate_payment_image_type, validate_image_size],
+        validators=[validate_picture_type, validate_image_size],
         label="Larawan ng GCash QR code",
     )

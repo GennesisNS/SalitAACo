@@ -139,12 +139,11 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | --- | --- | --- | --- | --- |
 | Buod: children as a table, the plan | `overview.view_overview` | `overview` `overview/` | | `dashboard/overview/overview.html` |
 | Mga Bata: the table, and the add-a-child modal | `children.view_children` | `children` `children/` | `CreateChildForm` | `dashboard/children/children.html` |
-| Which boards a child sees (at least one stays on) | `boards.manage_child_boards` | `child_boards` `children/<uuid>/boards/` | `ChildBoardsForm` | `dashboard/children/boards.html` |
+| Which boards a child sees (at least one stays on), and the guardian's custom boards: add, change, rename, delete | `boards.manage_child_boards`, `boards.remove_own_board`, `boards.view_guardian_board_icon` | `child_boards` `children/<uuid>/boards/`, `remove_own_board` `…/boards/<uuid>/delete/`, `guardian_board_icon` `own-boards/<uuid>/icon/` | `ChildBoardsForm`, `GuardianBoardForm` | `dashboard/children/boards.html` |
 | Which voice a child hears | `voice.choose_child_voice` | `child_voice` `children/<uuid>/voice/` | `ChooseFamilyVoiceForm` | `dashboard/children/voice.html` |
 | A child's usage, by 7 days, 30 days or all time | `usage.view_child_usage` | `child_usage` `children/<uuid>/usage/` | `UsageRangeForm` | `dashboard/children/usage.html` |
 | Family voices, with consent as a step before recording | `family_voices.view_family_voices` | `family_voices` `family-voices/` | `AddFamilyVoiceForm` | `dashboard/family_voices/family_voices.html` |
 | Plans, paying by GCash QR code, history of payments | `plan.view_plan`, `plan.view_transactions`, `plan.view_payment_proof`, `plan.view_gcash_qr` | `plan` `plan/`, `plan_transactions` `plan/transactions/`, `view_payment_proof` `plan/payments/<uuid>/proof/`, `view_gcash_qr` `plan/gcash-qr/` | `PaymentProofForm` | `dashboard/plan/` |
-| Sariling Board: a guardian's own boards for their family | `guardian_boards.view_guardian_boards`, `guardian_boards.remove_guardian_board` | `guardian_boards` `own-boards/`, `remove_guardian_board` `own-boards/<uuid>/delete/` | `GuardianBoardForm` | `dashboard/guardian_boards/guardian_boards.html` |
 | Sariling Tile: a guardian's own tiles on their family's boards | `guardian_words.view_guardian_words`, `guardian_words.remove_guardian_word`, `voice_word`, `play_guardian_word` | `guardian_words` `tiles/`, `remove_guardian_word` `tiles/<uuid>/delete/`, `voice_guardian_word` `tiles/<uuid>/voice/`, `play_guardian_word` `tiles/<uuid>/audio.mp3` | `GuardianWordForm` | `dashboard/guardian_words/guardian_words.html` |
 | Guides, and writing to support | `support.view_support` | `support` `support/` | `ContactSupportForm` | `dashboard/support/support.html` |
 
@@ -187,7 +186,7 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 | `Institution` | The admin's record of a school or centre *(belongs to a page that may be removed)* |
 | `Plan` | A plan guardians can be on, as an admin edited it. Seeded with Free and SalitAACo Plus |
 | `Payment` | A guardian's proof of a GCash payment, its status, and once approved the time on the plan it bought |
-| `GuardianBoard` | A board a guardian made for their family, shown after the app's boards once it has a tile |
+| `GuardianBoard` | A custom board a guardian made for their family (an emoji or an uploaded picture), shown after the app's boards once it has a tile |
 | `GuardianWord` | A tile a guardian added to a board (the app's or their own), shown on their family's boards |
 
 ### Rules

@@ -10,6 +10,7 @@ from salitaaco.models.admin_account import AdminAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.models.guardian_board import GuardianBoard
 from salitaaco.models.payment import Payment
 from salitaaco.utils.family_voice import delete_family_voice
 from salitaaco.utils.guardian_words import delete_guardian_audio_folder
@@ -102,6 +103,8 @@ def delete_user_account(user):
         file_names += [customization.image.name, customization.sound.name]
     for payment in Payment.objects.filter(guardian__user=user):
         file_names.append(payment.proof.name)
+    for board in GuardianBoard.objects.filter(guardian__user=user):
+        file_names.append(board.icon_image.name)
     # A guardian's own tiles go with the account, and their folder of audio after it.
     guardian = GuardianAccount.objects.filter(user=user).first()
     for relation in ACCOUNT_RELATIONS:
