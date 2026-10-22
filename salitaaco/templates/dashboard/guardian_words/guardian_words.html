@@ -7,8 +7,9 @@
 {% block main %}
 <p class="pageIntro">
   Magdagdag ng sarili mong mga tile, hal. pangalan ng kapatid o paboritong pagkain sa bahay. Lalabas ang mga ito sa
-  board mo at sa board ng bawat anak mo, sa dulo ng board na pinili mo: isa sa mga board ng app, o isa sa
-  <a href="{% url 'guardian_boards' %}">sarili mong board</a>.
+  board mo at sa board ng bawat anak mo, sa dulo ng board na pinili mo: isa sa mga board ng app, o isa sa mga custom
+  board mo, na ginagawa sa
+  {% if selected_child %}<a href="{% url 'child_boards' selected_child.uuid %}">Mga Board</a>{% else %}“Mga Board” ng isang anak{% endif %}.
 </p>
 
 {% include "components/guardian_words/limit_notice.html" with noun="tile" %}

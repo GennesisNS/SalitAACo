@@ -127,12 +127,11 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `children/` | Mga Bata: the children, and the form that adds one | Guardians |
 | `children/<uuid>/` | Edit a child: name, age, picture, password, delete | The child's guardian |
 | `children/<uuid>/board/` | The child's board, for setting up tiles | The child's guardian |
-| `children/<uuid>/boards/` | Mga Board: which boards the child sees | The child's guardian |
+| `children/<uuid>/boards/` | Mga Board: which boards the child sees, and adding, changing and deleting the guardian's custom boards | The child's guardian |
 | `children/<uuid>/voice/` | Boses: which voice the child hears | The child's guardian |
 | `children/<uuid>/usage/` | Paggamit: boards opened and words tapped, by 7 days, 30 days or all time | The child's guardian |
 | `family-voices/` | Boses ng Pamilya: family members' cloned voices | Guardians |
 | `plan/`, `plan/transactions/` | Plano at Subscription: paying by GCash QR code, and the history of payments (see [Plans and payments](#plans-and-payments)) | Guardians |
-| `own-boards/` | Sariling Board: boards a guardian makes for their family, up to their plan's limit | Guardians |
 | `tiles/` | Sariling Tile: tiles a guardian adds to their family's boards, up to their plan's limit | Guardians |
 | `support/` | Tulong at Suporta: guides, and a form for writing to the admins | Guardians |
 | `analytics/` | Admin dashboard | Admins |
@@ -189,7 +188,7 @@ salitaaco/
   routes/               The views, one folder per feature
     dashboard/__init__.py   Every address under /dashboard/
     auth.py  board/  account/  settings/  error_handler.py
-    overview/  children/  family_voices/  guardian_boards/  guardian_words/  plan/  support/   (guardian)
+    overview/  children/  family_voices/  guardian_words/  plan/  support/   (guardian)
     analytics/  reports/  users/  vocabulary/  institutions/  revenue/
     subscriptions/  feedback/  system/  privacy/                             (admin)
   models/               One model per file (account_base.py is shared by the three account models)
@@ -274,7 +273,7 @@ What admins and guardians change is stored in the database on top of it:
 | A board hidden from everyone | Admin, on Mga Board | `BoardStatus` |
 | A word added to a board | Admin, on Mga Salita at Simbolo | `AddedWord` |
 | A board turned off for one child | Guardian, on the child's Mga Board | `HiddenBoard` |
-| A board of the guardian's own, for their family | Guardian, on Sariling Board | `GuardianBoard` |
+| A custom board of the guardian's own, for their family | Guardian, on a child's Mga Board | `GuardianBoard` |
 | A tile of the guardian's own, on their family's boards | Guardian, on Sariling Tile | `GuardianWord` |
 
 A board's **Paborito** screen shows the words its user taps most, and only those that are tiles on their boards at the time: not a deleted tile, one on a board that is turned off, or a guardian's own tile while it is hidden.
@@ -296,8 +295,8 @@ Paying is by GCash QR code, with no payment gateway: the guardian scans the code
 What the plans allow:
 
 - **Family voices:** 2 on Free (`FREE_FAMILY_VOICE_LIMIT` in `defaults/plans.py`), any number on Plus. A guardian on Free with 2 voices is told to get Plus to add more. Voices made while on Plus stay when it ends; only adding stops.
-- **Own tiles and boards:** how many tiles (Sariling Tile) and boards (Sariling Board) a guardian can make, each across all of their family's boards, is set for Free and for Plus on System Settings › General under “Mga limit ng Free at Plus”. They start at 0 tiles and 0 boards on Free, 20 tiles and 5 boards on Plus. Over a limit (Plus ended, or an admin lowered it), the oldest ones up to the limit keep showing and the rest are kept, hidden, until the limit allows them again. A guardian who has reached the limit is told to get Plus when Plus would allow more, or to delete one first.
-- **Sariling Board:** a board of the family's own (a name and an emoji), shown after the app's boards on the guardian's own board and on every one of their children's, once it has a tile. The guardian turns it on and off for each child on the child's Mga Board, as any other board. Deleting it deletes its tiles.
+- **Own tiles and boards:** how many tiles (Sariling Tile) and custom boards (Mga Board) a guardian can make, each across all of their family's boards, is set for Free and for Plus on System Settings › General under “Mga limit ng Free at Plus”. They start at 0 tiles and 0 boards on Free, 20 tiles and 5 boards on Plus. Over a limit (Plus ended, or an admin lowered it), the oldest ones up to the limit keep showing and the rest are kept, hidden, until the limit allows them again. A guardian who has reached the limit is told to get Plus when Plus would allow more, or to delete one first.
+- **Custom boards:** a board of the family's own (a name, and an emoji or an uploaded JPG, PNG or WEBP picture up to 5 MB), which the guardian adds, renames, changes and deletes with “＋ Magdagdag ng board”, “I-edit” and “Burahin” on any child's **Mga Board**, where it is marked “Custom” and shows at once. It shows after the app's boards on the guardian's own board and on every one of their children's, once it has a tile, and the guardian turns it on and off for each child as any other board. Renaming it keeps its tiles, switches and counts; deleting it (after saying how many tiles go with it) deletes its tiles too. The app's boards cannot be changed or deleted by guardians. An uploaded picture is kept in `media/guardian-board-icons/` and shown only to the guardian and their children.
 - **Sariling Tile:** a tile of the family's own (a word and an emoji), on one of the app's boards or one of the family's own, shown on the guardian's own board and on every one of their children's. A new tile is voiced with ElevenLabs right away: in the shared voice (`ELEVENLABS_VOICE_ID`) and in each of the guardian's family voices. The shared voice's audio of a guardian's tile is kept in `media/guardian-tile-audio/<guardian>/`, apart from the vocabulary's audio in `static/audio/text-to-speech/`, and like every upload it is played only through a login-protected view, to the guardian and their children. If ElevenLabs refuses, the tile speaks in the device's voice and the page offers “Gawin ang boses” to try again; family voices also fill in missing words when the Boses ng Pamilya page is opened.
 
 Every other feature is open to every guardian. A family's own boards and tiles, which can be names and places, are left out of the admin's lists of most-opened boards and most-used words; deleting one deletes its counts too.

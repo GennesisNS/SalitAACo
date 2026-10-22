@@ -170,7 +170,9 @@ function markNavigation() {
 function render() {
   const board = openBoard();
   const onHome = currentScreen === "home";
-  titleEl.textContent = board ? `${board.icon} ${board.name}` : SCREEN_TITLES[currentScreen];
+  titleEl.textContent = board ? `${board.icon_url ? "" : `${board.icon} `}${board.name}` : SCREEN_TITLES[currentScreen];
+  // A family's own board may have an uploaded picture in place of an emoji.
+  if (board && board.icon_url) titleEl.prepend(boardIcon(board, "titleIcon"));
   backToBoards.classList.toggle("hidden", !board);
   aspectBar.style.display = board && board.name === VERB_BOARD ? "flex" : "none";
   gridTitleEl.classList.toggle("hidden", !onHome);
@@ -235,12 +237,20 @@ function renderGrid() {
   }
 }
 
+// A board's uploaded picture (a family's own board may have one in place of an emoji).
+function boardIcon(board, className) {
+  const img = el("img", className);
+  img.src = board.icon_url;
+  img.alt = "";
+  return img;
+}
+
 // The boards to choose from: each tile is a link to its board's screen.
 function renderBoards() {
   Object.values(boards).forEach((board) => {
     const tile = el("a", "cell board");
     tile.href = `#boards/${encodeURIComponent(board.name)}`;
-    tile.append(el("span", "emoji", board.icon), el("span", "", board.name));
+    tile.append(board.icon_url ? boardIcon(board, "customimg") : el("span", "emoji", board.icon), el("span", "", board.name));
     gridEl.appendChild(tile);
   });
 }

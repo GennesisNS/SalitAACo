@@ -238,6 +238,15 @@
   font-weight: 800;
   line-height: 1.15;
 }
+/* A family's own board's uploaded picture, before its name. */
+.screenTitle .titleIcon {
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 8px;
+  border-radius: 8px;
+  object-fit: cover;
+  vertical-align: -0.2em;
+}
 .screenHead .iconbtn {
   min-height: 48px;
   border-width: 2px;

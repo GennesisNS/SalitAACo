@@ -12,7 +12,6 @@ import salitaaco.routes.children.usage as child_usage
 import salitaaco.routes.children.voice as child_voice
 import salitaaco.routes.family_voices.family_voices as family_voices
 import salitaaco.routes.feedback.feedback as feedback
-import salitaaco.routes.guardian_boards.guardian_boards as guardian_boards
 import salitaaco.routes.guardian_words.guardian_words as guardian_words
 import salitaaco.routes.institutions.institutions as institutions
 import salitaaco.routes.overview.overview as overview
@@ -58,6 +57,7 @@ urlpatterns = [
     path('children/<uuid:child_uuid>/board/', board.view_board, name='child_board'),
     # The pages about one child, reached from the sidebar for the selected child.
     path('children/<uuid:child_uuid>/boards/', child_boards.manage_child_boards, name='child_boards'),
+    path('children/<uuid:child_uuid>/boards/<uuid:board_uuid>/delete/', child_boards.remove_own_board, name='remove_own_board'),
     path('children/<uuid:child_uuid>/voice/', child_voice.choose_child_voice, name='child_voice'),
     path('children/<uuid:child_uuid>/usage/', child_usage.view_child_usage, name='child_usage'),
 
@@ -67,9 +67,9 @@ urlpatterns = [
     path('family-voices/<uuid:family_voice_uuid>/delete/', family_voices.remove_family_voice, name='remove_family_voice'),
     path('family-voices/<uuid:family_voice_uuid>/words/<slug:word_slug>.mp3', family_voices.play_family_voice_word, name='play_family_voice_word'),
 
-    # Tiles and boards a guardian adds for their family, up to their plan's limits.
-    path('own-boards/', guardian_boards.view_guardian_boards, name='guardian_boards'),
-    path('own-boards/<uuid:board_uuid>/delete/', guardian_boards.remove_guardian_board, name='remove_guardian_board'),
+    # Tiles and boards a guardian adds for their family, up to their plan's limits. The boards are
+    # set up on a child's Mga Board; their uploaded pictures are for the guardian and their children.
+    path('own-boards/<uuid:board_uuid>/icon/', child_boards.view_guardian_board_icon, name='guardian_board_icon'),
     path('tiles/', guardian_words.view_guardian_words, name='guardian_words'),
     path('tiles/<uuid:word_uuid>/delete/', guardian_words.remove_guardian_word, name='remove_guardian_word'),
     path('tiles/<uuid:word_uuid>/voice/', guardian_words.voice_word, name='voice_guardian_word'),

@@ -1,5 +1,8 @@
+from django.urls import reverse
+
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.hidden_board import HiddenBoard
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.board import all_boards
@@ -32,20 +35,36 @@ def shown_guardian_boards(guardian):
     return list(guardian.boards.all()[:board_limit(guardian)])
 
 
-def family_boards(guardian):
+def board_icon_url(board):
+    """Where a guardian's board's uploaded picture is, or None when its picture is an emoji."""
+    if not board.has_icon_image:
+        return None
+    # A new picture is stored under a new name, so the address changes with it.
+    return f"{reverse('guardian_board_icon', args=[board.uuid])}?v={board.icon_image.name.rsplit('/', 1)[-1]}"
+
+
+def board_data(board):
+    """A guardian's board as the board pages describe boards, with its picture's address when it has one."""
+    return {"name": board.name, "icon": board.emoji, "icon_url": board_icon_url(board), "items": []}
+
+
+def family_boards(guardian, include_empty=False):
     """
     Every board a guardian's family sees: the app's published boards, then the
     guardian's own shown boards, each with the guardian's shown tiles at its
-    end. A board of the guardian's shows once it has a tile; until then there
-    is nothing on it to tap.
+    end. A board of the guardian's shows once it has a tile, since until then
+    there is nothing on it to tap; `include_empty` keeps the ones without, for
+    the page where the guardian sets them up.
     """
     categories = all_boards()
     if guardian is None:
         return categories
 
-    own = [{"name": board.name, "icon": board.emoji, "items": []} for board in shown_guardian_boards(guardian)]
+    own = [board_data(board) for board in shown_guardian_boards(guardian)]
     own_names = {board["name"] for board in own}
     filled = add_guardian_words(categories + own, shown_guardian_words(guardian))
+    if include_empty:
+        return filled
     return [board for board in filled if board["name"] not in own_names or board["items"]]
 
 
@@ -78,10 +97,31 @@ def boards_of(owner, owner_child):
     return family_boards(board_guardian(owner, owner_child))
 
 
+def family_users(guardian):
+    return [guardian.user_id, *guardian.children.values_list("user_id", flat=True)]
+
+
+def rename_guardian_board(board, name):
+    """
+    Give a guardian's board another name. Its tiles, the switches that turned
+    it off for the children and the counts of its openings find it by name, so
+    they take the new one too.
+    """
+    old = board.name
+    if name == old:
+        return
+    guardian = board.guardian
+    GuardianWord.objects.filter(guardian=guardian, board=old).update(board=name)
+    HiddenBoard.objects.filter(child__guardian=guardian, board=old).update(board=name)
+    DailyUsage.objects.filter(user__in=family_users(guardian), kind=DailyUsage.BOARD, name=old).update(name=name)
+    board.name = name
+    board.save()
+
+
 def delete_guardian_board(board):
     """
-    Delete a guardian's board with its tiles (and their audio), the switches
-    that turned it off for the children, and the counts of its openings.
+    Delete a guardian's board with its picture, its tiles (and their audio),
+    the switches that turned it off for the children, and the counts of its openings.
     """
     guardian = board.guardian
     for word in guardian.words.filter(board=board.name):
@@ -90,6 +130,6 @@ def delete_guardian_board(board):
         delete_guardian_word_audio(guardian, text)
         delete_word_usage(guardian, text)
     HiddenBoard.objects.filter(child__guardian=guardian, board=board.name).delete()
-    users = [guardian.user_id, *guardian.children.values_list("user_id", flat=True)]
-    DailyUsage.objects.filter(user__in=users, kind=DailyUsage.BOARD, name=board.name).delete()
+    DailyUsage.objects.filter(user__in=family_users(guardian), kind=DailyUsage.BOARD, name=board.name).delete()
+    board.remove_icon_image(save=False)
     board.delete()

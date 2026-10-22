@@ -1,6 +1,7 @@
 """
 The "Sariling Tile" page: tiles a guardian adds to the boards (the app's or
-their own, see routes/guardian_boards/), which show on their own board and on
+their own custom boards, set up on a child's Mga Board, see routes/children/boards.py),
+which show on their own board and on
 every one of their children's. How many a guardian can have depends on their
 plan, as an admin sets it on System Settings > General; over it, the oldest
 up to it show and the rest are kept, hidden.
