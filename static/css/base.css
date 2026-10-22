@@ -910,6 +910,7 @@ a.cell:active {
   gap: 8px;
 }
 .settingsBody .tileSizeOption,
+.settingsFields .tileSizeOption,
 .voiceOptions .tileSizeOption {
   flex: 1;
   min-width: 130px;
@@ -927,6 +928,7 @@ a.cell:active {
   cursor: pointer;
 }
 .settingsBody .tileSizeOption:has(input:checked),
+.settingsFields .tileSizeOption:has(input:checked),
 .voiceOptions .tileSizeOption:has(input:checked) {
   border-color: var(--accent);
   background: var(--soft);

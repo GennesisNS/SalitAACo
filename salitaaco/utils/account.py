@@ -11,6 +11,7 @@ from salitaaco.models.customization import Customization
 from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.models.guardian_board import GuardianBoard
+from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.payment import Payment
 from salitaaco.utils.family_voice import delete_family_voice
 from salitaaco.utils.guardian_words import delete_guardian_audio_folder
@@ -90,7 +91,8 @@ def delete_user_account(user):
     """
     Permanently delete an account with everything it owns: its admin, guardian
     or child account, custom pictures and recordings, usage counts and rating,
-    and a guardian's family voices (at ElevenLabs too) and payments. The rows
+    and a guardian's family voices (at ElevenLabs too), payments, and own
+    boards and tiles with their pictures. The rows
     go through the database cascade; the uploaded files are removed from
     storage afterwards.
     """
@@ -105,6 +107,8 @@ def delete_user_account(user):
         file_names.append(payment.proof.name)
     for board in GuardianBoard.objects.filter(guardian__user=user):
         file_names.append(board.icon_image.name)
+    for word in GuardianWord.objects.filter(guardian__user=user):
+        file_names.append(word.icon_image.name)
     # A guardian's own tiles go with the account, and their folder of audio after it.
     guardian = GuardianAccount.objects.filter(user=user).first()
     for relation in ACCOUNT_RELATIONS:

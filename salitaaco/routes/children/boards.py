@@ -16,7 +16,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from salitaaco.forms.children.child_boards import ChildBoardsForm
-from salitaaco.forms.guardian_words.guardian_board import IMAGE, GuardianBoardForm
+from salitaaco.forms.guardian_words.guardian_board import GuardianBoardForm
+from salitaaco.forms.picture_choice import picture_kind
 from salitaaco.models.guardian_board import GuardianBoard
 from salitaaco.models.hidden_board import HiddenBoard
 from salitaaco.models.site_setting import SiteSetting
@@ -32,7 +33,6 @@ from salitaaco.utils.guardian_boards import (
 )
 from salitaaco.utils.guardian_words import limit_reached_message, on_free_plan
 from salitaaco.utils.perms_check import is_app_user, is_guardian, multi_user_test
-from salitaaco.utils.uploads import ICON_MAX_SIDE, random_upload_name, shrink_picture
 
 PREVIEW_TILES = 4
 NEW_BOARD = "new-board"
@@ -41,26 +41,6 @@ NEW_BOARD = "new-board"
 def edit_prefix(board):
     """The fields of each own board's form are named after it, so that every board's form can be on the page."""
     return f"board-{board.pk}"
-
-
-def save_icon(board, form):
-    """
-    Give a board the picture its form chose: an uploaded one, made small
-    enough to keep (utils/uploads.py), or an emoji in place of an uploaded one.
-    """
-    if form.cleaned_data["icon_kind"] == IMAGE:
-        image = form.cleaned_data["icon_image"]
-        if image:
-            content, mime = shrink_picture(image, ICON_MAX_SIDE)
-            board.set_icon_image(random_upload_name(mime), content, mime)
-    else:
-        board.remove_icon_image(save=False)
-        board.emoji = form.cleaned_data["emoji"]
-        board.save()
-
-
-def icon_kind_of(board):
-    return IMAGE if board.has_icon_image else "emoji"
 
 
 @active_nav("child_boards")
@@ -81,7 +61,7 @@ def manage_child_boards(request, child_uuid):
     edit_forms = {
         board.pk: GuardianBoardForm(
             prefix=edit_prefix(board), guardian=guardian, editing=board,
-            initial={"name": board.name, "emoji": board.emoji, "icon_kind": icon_kind_of(board)},
+            initial={"name": board.name, "emoji": board.emoji, "icon_kind": picture_kind(board)},
         )
         for board in own_boards
     }
@@ -119,7 +99,7 @@ def manage_child_boards(request, child_uuid):
             new_board_form = GuardianBoardForm(request.POST, request.FILES, prefix=NEW_BOARD, guardian=guardian)
             if new_board_form.is_valid():
                 board = GuardianBoard.objects.create(guardian=guardian, name=new_board_form.cleaned_data["name"])
-                save_icon(board, new_board_form)
+                new_board_form.save_picture(board)
                 messages.success(request, f"Nagawa na ang board na “{board.name}”. Lagyan ito ng tile sa Sariling Tile.")
                 return redirect('child_boards', child_uuid=child.uuid)
             open_modal = "new-board"
@@ -133,7 +113,7 @@ def manage_child_boards(request, child_uuid):
             if form.is_valid():
                 with transaction.atomic():
                     rename_guardian_board(board, form.cleaned_data["name"])
-                    save_icon(board, form)
+                    form.save_picture(board)
                 messages.success(request, f"Naka-save na ang board na “{board.name}”.")
                 return redirect('child_boards', child_uuid=child.uuid)
             open_modal = f"edit-board-{board.uuid}"
@@ -154,7 +134,8 @@ def manage_child_boards(request, child_uuid):
             # Every tile of an own board, shown or not, goes with it when it is deleted.
             "own_tile_count": tile_counts.get(own.name, 0) if own else 0,
             "word_count": len(board["items"]),
-            "preview": [item["e"] for item in board["items"][:PREVIEW_TILES]],
+            # Its first tiles, each an emoji or an uploaded picture (`img`).
+            "preview": board["items"][:PREVIEW_TILES],
         }
 
     # Each board with its switch, in the order of the form's choices; then the own boards over the limit, without.

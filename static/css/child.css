@@ -172,6 +172,13 @@
   outline: 4px solid var(--cta);
   outline-offset: 1px;
 }
+/* A word whose tile has a picture in place of an emoji. */
+.tag .tagImage {
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 6px;
+  object-fit: cover;
+}
 .boardBar .iconbtn {
   min-height: 56px;
   padding: 10px 20px;

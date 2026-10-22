@@ -144,7 +144,7 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | A child's usage, by 7 days, 30 days or all time | `usage.view_child_usage` | `child_usage` `children/<uuid>/usage/` | `UsageRangeForm` | `dashboard/children/usage.html` |
 | Family voices, with consent as a step before recording | `family_voices.view_family_voices` | `family_voices` `family-voices/` | `AddFamilyVoiceForm` | `dashboard/family_voices/family_voices.html` |
 | Plans, paying by GCash QR code, history of payments | `plan.view_plan`, `plan.view_transactions`, `plan.view_payment_proof`, `plan.view_gcash_qr` | `plan` `plan/`, `plan_transactions` `plan/transactions/`, `view_payment_proof` `plan/payments/<uuid>/proof/`, `view_gcash_qr` `plan/gcash-qr/` | `PaymentProofForm` | `dashboard/plan/` |
-| Sariling Tile: a guardian's own tiles on their family's boards | `guardian_words.view_guardian_words`, `guardian_words.remove_guardian_word`, `voice_word`, `play_guardian_word` | `guardian_words` `tiles/`, `remove_guardian_word` `tiles/<uuid>/delete/`, `voice_guardian_word` `tiles/<uuid>/voice/`, `play_guardian_word` `tiles/<uuid>/audio.mp3` | `GuardianWordForm` | `dashboard/guardian_words/guardian_words.html` |
+| Sariling Tile: a guardian's own tiles on their family's boards, with an emoji or (on Plus) an uploaded picture | `guardian_words.view_guardian_words`, `guardian_words.remove_guardian_word`, `voice_word`, `play_guardian_word`, `view_guardian_word_image` | `guardian_words` `tiles/`, `remove_guardian_word` `tiles/<uuid>/delete/`, `voice_guardian_word` `tiles/<uuid>/voice/`, `play_guardian_word` `tiles/<uuid>/audio.mp3`, `guardian_word_image` `tiles/<uuid>/image/` | `GuardianWordForm` | `dashboard/guardian_words/guardian_words.html` |
 | Guides, and writing to support | `support.view_support` | `support` `support/` | `ContactSupportForm` | `dashboard/support/support.html` |
 
 ### Admin
@@ -155,7 +155,7 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Analytics at Ulat, and CSV reports | `reports.view_reports`, `reports.export_report` | `reports` `reports/`, `export_report` `reports/export/` | `ReportTabForm`, `ExportReportForm` | `dashboard/reports/reports.html` |
 | Users by status; make an account inactive or active | `users.view_users`, `users.set_user_status` | `users` `users/`, `set_user_status` `users/<id>/status/` | `SearchUserForm`, `UserStatusForm`, `SetUserStatusForm` | `dashboard/users/users.html` |
 | Boards: publish or hide (at least one stays published) | `boards.view_admin_boards`, `boards.set_board_status` | `admin_boards` `vocabulary/boards/`, `set_board_status` `vocabulary/boards/status/` | `SetBoardStatusForm` | `dashboard/vocabulary/boards.html` |
-| Words: list, add, edit, delete | `words.view_words`, `words.edit_word`, `words.delete_word` | `words` `vocabulary/words/`, `edit_word` `…/<uuid>/`, `delete_word` `…/<uuid>/delete/` | `SearchWordForm`, `WordForm` | `dashboard/vocabulary/words.html`, `word.html` |
+| Words: list, add, edit, delete, each with an emoji or an uploaded picture | `words.view_words`, `words.edit_word`, `words.delete_word`, `words.view_added_word_image` | `words` `vocabulary/words/`, `edit_word` `…/<uuid>/`, `delete_word` `…/<uuid>/delete/`, `added_word_image` `…/<uuid>/image/` | `SearchWordForm`, `WordForm` | `dashboard/vocabulary/words.html`, `word.html` |
 | Institutions *(may be removed)* | `institutions.view_institutions`, `edit_institution`, `delete_institution` | `institutions` `institutions/`, `edit_institution` `…/<uuid>/`, `delete_institution` `…/<uuid>/delete/` | `InstitutionForm` | `dashboard/institutions/` |
 | Kita: the record of every payment and what became of it, by status, to look at only | `revenue.view_revenue` | `revenue` `revenue/` | `TransactionStatusForm` | `dashboard/revenue/revenue.html` |
 | Mga Subscription: guardians per plan, this month's earnings, and approving or rejecting the waiting payments | `subscriptions.view_subscriptions`, `subscriptions.approve_payment` | `subscriptions` `subscriptions/` (rejecting is a form of the page), `approve_payment` `subscriptions/payments/<uuid>/approve/` | `RejectPaymentForm` | `dashboard/subscriptions/subscriptions.html` |
@@ -181,13 +181,13 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 | `DailyUsage` | How many times, on one day, a user tapped a word or opened a board. Counts only |
 | `SupportMessage` | What a guardian wrote to support, and when an admin marked it as dealt with |
 | `BoardStatus` | Whether an admin has hidden a board from everyone |
-| `AddedWord` | A word an admin added to a board |
+| `AddedWord` | A word an admin added to a board (an emoji or an uploaded picture) |
 | `SiteSetting` | The one row of site settings: support contact details, maintenance mode, the GCash QR code and account |
 | `Institution` | The admin's record of a school or centre *(belongs to a page that may be removed)* |
 | `Plan` | A plan guardians can be on, as an admin edited it. Seeded with Free and SalitAACo Plus |
 | `Payment` | A guardian's proof of a GCash payment, its status, and once approved the time on the plan it bought |
 | `GuardianBoard` | A custom board a guardian made for their family (an emoji or an uploaded picture), shown after the app's boards once it has a tile |
-| `GuardianWord` | A tile a guardian added to a board (the app's or their own), shown on their family's boards |
+| `GuardianWord` | A tile a guardian added to a board (the app's or their own), shown on their family's boards (an emoji or an uploaded picture) |
 
 ### Rules
 

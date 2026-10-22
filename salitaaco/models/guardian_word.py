@@ -1,8 +1,10 @@
 from django.db import models
 import uuid
 
+from .icon_picture import IconPicture
 
-class GuardianWord(models.Model):
+
+class GuardianWord(IconPicture, models.Model):
     """
     A tile a guardian on a paid plan added to one of the boards. It is shown,
     after the board's own words, on the guardian's own board and on every one
@@ -16,8 +18,10 @@ class GuardianWord(models.Model):
     board = models.CharField(max_length=100)
     # What the tile says. It differs from every other tile the guardian's family sees.
     word = models.CharField(max_length=40)
-    # The tile's picture: an emoji, as the default words have.
-    emoji = models.CharField(max_length=16)
+    # The tile's picture: an emoji, as the default words have, unless it has an uploaded one.
+    emoji = models.CharField(max_length=16, blank=True)
+    icon_image = models.ImageField(upload_to='guardian-word-images/', blank=True)
+    icon_mime = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -27,4 +31,4 @@ class GuardianWord(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.emoji} {self.word} ({self.board}, {self.guardian})"
+        return f"{self.emoji or '🖼️'} {self.word} ({self.board}, {self.guardian})"

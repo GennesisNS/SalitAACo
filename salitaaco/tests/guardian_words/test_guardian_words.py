@@ -2,6 +2,7 @@ import shutil
 from datetime import timedelta
 from unittest import mock
 
+from django.core.files.storage import default_storage
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -9,7 +10,7 @@ from django.utils import timezone
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
 from salitaaco.defaults.family_voice import TERMS_VERSION
 from salitaaco.defaults.plans import DEFAULT_FREE_WORD_LIMIT, DEFAULT_PLUS_WORD_LIMIT
-from salitaaco.forms.guardian_words.guardian_word import GuardianWordForm
+from salitaaco.forms.guardian_words.guardian_word import PLUS_PICTURES, GuardianWordForm
 from salitaaco.models.added_word import AddedWord
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.daily_usage import DailyUsage
@@ -20,7 +21,7 @@ from salitaaco.models.site_setting import SiteSetting
 from salitaaco.models.word_usage import WordUsage
 from salitaaco.tests.payments_base import make_payment, messages_of
 from salitaaco.tests.text_to_speech.test_text_to_speech import SharedTileAudioTestMixin
-from salitaaco.tests.users_base import UserBase, make_guardian
+from salitaaco.tests.users_base import UserBase, image_upload, make_guardian
 from salitaaco.utils.account import delete_user_account
 from salitaaco.utils.family_voice import family_voice_directory, family_voice_progress, generate_family_voice_words
 from salitaaco.utils.guardian_words import guardian_word_audio_directory
@@ -239,6 +240,92 @@ class GuardianWordsOnBoardsTest(GuardianWordsBase):
 
         self.login_as("miguel")
         self.assertNotIn("Tao", self.board_items("board"))
+
+
+class GuardianWordPictureTest(GuardianWordsBase):
+    """On Plus, a tile's symbol may be an uploaded picture in place of an emoji."""
+
+    def add_with_picture(self, word="Kuya Jun", board="Tao"):
+        return self.client.post(self.url, {
+            "word_form": "", "board": board, "word": word, "icon_kind": "image", "emoji": "",
+            "icon_image": image_upload(),
+        })
+
+    def tile(self, word, route="board", *args):
+        categories = self.client.get(reverse(route, args=args)).context["board_data"]["categories"]
+        return next(item for category in categories for item in category["items"] if item["w"] == word)
+
+    def test_on_plus_the_form_offers_the_picture(self):
+        self.login_as("nanay")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'enctype="multipart/form-data"')
+        self.assertContains(response, 'name="icon_kind" value="image"')
+        self.assertContains(response, "📷 Pumili ng larawan")
+        self.assertNotContains(response, PLUS_PICTURES)
+
+    def test_a_tile_with_a_picture_is_on_the_boards_of_her_family_only(self):
+        self.login_as("nanay")
+        self.assertRedirects(self.add_with_picture(), self.url)
+        word = GuardianWord.objects.get()
+        self.assertTrue(word.icon_image.name.startswith("guardian-word-images/"))
+        self.assertTrue(word.icon_image.name.endswith(".webp"))
+        self.assertEqual((word.emoji, word.icon_mime), ("", "image/webp"))
+
+        image_url = reverse("guardian_word_image", args=[word.uuid])
+        self.assertContains(self.client.get(self.url), f'<img class="symbolImage" src="{image_url}?v=')
+        self.assertTrue(self.tile("Kuya Jun")["img"].startswith(image_url))
+        self.assertTrue(self.tile("Kuya Jun", "child_board", self.nanay.children.get().uuid)["img"].startswith(image_url))
+        self.login_as("miguel")
+        self.assertTrue(self.tile("Kuya Jun")["img"].startswith(image_url))
+
+        for username, status in [("nanay", 200), ("miguel", 200), ("tatay", 404), ("ana", 404), ("developer", 404)]:
+            self.login_as(username)
+            self.assertEqual(self.client.get(image_url).status_code, status, username)
+
+    def test_a_tile_with_a_picture_counts_toward_the_limit(self):
+        self.set_limits(plus_word_limit=1)
+        self.login_as("nanay")
+        self.add_with_picture()
+        response = self.add(word="sinigang", board="Pagkain")
+        self.assertEqual(messages_of(response)[-1], "Naabot mo na ang 1 na sariling tile. Magbura muna ng isa para makapagdagdag ng bago.")
+        self.assertEqual(GuardianWord.objects.count(), 1)
+
+    def test_on_free_the_symbol_is_an_emoji(self):
+        self.set_limits(free_word_limit=2)
+        self.login_as("tatay")
+        response = self.client.get(self.url)
+        self.assertContains(response, PLUS_PICTURES)
+        self.assertNotContains(response, 'name="icon_kind" value="image"')
+        self.assertNotContains(response, "📷 Pumili ng larawan")
+
+        response = self.add_with_picture(word="Lolo Ben")
+        self.assertContains(response, PLUS_PICTURES)
+        self.assertFalse(GuardianWord.objects.exists())
+        # An emoji tile is still hers to add.
+        self.assertRedirects(self.add(word="Lolo Ben"), self.url)
+
+    def test_deleting_the_tile_its_board_or_her_account_deletes_its_picture(self):
+        self.login_as("nanay")
+        self.add_with_picture()
+        name = GuardianWord.objects.get().icon_image.name
+        self.client.post(reverse("remove_guardian_word", args=[GuardianWord.objects.get().uuid]))
+        self.assertFalse(default_storage.exists(name))
+
+        self.nanay.boards.create(name="Bahay ni Lola", emoji="🏡")
+        self.add_with_picture(word="Lola Nena", board="Bahay ni Lola")
+        name = GuardianWord.objects.get().icon_image.name
+        board = self.nanay.boards.get()
+        self.client.post(reverse("remove_own_board", args=[self.nanay.children.get().uuid, board.uuid]))
+        self.assertFalse(default_storage.exists(name))
+
+        # A guardian's account goes only without children, so a childless guardian's is deleted.
+        tito = make_guardian("tito", "Tito Ben")
+        approve_payment(make_payment(tito), self.developer)
+        self.login_as("tito")
+        self.add_with_picture()
+        name = GuardianWord.objects.get(guardian=tito).icon_image.name
+        delete_user_account(tito.user)
+        self.assertFalse(default_storage.exists(name))
 
 
 @override_settings(ELEVENLABS_API_KEY="susi", ELEVENLABS_VOICE_ID="pinoy-boses")

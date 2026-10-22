@@ -1,4 +1,5 @@
 {% extends "layouts/dashboard.html" %}
+{% load static %}
 
 {% block title %}Sariling Tile - SalitAACo{% endblock %}
 
@@ -37,7 +38,7 @@
         {% for item in words %}
         {% with word=item.word %}
         <tr>
-          <td class="symbolCell">{{ word.emoji }}</td>
+          <td class="symbolCell">{% if item.icon_url %}<img class="symbolImage" src="{{ item.icon_url }}" alt="" />{% else %}{{ word.emoji }}{% endif %}</td>
           <td data-label="Salita"><b>{{ word.word }}</b></td>
           <td data-label="Board">{{ word.board }}</td>
           <td data-label="Status">
@@ -73,7 +74,7 @@
   <hr class="sectionDivider" />
 
   <h2>Magdagdag ng tile</h2>
-  <form method="post" class="narrowForm settingsFields" novalidate>
+  <form method="post" enctype="multipart/form-data" class="narrowForm settingsFields" novalidate>
     {% csrf_token %}
     {% include "components/vocabulary/word_fields.html" with word_form=word_form %}
     <button class="primaryBtn formActions" type="submit" name="word_form">＋ Idagdag ang tile</button>
@@ -100,4 +101,8 @@
 </div>
 {% endwith %}
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/picture_choice.js' %}" defer></script>
 {% endblock %}

@@ -1,4 +1,5 @@
 {% extends "layouts/dashboard.html" %}
+{% load static %}
 
 {% block title %}Mga Salita at Simbolo - SalitAACo{% endblock %}
 
@@ -43,7 +44,7 @@
       <tbody>
         {% for row in words %}
         <tr>
-          <td class="symbolCell">{{ row.emoji }}</td>
+          <td class="symbolCell">{% if row.icon_url %}<img class="symbolImage" src="{{ row.icon_url }}" alt="" />{% else %}{{ row.emoji }}{% endif %}</td>
           <td data-label="Salita"><b>{{ row.word }}</b></td>
           <td data-label="Board">{{ row.board }}</td>
           <td data-label="Pinagmulan">
@@ -84,7 +85,7 @@
       <h2 id="addWordTitle">Magdagdag ng salita</h2>
       <button class="closeBtn" type="button" data-close-modal="add-word" aria-label="Isara">&times;</button>
     </div>
-    <form method="post" action="{% url 'words' %}" class="settingsBody" novalidate>
+    <form method="post" action="{% url 'words' %}" enctype="multipart/form-data" class="settingsBody" novalidate>
       {% csrf_token %}
       {% include "components/vocabulary/word_fields.html" %}
       <button class="primaryBtn blockBtn formActions" type="submit" name="word_form">Idagdag ang salita</button>
@@ -108,4 +109,8 @@
 </div>
 {% endif %}
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/picture_choice.js' %}" defer></script>
 {% endblock %}

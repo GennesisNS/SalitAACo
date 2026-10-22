@@ -68,7 +68,9 @@
               {% if row.own %}<span class="planTag">Custom</span>{% endif %}
             </td>
             <td>{{ row.word_count }}</td>
-            <td class="boardPreview" aria-hidden="true">{{ row.preview|join:" " }}</td>
+            <td class="boardPreview" aria-hidden="true">
+              {% for item in row.preview %}{% if item.img %}<img class="boardIcon" src="{{ item.img }}" alt="" />{% else %}{{ item.e }}{% endif %} {% endfor %}
+            </td>
             <td>
               {% if row.own %}
               <span class="rowActions">
@@ -155,5 +157,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{% static 'js/picture_choice.js' %}" defer></script>
 <script src="{% static 'js/child_boards.js' %}" defer></script>
 {% endblock %}

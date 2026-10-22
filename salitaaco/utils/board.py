@@ -2,6 +2,19 @@ from salitaaco.defaults.board import BOARD_ICONS, QUICK_WORDS
 from salitaaco.defaults.vocabulary import CATEGORIES
 from salitaaco.models.added_word import AddedWord
 from salitaaco.models.board_status import BoardStatus
+from salitaaco.utils.uploads import icon_image_url
+
+
+def word_tile(word, image_route):
+    """
+    A word an admin or a guardian added (an AddedWord or a GuardianWord), as
+    the boards describe a tile: its word, its emoji and, when its picture was
+    uploaded, the address `image_route` serves it at.
+    """
+    tile = {"w": word.word, "e": word.emoji}
+    if word.has_icon_image:
+        tile["img"] = icon_image_url(image_route, word)
+    return tile
 
 
 def every_board():
@@ -12,7 +25,7 @@ def every_board():
     """
     added = {}
     for word in AddedWord.objects.order_by("created_at", "added_word_id"):
-        added.setdefault(word.board, []).append({"w": word.word, "e": word.emoji})
+        added.setdefault(word.board, []).append(word_tile(word, "added_word_image"))
     unpublished = set(BoardStatus.objects.filter(is_published=False).values_list("board", flat=True))
 
     return [
