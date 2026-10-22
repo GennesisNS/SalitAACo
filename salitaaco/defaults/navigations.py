@@ -195,14 +195,6 @@ dashboard_items = [
                 "icon": "lock",
                 "roles": [ADMINISTRATOR],
             },
-            # May be removed, with routes/technical_status/.
-            {
-                "name": "Technical status",
-                "id": "system_status",
-                "route": "system_status",
-                "icon": "activity",
-                "roles": [ADMINISTRATOR],
-            },
         ],
     },
     # ----- Everyone's own: their board, how the app looks for them, their account -----

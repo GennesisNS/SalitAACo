@@ -2,7 +2,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.test import SimpleTestCase
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from salitaaco.tests.users_base import UserBase, make_guardian
 
@@ -42,8 +42,7 @@ class LayoutPerRoleTest(LayoutBase):
             ],
             "developer": [
                 "analytics", "reports", "users", "admin_boards", "words", "institutions", "revenue", "subscriptions",
-                "feedback", "system_general", "system_plans", "system_access", "system_privacy", "system_status",
-                "profile", "settings",
+                "feedback", "system_general", "system_plans", "system_access", "system_privacy", "profile", "settings",
             ],
         }
         for username, routes in pages.items():
@@ -103,9 +102,16 @@ class NavigationPerRoleTest(LayoutBase):
         self.assertEqual(self.navigation("analytics"), [
             "analytics", "reports", "users", "admin_boards", "words", "institutions",
             "revenue", "subscriptions", "feedback",
-            "system_general", "system_plans", "system_access", "system_privacy", "system_status",
+            "system_general", "system_plans", "system_access", "system_privacy",
             "board", "settings", "profile",
         ])
+
+    def test_the_technical_status_page_is_gone(self):
+        # It showed developers' details (server paths, API errors, voice IDs), not an admin's work.
+        self.login_as("developer")
+        self.assertEqual(self.client.get("/dashboard/system/status/").status_code, 404)
+        with self.assertRaises(NoReverseMatch):
+            reverse("system_status")
 
     def test_a_child_logs_out_from_the_profile_page(self):
         # The sidebar holds the log out button; the child layout has no sidebar.

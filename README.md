@@ -191,7 +191,7 @@ salitaaco/
     auth.py  board/  account/  settings/  error_handler.py
     overview/  children/  family_voices/  guardian_boards/  guardian_words/  plan/  support/   (guardian)
     analytics/  reports/  users/  vocabulary/  institutions/  revenue/
-    subscriptions/  feedback/  system/  privacy/  technical_status/          (admin)
+    subscriptions/  feedback/  system/  privacy/                             (admin)
   models/               One model per file (account_base.py is shared by the three account models)
   forms/                One form per file, one folder per feature
     validators.py       Reusable validation rules
@@ -315,7 +315,6 @@ Some pages were built so that each can be deleted cleanly. Each is its own route
 | Mga Paaralan at Institusyon | `routes/institutions/` | `forms/institutions/`, `templates/components/institutions/`, `models/institution.py` and its line in `models/__init__.py`, migration `0016` |
 | Feedback at mga Isyu | `routes/feedback/` | Nothing more |
 | Privacy | `routes/privacy/` | `forms/privacy/` |
-| Technical status | `routes/technical_status/` | Nothing more |
 
 If a migration being deleted has already been applied somewhere, add a migration that deletes the model instead of deleting the file. A few tests elsewhere list these pages among the sidebar's items and need the name taken out.
 

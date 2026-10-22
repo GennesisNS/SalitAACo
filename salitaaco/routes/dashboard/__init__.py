@@ -26,7 +26,6 @@ import salitaaco.routes.support.support as support
 import salitaaco.routes.system.access as system_access
 import salitaaco.routes.system.general as system_general
 import salitaaco.routes.system.plans as system_plans
-import salitaaco.routes.technical_status.technical_status as technical_status
 import salitaaco.routes.users.users as users
 import salitaaco.routes.vocabulary.boards as admin_boards
 import salitaaco.routes.vocabulary.words as words
@@ -114,9 +113,8 @@ urlpatterns = [
     path('system/plans/<int:plan_id>/delete/', system_plans.remove_plan, name='remove_plan'),
     path('system/access/', system_access.view_access_control, name='system_access'),
     path('system/access/<int:user_id>/remove/', system_access.remove_admin, name='remove_admin'),
-    # May be removed, with routes/privacy/ and routes/technical_status/.
+    # May be removed, with routes/privacy/.
     path('system/privacy/', privacy.view_privacy, name='system_privacy'),
-    path('system/status/', technical_status.view_technical_status, name='system_status'),
 
     # The record of payments, and the subscribers with the payments waiting to be approved or rejected.
     path('revenue/', revenue.view_revenue, name='revenue'),
