@@ -74,7 +74,7 @@ Things to know:
 
 ### Creating each kind of account
 
-Every password, a guardian's or a child's, needs at least 8 characters with an uppercase and a lowercase letter, a number and a special character (for example `Lihim#2026`). Names may only have letters, spaces and dashes. A username can be used by one account only, whatever its case.
+Every password, a guardian's or a child's, needs 8 to 128 characters with an uppercase and a lowercase letter, a number and a special character (for example `Lihim#2026`). Names may have letters of any alphabet (ñ, é), spaces, dashes, apostrophes and dots, as in "Ma. Niña Dela Cruz-Reyes". A username has at least 3 characters: letters, numbers, dots, dashes and underscores, with no spaces. It can be used by one account only, whatever its case. These rules live in `salitaaco/forms/validators.py`; every form's messages are in Filipino.
 
 #### A guardian
 
@@ -135,7 +135,7 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `tiles/` | Sariling Tile: tiles a guardian adds to their family's boards, up to their plan's limit | Guardians |
 | `support/` | Tulong at Suporta: guides, and a form for writing to the admins | Guardians |
 | `analytics/` | Admin dashboard | Admins |
-| `reports/`, `reports/export/` | Analytics at Ulat, and its CSV reports | Admins |
+| `reports/`, `reports/export/` | Analytics at Ulat (growth, usage, retention, and Negosyo: guardians per plan, revenue by month, payments by status), and its CSV reports | Admins |
 | `users/` | Mga User: every account, by status; make one inactive or active | Admins |
 | `vocabulary/boards/` | Mga Board: publish a board or hide it from everyone | Admins |
 | `vocabulary/words/` | Mga Salita at Simbolo: every word, and adding words to boards with an emoji or an uploaded picture | Admins |

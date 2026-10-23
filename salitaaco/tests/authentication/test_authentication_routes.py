@@ -5,11 +5,14 @@ from unittest import mock
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import override_settings
+from django.db import DatabaseError
+from django.test import RequestFactory, override_settings
 from django.urls import clear_url_caches, resolve, reverse
+from django.utils.functional import SimpleLazyObject
 
 from salitaaco import urls
 from salitaaco.models.admin_account import AdminAccount
+from salitaaco.routes import error_handler
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.tests.users_base import GUARDIAN_PASSWORD, UserBase, make_guardian
 from salitaaco.utils.account import find_user_account
@@ -142,6 +145,19 @@ class LogoutAndRedirectsTest(UserBase):
         self.assertEqual(response.status_code, 404)
         self.assertContains(response, "Walang ganitong pahina", status_code=404)
 
+    def test_a_server_error_has_its_page_even_when_the_database_fails(self):
+        # The page is drawn without the context processors, which would read the database again:
+        # here, looking up who is logged in fails as it would with the database down.
+        def database_down():
+            raise DatabaseError("the database is down")
+
+        request = RequestFactory().get("/kahit-saan/")
+        request.user = SimpleLazyObject(database_down)
+        response = error_handler.server_error(request)
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("May problema sa server", response.content.decode())
+        self.assertIn('href="/"', response.content.decode())
+
 
 class AdminAddressTest(UserBase):
     """/admin is Django's admin site when SHOW_ADMIN_ROUTES is on, and the old PHP address otherwise."""
@@ -215,9 +231,11 @@ class MakeAdminCommandTest(UserBase):
     def test_the_password_is_checked(self):
         with self.assertRaisesRegex(CommandError, "do not match"):
             self.make_admin("juan", passwords=(self.PASSWORD, "Iba#2026"))
-        with self.assertRaisesRegex(CommandError, "at least 8 characters"):
+        with self.assertRaisesRegex(CommandError, "Hindi bababa sa 8 character ang password."):
             self.make_admin("juan", passwords=("maikli", "maikli"))
-        self.assertFalse(User.objects.filter(username="juan").exists())
+        with self.assertRaisesRegex(CommandError, "walang espasyo"):
+            self.make_admin("juan dela cruz")
+        self.assertFalse(User.objects.filter(username__startswith="juan").exists())
 
     def test_the_password_can_come_from_the_environment(self):
         with mock.patch.dict("os.environ", {"ADMIN_PASSWORD": self.PASSWORD}):

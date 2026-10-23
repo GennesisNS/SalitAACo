@@ -7,11 +7,14 @@ from django.utils import timezone
 from salitaaco.forms.reports.export_report import ExportReportForm
 from salitaaco.forms.reports.report_tab import ReportTabForm
 from salitaaco.models.daily_usage import DailyUsage
+from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.rating import Rating
 from salitaaco.models.support_message import SupportMessage
 from salitaaco.models.word_usage import WordUsage
+from salitaaco.tests.payments_base import make_payment
 from salitaaco.tests.users_base import UserBase, make_guardian
-from salitaaco.utils import admin_stats
+from salitaaco.utils import admin_stats, analytics
+from salitaaco.utils.plans import approve_payment, reject_payment
 
 
 class ReportsBase(UserBase):
@@ -103,7 +106,7 @@ class ReportsPageTest(ReportsBase):
         self.login_as("developer")
         for tab, heading in [
             ("growth", "Mga bagong sign-up"), ("usage", "Mga pindot kada araw"), ("retention", "Pagbabalik ng mga gumagamit"),
-            ("business", "Lalabas dito ang mga subscription"), ("export", "Mag-download ng ulat"),
+            ("business", "Mga bayad ayon sa status"), ("export", "Mag-download ng ulat"),
         ]:
             response = self.client.get(reverse("reports"), {"tab": tab})
             self.assertEqual(response.context["tab"], tab)
@@ -113,6 +116,22 @@ class ReportsPageTest(ReportsBase):
         for data in [{}, {"tab": "wala-nito"}]:
             self.assertEqual(self.client.get(reverse("reports"), data).context["tab"], "growth")
         self.assertEqual(ReportTabForm({"tab": "usage"}).chosen(), "usage")
+
+    def test_the_business_tab_has_the_plans_and_the_money(self):
+        approve_payment(make_payment(self.nanay), self.developer)
+        make_payment(self.nanay)
+        rejected = make_payment(self.nanay)
+        reject_payment(rejected, self.developer, "Malabo.")
+
+        self.login_as("developer")
+        response = self.client.get(reverse("reports"), {"tab": "business"})
+        business = response.context["business"]
+        self.assertEqual(business["plans"], [{"name": "Free", "guardians": 0}, {"name": "SalitAACo Plus", "guardians": 1}])
+        self.assertEqual((business["revenue_this_month"], business["revenue_total"]), ("₱149", "₱149"))
+        self.assertEqual((business["pending"], business["approved"], business["rejected"]), (1, 1, 1))
+        self.assertEqual(len(business["months"]), 6)
+        self.assertEqual((business["months"][-1]["month"], business["months"][-1]["pesos"]), (self.today.replace(day=1), "₱149"))
+        self.assertContains(response, "Naka-SalitAACo Plus")
 
 
 class ExportReportTest(ReportsBase):
@@ -169,6 +188,21 @@ class ExportReportTest(ReportsBase):
             f"{(self.today - timedelta(days=3)).isoformat()},3",
             f"{self.today.isoformat()},1",
         ])
+
+    def test_the_words_report_leaves_out_a_familys_own_tiles(self):
+        # Nanay's family has a tile of a name; Ana, of another family, taps an app word of the same spelling.
+        GuardianWord.objects.create(guardian=self.nanay, board="Tao", word="Lola Nena", emoji="👵")
+        GuardianWord.objects.create(guardian=self.nanay, board="Pagkain", word="pandesal", emoji="🥖")
+        WordUsage.objects.create(user=self.miguel, word="Lola Nena", use_count=9)
+        WordUsage.objects.create(user=self.miguel, word="pandesal", use_count=4)
+        WordUsage.objects.create(user=self.ana, word="pandesal", use_count=2)
+        WordUsage.objects.create(user=self.miguel, word="kain", use_count=1)
+        self.used(DailyUsage.WORD, "Lola Nena", 3)
+        self.used(DailyUsage.WORD, "kain", 1)
+
+        self.assertEqual(self.lines(self.export(report="words")), ["salita,mga_pindot", "pandesal,2", "kain,1"])
+        self.assertEqual(self.lines(self.export(report="words", date_from=self.today.isoformat())), ["salita,mga_pindot", "kain,1"])
+        self.assertEqual([(row["word"], row["total_uses"]) for row in analytics.top_words()], [("pandesal", 2), ("kain", 1)])
 
     def test_reports_hold_counts_only(self):
         WordUsage.objects.create(user=self.miguel, word="kain", use_count=3)

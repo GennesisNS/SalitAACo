@@ -1,7 +1,7 @@
 from django.db import models
 import uuid
 
-from salitaaco.defaults.plans import APPROVED, PAYMENT_STATUSES, PENDING, REJECTED
+from salitaaco.defaults.plans import APPROVED, PAYMENT_STATUSES, PENDING
 
 
 class Payment(models.Model):
@@ -47,10 +47,6 @@ class Payment(models.Model):
     @property
     def is_approved(self):
         return self.status == APPROVED
-
-    @property
-    def is_rejected(self):
-        return self.status == REJECTED
 
     def __str__(self):
         return f"{self.guardian}: ₱{self.amount} ({self.status})"

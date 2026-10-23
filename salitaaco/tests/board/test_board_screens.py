@@ -6,7 +6,7 @@ from django.urls import reverse
 from salitaaco.defaults.board import BOARD_ICONS, FEELINGS_BOARD, QUICK_WORDS
 from salitaaco.defaults.vocabulary import CATEGORIES
 from salitaaco.tests.users_base import UserBase, make_guardian
-from salitaaco.utils.board import boards, quick_words
+from salitaaco.utils.board import all_boards, quick_words
 
 BOARD_NAMES = [category["name"] for category in CATEGORIES]
 
@@ -30,17 +30,17 @@ class BoardDefaultsTest(TestCase):
             self.assertIn(name, BOARD_NAMES)
 
     def test_every_board_has_a_picture(self):
-        self.assertEqual([board["name"] for board in boards()], BOARD_NAMES)
-        for board in boards():
+        self.assertEqual([board["name"] for board in all_boards()], BOARD_NAMES)
+        for board in all_boards():
             self.assertEqual(board["icon"], BOARD_ICONS[board["name"]])
 
         # A board nobody chose a picture for is shown with its first word's.
         with mock.patch("salitaaco.utils.board.BOARD_ICONS", {}):
-            for board, category in zip(boards(), CATEGORIES):
+            for board, category in zip(all_boards(), CATEGORIES):
                 self.assertEqual(board["icon"], category["items"][0]["e"])
 
     def test_the_vocabulary_itself_is_left_as_it_is(self):
-        boards()
+        all_boards()
         for category in CATEGORIES:
             self.assertEqual(sorted(category), ["items", "name"])
 

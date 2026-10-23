@@ -7,7 +7,8 @@ from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.hidden_board import HiddenBoard
 from salitaaco.tests.users_base import UserBase, make_guardian
-from salitaaco.utils.board import all_boards, board_names, boards, every_board
+from salitaaco.utils.board import all_boards, board_names, every_board
+from salitaaco.utils.guardian_boards import child_boards
 
 ALL_BOARDS = ["Tao", "Bagay", "Pagkain", "Lugar", "Pandiwa", "Pakiramdam"]
 
@@ -150,4 +151,4 @@ class HiddenBoardEverywhereTest(AdminBoardsBase):
         for name in ["Tao", "Bagay", "Pagkain", "Pandiwa", "Pakiramdam"]:
             HiddenBoard.objects.create(child=self.miguel_account, board=name)
         # The guardian left only Lugar on, and then the admin hid Lugar.
-        self.assertEqual([board["name"] for board in boards(self.miguel_account)], ["Tao", "Bagay", "Pagkain", "Pandiwa", "Pakiramdam"])
+        self.assertEqual([board["name"] for board in child_boards(self.miguel_account)], ["Tao", "Bagay", "Pagkain", "Pandiwa", "Pakiramdam"])

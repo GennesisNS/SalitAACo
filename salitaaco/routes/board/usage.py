@@ -7,6 +7,7 @@ from salitaaco.forms.board.tile_word import TileWordForm
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.word_usage import WordUsage
+from salitaaco.utils.board import board_words
 from salitaaco.utils.guardian_boards import boards_of
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.word_usage import DEFAULT_FREQUENT_LIMIT, frequent_words
@@ -16,10 +17,12 @@ from salitaaco.utils.word_usage import DEFAULT_FREQUENT_LIMIT, frequent_words
 @multi_user_test(is_app_user)
 @require_POST
 def increment_word_usage(request):
-    """Called by the board every time a tile is tapped."""
-    tile_word_form = TileWordForm(request.POST)
+    """Called by the board every time a tile is tapped. Only a word one of the user's tiles says is counted."""
+    owner_child = ChildAccount.objects.filter(user=request.user).select_related("guardian").first()
+    words = board_words(boards_of(request.user, owner_child))
+    tile_word_form = TileWordForm(request.POST, words=words)
     if not tile_word_form.is_valid():
-        return JsonResponse({"ok": False, "error": "Walang word."}, status=400)
+        return JsonResponse({"ok": False, "error": tile_word_form.errors["word"][0]}, status=400)
 
     word = tile_word_form.cleaned_data['word']
     WordUsage.record_use(request.user, word)

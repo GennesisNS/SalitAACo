@@ -31,10 +31,6 @@ def word_limit(guardian):
     return setting.free_word_limit if on_free_plan(guardian) else setting.plus_word_limit
 
 
-def can_add_word(guardian):
-    return guardian.words.count() < word_limit(guardian)
-
-
 def limit_reached_message(noun, limit, on_free, plus_limit):
     """
     What a guardian is told when they cannot add another tile or board

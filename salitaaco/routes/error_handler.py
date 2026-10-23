@@ -1,13 +1,18 @@
+from django.http import HttpResponseServerError
 from django.shortcuts import render
+from django.template.loader import render_to_string
 
 
-def render_error(request, status_code, title, message):
-    context = {
+def error_context(status_code, title, message):
+    return {
         "status_code": status_code,
         "title": title,
         "message": message,
     }
-    return render(request, 'http_error.html', context, status=status_code)
+
+
+def render_error(request, status_code, title, message):
+    return render(request, 'http_error.html', error_context(status_code, title, message), status=status_code)
 
 
 def bad_request(request, exception=None):
@@ -23,4 +28,7 @@ def page_not_found(request, exception=None):
 
 
 def server_error(request):
-    return render_error(request, 500, "May problema sa server", "Pakisubukan muli mamaya.")
+    # Drawn without the request, so without the context processors, which read
+    # the database for the sidebar and the account: the error may be the database.
+    content = render_to_string('http_error.html', error_context(500, "May problema sa server", "Pakisubukan muli mamaya."))
+    return HttpResponseServerError(content)

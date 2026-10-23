@@ -1,15 +1,18 @@
 from django import forms
 
 from ..helpers import BaseForm
+from ..validators import name_validator
 
 
 class ProfileInformationForm(BaseForm):
+    # The same rule as when the account was made.
     display_name = forms.CharField(
         required=True,
         max_length=100,
         widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. Miguel"}),
         error_messages={"required": "Ilagay ang pangalan."},
         label="Pangalan (Display Name)",
+        validators=[name_validator],
     )
     age = forms.IntegerField(
         required=False,

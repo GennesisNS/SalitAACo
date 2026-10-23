@@ -152,7 +152,7 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Feature | Django view | URL name and path | Form | Template |
 | --- | --- | --- | --- | --- |
 | Dashboard | `analytics.view_analytics` | `analytics` `analytics/` | | `dashboard/analytics/analytics.html` |
-| Analytics at Ulat, and CSV reports | `reports.view_reports`, `reports.export_report` | `reports` `reports/`, `export_report` `reports/export/` | `ReportTabForm`, `ExportReportForm` | `dashboard/reports/reports.html` |
+| Analytics at Ulat (growth, usage, retention, Negosyo), and CSV reports | `reports.view_reports`, `reports.export_report` | `reports` `reports/`, `export_report` `reports/export/` | `ReportTabForm`, `ExportReportForm` | `dashboard/reports/reports.html` |
 | Users by status; make an account inactive or active | `users.view_users`, `users.set_user_status` | `users` `users/`, `set_user_status` `users/<id>/status/` | `SearchUserForm`, `UserStatusForm`, `SetUserStatusForm` | `dashboard/users/users.html` |
 | Boards: publish or hide (at least one stays published) | `boards.view_admin_boards`, `boards.set_board_status` | `admin_boards` `vocabulary/boards/`, `set_board_status` `vocabulary/boards/status/` | `SetBoardStatusForm` | `dashboard/vocabulary/boards.html` |
 | Words: list, add, edit, delete, each with an emoji or an uploaded picture | `words.view_words`, `words.edit_word`, `words.delete_word`, `words.view_added_word_image` | `words` `vocabulary/words/`, `edit_word` `…/<uuid>/`, `delete_word` `…/<uuid>/delete/`, `added_word_image` `…/<uuid>/image/` | `SearchWordForm`, `WordForm` | `dashboard/vocabulary/words.html`, `word.html` |
@@ -200,7 +200,9 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 - Family voices ask for consent as a step of its own before anything can be recorded.
 - In maintenance mode everyone but admins gets the maintenance page, children included.
 - A guardian has at most one payment waiting for an admin, and cannot send one while no GCash QR code is set. Only the guardian who sent a proof of payment and admins can open it.
-- Admins see counts of what is used, never the sentences built on a board; reports hold no names or usernames. A family's own boards and tiles are left out of the admin's counts.
+- Admins see counts of what is used, never the sentences built on a board; reports hold no names or usernames. A family's own boards and tiles are left out of the admin's counts and of the CSV reports (only the family's own taps of their tile; the same word as an app tile still counts for everyone else).
+- Only a word one of the user's tiles says is counted when tapped, or given a picture or a recording.
+- Every route is opened by every role in `tests/routes/test_every_route.py`, which fails on any server error and on a new route without a sample. The 500 page is drawn without the database.
 
 Kept from the PHP application against the MYO conventions, because behaviour wins:
 

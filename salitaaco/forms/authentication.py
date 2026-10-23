@@ -1,7 +1,7 @@
 from django import forms
 
 from .helpers import BaseForm
-from .validators import name_validator, username_exists, validate_password_strength
+from .validators import name_validator, username_exists, validate_password_strength, validate_username
 
 
 class LoginForm(BaseForm):
@@ -36,7 +36,7 @@ class RegisterForm(BaseForm):
         widget=forms.TextInput(attrs={"class": "input", "autocomplete": "username", "placeholder": "username"}),
         error_messages={"required": "Ilagay ang username."},
         label="Username",
-        validators=[username_exists],
+        validators=[validate_username, username_exists],
     )
     password = forms.CharField(
         required=True,

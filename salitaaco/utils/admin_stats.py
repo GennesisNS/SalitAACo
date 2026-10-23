@@ -2,7 +2,7 @@ from collections import Counter
 from datetime import timedelta
 
 from django.contrib.auth.models import User
-from django.db.models import Count, Sum
+from django.db.models import Sum
 from django.utils import timezone
 
 from salitaaco.models.child_account import ChildAccount
@@ -135,8 +135,3 @@ def accounts_by_role():
         {"label": "Bata", "count": ChildAccount.objects.count()},
         {"label": "Admin", "count": User.objects.filter(admin_account__isnull=False).count()},
     ]
-
-
-def ratings_by_stars():
-    """{stars: count}, for the summary beside the average."""
-    return dict(Rating.objects.values_list("rating").annotate(count=Count("rating_id")))

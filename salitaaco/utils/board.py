@@ -2,6 +2,7 @@ from salitaaco.defaults.board import BOARD_ICONS, QUICK_WORDS
 from salitaaco.defaults.vocabulary import CATEGORIES
 from salitaaco.models.added_word import AddedWord
 from salitaaco.models.board_status import BoardStatus
+from salitaaco.utils.tile_audio import VERB_ASPECTS
 from salitaaco.utils.uploads import icon_image_url
 
 
@@ -57,42 +58,22 @@ def board_names():
     return [board["name"] for board in all_boards()]
 
 
-def hidden_board_names(child):
-    """The published boards the child's guardian turned off."""
-    hidden = {hidden_board.board for hidden_board in child.hidden_boards.all()}
-    return hidden.intersection(board_names())
-
-
-def boards(child=None):
-    """
-    The boards a board page offers. A child's is without the boards their
-    guardian turned off; a guardian's or an admin's own board has them all.
-    """
-    published = all_boards()
-    if child is None:
-        return published
-    hidden = {hidden_board.board for hidden_board in child.hidden_boards.all()}
-    shown = [board for board in published if board["name"] not in hidden]
-    # A child is never left without a board, whatever the rows say.
-    return shown or published
-
-
 def quick_words():
     """The Home screen's quick words as tiles, in the order of QUICK_WORDS. A word the vocabulary lacks is left out."""
     tiles = {item["w"]: item for category in CATEGORIES for item in category["items"]}
     return [tiles[word] for word in QUICK_WORDS if word in tiles]
 
 
-# Features that add to what the board page receives put a function here: it is
-# given the child whose board it is (None on a guardian's or an admin's own
-# board) and returns a dict that is merged into the board's data. board.js
-# treats everything added this way as optional, so a feature that registers
-# here can be deleted without the board noticing.
-board_data_sources = []
-
-
-def extra_board_data(child):
-    data = {}
-    for source in board_data_sources:
-        data.update(source(child))
-    return data
+def board_words(boards):
+    """
+    Every word a user can tap, or give a picture or a recording, on `boards`
+    (as a board page has them): each tile's word, a verb in each of its forms,
+    and the Home screen's quick words.
+    """
+    words = {item["w"] for item in quick_words()}
+    for board in boards:
+        for item in board["items"]:
+            words.add(item["w"])
+            if "verb" in item:
+                words.update(item["verb"][aspect] for aspect in VERB_ASPECTS)
+    return words

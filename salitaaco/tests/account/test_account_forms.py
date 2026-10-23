@@ -69,7 +69,7 @@ class ChangePasswordFormTest(UserBase):
     def test_new_password_must_be_strong(self):
         form = self.form(new_password="Bago#12", confirm_password="Bago#12")
         self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors["new_password"], ["Password must be at least 8 characters long."])
+        self.assertEqual(form.errors["new_password"], ["Hindi bababa sa 8 character ang password."])
 
     def test_confirmation_must_match(self):
         form = self.form(confirm_password="iba")

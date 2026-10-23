@@ -104,6 +104,15 @@ class TileCustomizationTest(UserBase):
         self.assertEqual(messages_of(response), ["Hindi suportadong file type ng larawan."])
         self.assertFalse(Customization.objects.exists())
 
+    def test_a_picture_or_recording_is_only_for_a_tile_on_the_board(self):
+        self.login_as("miguel")
+        for response in [self.upload_image(word="kahit ano"), self.upload_sound(word="kahit ano")]:
+            self.assertRedirects(response, reverse("board"))
+            self.assertEqual(messages_of(response)[-1], "Walang ganitong tile sa board.")
+        self.assertFalse(Customization.objects.exists())
+        # A verb tile is set up in the form it shows.
+        self.assertEqual(messages_of(self.upload_image(word="kumain"))[-1], "Nai-save na ang larawan ng tile.")
+
     def test_owner_is_served_the_files(self):
         self.login_as("miguel")
         self.upload_image()
@@ -174,6 +183,18 @@ class WordUsageTest(UserBase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"ok": False, "error": "Walang word."})
         self.assertFalse(WordUsage.objects.exists())
+
+    def test_only_a_word_on_the_users_boards_is_counted(self):
+        self.login_as("miguel")
+        # A word, a verb in one of its forms, and a quick word of the Home screen are tiles.
+        for word in ["isda", "kumain", "oo"]:
+            self.assertEqual(self.tap(word).json(), {"ok": True}, word)
+        # Anything else is not counted, so it never reaches the admin's lists.
+        for word in ["kahit ano", "<script>", "Kuya Jun"]:
+            response = self.tap(word)
+            self.assertEqual(response.status_code, 400, word)
+            self.assertEqual(response.json(), {"ok": False, "error": "Walang ganitong tile sa board."})
+        self.assertEqual(sorted(WordUsage.objects.values_list("word", flat=True)), ["isda", "kumain", "oo"])
 
     def test_tap_needs_post(self):
         self.login_as("miguel")

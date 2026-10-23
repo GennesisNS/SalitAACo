@@ -65,7 +65,6 @@ class AnalyticsNumbersTest(UserBase):
         mama.set_sound(random_upload_name("audio/webm"), sound_upload(size=96), "audio/webm")
         papa = Customization.objects.create(user=cls.miguel, word="papa")
         papa.set_image(random_upload_name("image/png"), image_upload(), "image/png")
-        cls.upload_bytes = mama.image.size + mama.sound.size + papa.image.size
 
         WordUsage.objects.create(user=cls.miguel, word="kain", use_count=5)
         WordUsage.objects.create(user=cls.miguel, word="inom", use_count=2)
@@ -87,13 +86,14 @@ class AnalyticsNumbersTest(UserBase):
         self.assertEqual(numbers["total_taps"], 11)
         self.assertEqual(numbers["average_rating"], 4.5)
         self.assertEqual(numbers["rating_count"], 2)
-        self.assertEqual(numbers["storage_bytes"], self.upload_bytes)
 
     def test_overview_with_no_ratings(self):
         Rating.objects.all().delete()
         numbers = analytics.overview()
         self.assertIsNone(numbers["average_rating"])
-        self.assertEqual(analytics.stat_cards(numbers)[3]["value"], "—")
+        self.assertEqual(numbers["average_stars"], 0)
+        self.login_as("developer")
+        self.assertContains(self.client.get(reverse("analytics")), "—")
 
     def test_signups_by_day_covers_fourteen_days_ending_today(self):
         series = analytics.signups_by_day()
