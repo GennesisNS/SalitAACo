@@ -15,7 +15,7 @@ from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
 from salitaaco.utils.account import get_user_account
 from salitaaco.utils.active_nav import active_nav
-from salitaaco.utils.board import extra_board_data, quick_words
+from salitaaco.utils.board import board_words, quick_words
 from salitaaco.utils.children import guardian_child_or_404
 from salitaaco.utils.family_voice import family_voice_urls
 from salitaaco.utils.guardian_boards import board_guardian, boards_of
@@ -51,6 +51,12 @@ def view_board(request, child_uuid=None):
 
     user_rating = Rating.objects.filter(user=request.user).first()
 
+    # The child whose board this is (None on a guardian's or an admin's own), and its boards.
+    owner_child = managed_child or ChildAccount.objects.filter(user=owner).select_related("family_voice").first()
+    categories = boards_of(owner, owner_child)
+    # A picture or a recording is only for a tile these boards have.
+    words = board_words(categories)
+
     tile_image_form = UploadTileImageForm()
     tile_sound_form = UploadTileSoundForm()
     rating_form = SubmitRatingForm(initial={
@@ -60,7 +66,7 @@ def view_board(request, child_uuid=None):
 
     if request.method == "POST":
         if "tile_image_form" in request.POST:
-            tile_image_form = UploadTileImageForm(request.POST, request.FILES)
+            tile_image_form = UploadTileImageForm(request.POST, request.FILES, words=words)
             if tile_image_form.is_valid():
                 image = tile_image_form.cleaned_data['image']
                 customization, _ = Customization.objects.get_or_create(
@@ -75,7 +81,7 @@ def view_board(request, child_uuid=None):
             return redirect(board_url)
 
         if "tile_sound_form" in request.POST:
-            tile_sound_form = UploadTileSoundForm(request.POST, request.FILES)
+            tile_sound_form = UploadTileSoundForm(request.POST, request.FILES, words=words)
             if tile_sound_form.is_valid():
                 sound = tile_sound_form.cleaned_data['sound']
                 customization, _ = Customization.objects.get_or_create(
@@ -116,7 +122,6 @@ def view_board(request, child_uuid=None):
 
     # The voice for tiles nobody recorded by hand: the child's family voice where it
     # already has the word, otherwise the app's shared voice.
-    owner_child = managed_child or ChildAccount.objects.filter(user=owner).select_related("family_voice").first()
     # The guardian's own tiles that show, up to their plan's limit.
     own_words = shown_guardian_words(board_guardian(owner, owner_child))
     tile_audio = tile_audio_urls()
@@ -135,7 +140,7 @@ def view_board(request, child_uuid=None):
         "board_data": {
             # The app's boards and the family's own, with the family's own tiles;
             # a child's are the ones their guardian left on.
-            "categories": boards_of(owner, owner_child),
+            "categories": categories,
             "verb_category": VERB_CATEGORY,
             # The Home screen: the quick words, then the board of feelings.
             "quick_words": quick_words(),
@@ -149,7 +154,6 @@ def view_board(request, child_uuid=None):
             "increment_usage_url": None if managed_child else reverse('increment_word_usage'),
             "board_open_url": None if managed_child else reverse('record_board_open'),
             "frequent_words_url": None if managed_child else reverse('list_frequent_words'),
-            **extra_board_data(owner_child),
         },
     }
     return render(request, 'dashboard/board/board.html', context)

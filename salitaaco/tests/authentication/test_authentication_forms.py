@@ -37,11 +37,12 @@ class RegisterFormTest(UserBase):
 
     def test_password_must_be_strong(self):
         cases = [
-            ("Bago#12", "Password must be at least 8 characters long."),
-            ("bagong#123", "Password must contain at least one uppercase letter."),
-            ("BAGONG#123", "Password must contain at least one lowercase letter."),
-            ("Bagong#abc", "Password must contain at least one number."),
-            ("Bagong1234", "Password must contain at least one special character."),
+            ("Bago#12", "Hindi bababa sa 8 character ang password."),
+            ("Bagong#123" + "a" * 120, "Hanggang 128 character lang ang password."),
+            ("bagong#123", "Kailangang may kahit isang malaking titik ang password."),
+            ("BAGONG#123", "Kailangang may kahit isang maliit na titik ang password."),
+            ("Bagong#abc", "Kailangang may kahit isang numero ang password."),
+            ("Bagong1234", "Kailangang may kahit isang espesyal na character ang password (hal. ! @ # $)."),
         ]
         for password, error in cases:
             form = RegisterForm(self.valid_data(password=password, confirm_password=password))
@@ -58,3 +59,21 @@ class RegisterFormTest(UserBase):
         form = RegisterForm(self.valid_data(username="  bago  "))
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["username"], "bago")
+
+    def test_a_username_is_letters_numbers_and_dot_dash_underscore(self):
+        for username in ["bago", "maria.santos", "juan_dela-cruz", "nanay2026"]:
+            self.assertTrue(RegisterForm(self.valid_data(username=username)).is_valid(), username)
+        for username, error in [
+            ("ab", "Hindi bababa sa 3 character ang username."),
+            ("maria santos", "Mga titik, numero, tuldok (.), gitling (-) at underscore (_) lang ang puwede sa username, walang espasyo."),
+            ("niño", "Mga titik, numero, tuldok (.), gitling (-) at underscore (_) lang ang puwede sa username, walang espasyo."),
+            ("<script>", "Mga titik, numero, tuldok (.), gitling (-) at underscore (_) lang ang puwede sa username, walang espasyo."),
+        ]:
+            self.assertEqual(RegisterForm(self.valid_data(username=username)).errors["username"], [error], username)
+
+    def test_a_name_is_written_as_filipinos_write_names(self):
+        for name in ["Maria Santos", "Ma. Teresa Dela Cruz-Reyes", "Niño", "José D'Souza", "Sto. Tomas Jr."]:
+            self.assertTrue(RegisterForm(self.valid_data(display_name=name)).is_valid(), name)
+        error = "Mga titik, espasyo, gitling (-), kudlit (') at tuldok (.) lang ang puwede sa pangalan."
+        for name in ["Maria2", "<b>Maria</b>", ".Maria", "Maria!"]:
+            self.assertEqual(RegisterForm(self.valid_data(display_name=name)).errors["display_name"], [error], name)

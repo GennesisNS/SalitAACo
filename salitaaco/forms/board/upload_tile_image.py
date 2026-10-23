@@ -1,10 +1,11 @@
 from django import forms
 
 from ..helpers import BaseForm
-from ..validators import validate_image_size, validate_image_type
+from ..validators import check_tile_word, validate_image_size, validate_image_type
 
 
 class UploadTileImageForm(BaseForm):
+    """A picture for one of the tiles on the board: `words` are the words its boards have."""
     word = forms.CharField(
         required=True,
         max_length=100,
@@ -21,3 +22,10 @@ class UploadTileImageForm(BaseForm):
         },
         validators=[validate_image_type, validate_image_size],
     )
+
+    def __init__(self, *args, words=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.words = words
+
+    def clean_word(self):
+        return check_tile_word(self.cleaned_data["word"], self.words)

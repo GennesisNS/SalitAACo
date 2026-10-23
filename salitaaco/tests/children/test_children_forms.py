@@ -40,7 +40,7 @@ class CreateChildFormTest(UserBase):
     def test_password_must_be_strong_and_match(self):
         form = CreateChildForm(self.valid_data(password="mahina", confirm_password="mahina"))
         self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors["password"], ["Password must be at least 8 characters long."])
+        self.assertEqual(form.errors["password"], ["Hindi bababa sa 8 character ang password."])
 
         form = CreateChildForm(self.valid_data(confirm_password="Iba#12345"))
         self.assertFalse(form.is_valid())
@@ -55,7 +55,7 @@ class ResetChildPasswordFormTest(UserBase):
     def test_password_must_be_strong_and_match(self):
         form = ResetChildPasswordForm({"new_password": "bagong#123", "confirm_password": "bagong#123"})
         self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors["new_password"], ["Password must contain at least one uppercase letter."])
+        self.assertEqual(form.errors["new_password"], ["Kailangang may kahit isang malaking titik ang password."])
 
         form = ResetChildPasswordForm({"new_password": "Bago#1234", "confirm_password": "Iba#12345"})
         self.assertFalse(form.is_valid())

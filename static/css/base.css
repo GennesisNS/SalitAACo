@@ -601,10 +601,6 @@ table {
   border-collapse: collapse;
   font-size: 14px;
 }
-table.scroll-wrap {
-  display: block;
-  overflow-x: auto;
-}
 th,
 td {
   padding: 10px 12px;

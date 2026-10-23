@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 
-from salitaaco.forms.validators import name_validator, validate_password_strength
+from salitaaco.forms.validators import name_validator, validate_password_strength, validate_username
 from salitaaco.utils.account import create_admin, delete_user_account
 from salitaaco.utils.perms_check import is_administrator
 
@@ -48,6 +48,7 @@ class Command(BaseCommand):
         display_name = options["name"] or username
         password = os.environ.get(PASSWORD_VARIABLE) or self.ask_password()
         try:
+            validate_username(username)
             if options["name"]:
                 name_validator(display_name)
             validate_password_strength(password)

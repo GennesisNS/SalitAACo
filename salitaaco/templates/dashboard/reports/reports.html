@@ -42,7 +42,6 @@
         </tbody>
       </table>
     </div>
-    <p class="note">Ang account na admin at tagapag-alaga nang sabay ay kabilang sa parehong bilang.</p>
   </section>
 </div>
 
@@ -112,13 +111,40 @@
 
 {% elif tab == "business" %}
 <!-- ============== BUSINESS ============== -->
-<section class="section">
-  <h2>Negosyo</h2>
-  <p class="emptyState">
-    Lalabas dito ang mga subscription at kita kapag nase-save na ang mga bayad. Sa ngayon, tingnan ang
-    <a href="{% url 'subscriptions' %}">Mga Subscription</a> at <a href="{% url 'revenue' %}">Kita</a>.
-  </p>
-</section>
+<div class="statsGrid">
+  {% for plan in business.plans %}
+  {% include "components/analytics/stat_card.html" with label="Naka-"|add:plan.name value=plan.guardians sub="na tagapag-alaga" %}
+  {% endfor %}
+  {% include "components/analytics/stat_card.html" with label="Kita ngayong buwan" value=business.revenue_this_month sub="mula sa mga aprubadong bayad" %}
+  {% include "components/analytics/stat_card.html" with label="Kabuuang kita" value=business.revenue_total sub="mula nang magsimula" %}
+</div>
+
+<div class="twoColumns">
+  <section class="section">
+    <h2>Kita kada buwan (huling 6 na buwan)</h2>
+    {% for row in business.months %}
+    {% include "components/analytics/bar_row.html" with label=row.month|date:"M Y" width=row.width count=row.pesos %}
+    {% endfor %}
+  </section>
+
+  <section class="section">
+    <h2>Mga bayad ayon sa status</h2>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>Status</th><th>Bilang</th></tr></thead>
+        <tbody>
+          <tr><td>Naghihintay</td><td>{{ business.pending }}</td></tr>
+          <tr><td>Aprubado</td><td>{{ business.approved }}</td></tr>
+          <tr><td>Tinanggihan</td><td>{{ business.rejected }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      Inaaprubahan o tinatanggihan ang mga bayad sa <a href="{% url 'subscriptions' %}">Mga Subscription</a>; nasa
+      <a href="{% url 'revenue' %}">Kita</a> ang talaan ng bawat isa.
+    </p>
+  </section>
+</div>
 
 {% else %}
 <!-- ============== REPORTS ============== -->

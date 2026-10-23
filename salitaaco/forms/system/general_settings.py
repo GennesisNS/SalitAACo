@@ -1,6 +1,7 @@
 from django import forms
 
 from ..helpers import BaseForm
+from ..validators import validate_phone_number
 
 
 class GeneralSettingsForm(BaseForm):
@@ -15,8 +16,9 @@ class GeneralSettingsForm(BaseForm):
     contact_phone = forms.CharField(
         required=False,
         max_length=40,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. 0917 000 0000"}),
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "hal. 0917 000 0000", "inputmode": "tel"}),
         label="Telepono ng suporta (opsiyonal)",
+        validators=[validate_phone_number],
     )
     maintenance_mode = forms.BooleanField(
         required=False,

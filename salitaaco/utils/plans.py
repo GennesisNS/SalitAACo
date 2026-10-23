@@ -162,3 +162,26 @@ def revenue_this_month():
     return Payment.objects.filter(
         status=APPROVED, reviewed_at__gte=month_start,
     ).aggregate(total=Sum("amount"))["total"] or 0
+
+
+def revenue_by_month(months=6):
+    """
+    The pesos approved in each of the last `months` months, this one last,
+    with the months that had none: [{"month": first day, "total": pesos}].
+    """
+    this_month = timezone.localtime().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    first = add_months(this_month, -(months - 1))
+    # Grouped here, not in SQL: date functions on MySQL need its time zone tables loaded.
+    totals = {}
+    for reviewed_at, amount in Payment.objects.filter(status=APPROVED, reviewed_at__gte=first).values_list("reviewed_at", "amount"):
+        moment = timezone.localtime(reviewed_at)
+        totals[(moment.year, moment.month)] = totals.get((moment.year, moment.month), 0) + amount
+    return [
+        {"month": month.date(), "total": totals.get((month.year, month.month), 0)}
+        for month in (add_months(first, offset) for offset in range(months))
+    ]
+
+
+def payment_counts():
+    """How many payments are waiting, approved and rejected, by status."""
+    return dict(Payment.objects.values_list("status").annotate(count=Count("payment_id")))

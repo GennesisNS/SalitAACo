@@ -8,17 +8,43 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from salitaaco.defaults.plans import APPROVED, PENDING, REJECTED
 from salitaaco.forms.reports.export_report import SIGNUPS, USAGE, WORDS, ExportReportForm
 from salitaaco.forms.reports.report_tab import EXPORT, ReportTabForm
 from salitaaco.models.customization import Customization
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.family_voice import FamilyVoice
+from salitaaco.models.payment import Payment
+from salitaaco.models.plan import Plan
 from salitaaco.models.word_usage import WordUsage
 from salitaaco.utils import admin_stats, analytics
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.perms_check import is_administrator, multi_user_test
+from salitaaco.utils.plans import payment_counts, revenue_by_month, revenue_this_month, subscriber_counts
 
 USAGE_DAYS_SHOWN = 14
+REVENUE_MONTHS_SHOWN = 6
+
+
+def business_numbers():
+    """The Negosyo tab: guardians on each plan, the payments by status, and the pesos approved each month."""
+    counts = subscriber_counts()
+    payments = payment_counts()
+    months = revenue_by_month(REVENUE_MONTHS_SHOWN)
+    highest = max((row["total"] for row in months), default=0)
+    for row in months:
+        row["width"] = analytics.bar_width(row["total"], highest)
+        row["pesos"] = f"₱{row['total']:,}"
+    total = Payment.objects.filter(status=APPROVED).aggregate(total=Sum("amount"))["total"] or 0
+    return {
+        "plans": [{"name": plan.name, "guardians": counts.get(plan.key, 0)} for plan in Plan.objects.all()],
+        "revenue_this_month": f"₱{revenue_this_month():,}",
+        "revenue_total": f"₱{total:,}",
+        "pending": payments.get(PENDING, 0),
+        "approved": payments.get(APPROVED, 0),
+        "rejected": payments.get(REJECTED, 0),
+        "months": months,
+    }
 
 
 def reports_context(tab, export_form):
@@ -39,6 +65,8 @@ def reports_context(tab, export_form):
         "family_voices": FamilyVoice.objects.count(),
         # Retention
         "retention": admin_stats.retention(),
+        # Business
+        "business": business_numbers(),
         # Reports
         "export_form": export_form,
     }
@@ -82,13 +110,15 @@ def usage_rows(date_from, date_to):
 def words_rows(date_from, date_to):
     """
     Every word and how often it was tapped. Over all time it is each word's
-    total; with dates it is counted from the days, which began later.
+    total; with dates it is counted from the days, which began later. A
+    family's own tiles (names, places at home) are left out, as on the page.
     """
     if date_from is None and date_to is None:
-        totals = WordUsage.objects.values("word").annotate(total=Sum("use_count")).order_by("-total", "word")
+        usages = analytics.family_tile_taps(WordUsage.objects.all(), "word")
+        totals = usages.values("word").annotate(total=Sum("use_count")).order_by("-total", "word")
         return ["salita", "mga_pindot"], [[row["word"], row["total"]] for row in totals]
 
-    usages = DailyUsage.objects.filter(kind=DailyUsage.WORD)
+    usages = analytics.family_tile_taps(DailyUsage.objects.filter(kind=DailyUsage.WORD), "name")
     if date_from:
         usages = usages.filter(day__gte=date_from)
     if date_to:

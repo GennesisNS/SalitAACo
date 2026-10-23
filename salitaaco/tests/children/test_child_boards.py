@@ -5,7 +5,8 @@ from salitaaco.forms.children.child_boards import ChildBoardsForm
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.hidden_board import HiddenBoard
 from salitaaco.tests.users_base import UserBase, make_guardian
-from salitaaco.utils.board import board_names, boards
+from salitaaco.utils.board import board_names
+from salitaaco.utils.guardian_boards import child_boards
 
 ALL_BOARDS = ["Tao", "Bagay", "Pagkain", "Lugar", "Pandiwa", "Pakiramdam"]
 
@@ -153,12 +154,12 @@ class BoardsOnTheBoardTest(ChildBoardsBase):
     def test_a_child_is_never_left_without_a_board(self):
         # Rows for boards the vocabulary no longer has are ignored.
         HiddenBoard.objects.create(child=self.miguel_account, board="Lumang Board")
-        self.assertEqual([board["name"] for board in boards(self.miguel_account)], ALL_BOARDS)
+        self.assertEqual([board["name"] for board in child_boards(self.miguel_account)], ALL_BOARDS)
 
         # Rows that would hide everything show everything.
         for name in ALL_BOARDS:
             HiddenBoard.objects.create(child=self.miguel_account, board=name)
-        self.assertEqual([board["name"] for board in boards(self.miguel_account)], ALL_BOARDS)
+        self.assertEqual([board["name"] for board in child_boards(self.miguel_account)], ALL_BOARDS)
 
     def test_deleting_the_child_deletes_their_rows(self):
         HiddenBoard.objects.create(child=self.miguel_account, board="Bagay")

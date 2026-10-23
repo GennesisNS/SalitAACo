@@ -6,9 +6,43 @@ from salitaaco.utils.uploads import IMAGE_MIME_TYPES, MAX_UPLOAD_SIZE, PICTURE_M
 import re
 
 
+MIN_USERNAME_LENGTH = 3
+MAX_PASSWORD_LENGTH = 128
+
+
 def username_exists(value):
     if User.objects.filter(username__iexact=value).exists():
         raise ValidationError("Ginagamit na ang username na ito.")
+
+
+def validate_username(value):
+    """
+    A username to log in with, typed on a phone or by a child: letters,
+    numbers, and the dot, dash and underscore, without spaces.
+    """
+    if len(value) < MIN_USERNAME_LENGTH:
+        raise ValidationError(f"Hindi bababa sa {MIN_USERNAME_LENGTH} character ang username.")
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", value):
+        raise ValidationError("Mga titik, numero, tuldok (.), gitling (-) at underscore (_) lang ang puwede sa username, walang espasyo.")
+
+
+def validate_phone_number(value):
+    """A telephone or GCash number as people write it: digits, with spaces, dashes, brackets or a leading +."""
+    if not re.fullmatch(r"\+?[0-9 ()-]+", value):
+        raise ValidationError("Mga numero lang ang puwede, hal. 0917 000 0000.")
+    digits = len(re.sub(r"\D", "", value))
+    if not 7 <= digits <= 15:
+        raise ValidationError("Hindi tama ang haba ng numero (7 hanggang 15 digit).")
+
+
+def check_tile_word(word, words):
+    """
+    A word that one of the user's tiles says. `words` is every word their
+    boards have (utils/board.board_words); None checks nothing.
+    """
+    if words is not None and word not in words:
+        raise ValidationError("Walang ganitong tile sa board.")
+    return word
 
 
 def validate_image_type(file):
@@ -60,24 +94,25 @@ def clean_symbol(value):
 
 
 def name_validator(value):
-    # only allow a-z, A-Z, dash, and space
-    if not re.match(r'^[a-zA-Z\s-]+$', value):
-        raise ValidationError("Name can only contain letters, spaces, and dashes.")
-    
-    
+    """
+    A person's name as Filipinos write it: letters of any alphabet (ñ, é),
+    spaces, and the dash, apostrophe and dot of "Ma. Teresa", "Dela Cruz-Reyes"
+    or "D'Souza". It starts with a letter.
+    """
+    if not re.fullmatch(r"[^\W\d_](?:[^\W\d_]|[ .'’-])*", value):
+        raise ValidationError("Mga titik, espasyo, gitling (-), kudlit (') at tuldok (.) lang ang puwede sa pangalan.")
+
+
 def validate_password_strength(value):
     if len(value) < 8:
-        raise ValidationError("Password must be at least 8 characters long.")
+        raise ValidationError("Hindi bababa sa 8 character ang password.")
+    if len(value) > MAX_PASSWORD_LENGTH:
+        raise ValidationError(f"Hanggang {MAX_PASSWORD_LENGTH} character lang ang password.")
     if not re.search(r'[A-Z]', value):
-        raise ValidationError("Password must contain at least one uppercase letter.")
+        raise ValidationError("Kailangang may kahit isang malaking titik ang password.")
     if not re.search(r'[a-z]', value):
-        raise ValidationError("Password must contain at least one lowercase letter.")
+        raise ValidationError("Kailangang may kahit isang maliit na titik ang password.")
     if not re.search(r'\d', value):
-        raise ValidationError("Password must contain at least one number.")
+        raise ValidationError("Kailangang may kahit isang numero ang password.")
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
-        raise ValidationError("Password must contain at least one special character.")
-
-
-def validate_passwords_match(password, retype_password):
-    if password != retype_password:
-        raise ValidationError("Passwords do not match.")
+        raise ValidationError("Kailangang may kahit isang espesyal na character ang password (hal. ! @ # $).")

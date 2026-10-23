@@ -20,10 +20,6 @@ def board_limit(guardian):
     return setting.free_board_limit if on_free_plan(guardian) else setting.plus_board_limit
 
 
-def can_add_board(guardian):
-    return guardian.boards.count() < board_limit(guardian)
-
-
 def shown_guardian_boards(guardian):
     """
     The guardian's boards that the boards show: the oldest ones, up to their

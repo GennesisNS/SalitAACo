@@ -1,7 +1,7 @@
 from django import forms
 
 from ..helpers import BaseForm
-from ..validators import name_validator, username_exists, validate_password_strength
+from ..validators import name_validator, username_exists, validate_password_strength, validate_username
 
 
 class CreateChildForm(BaseForm):
@@ -20,7 +20,7 @@ class CreateChildForm(BaseForm):
         error_messages={"required": "Ilagay ang username ng bata."},
         label="Username ng bata",
         help_text="Ito ang gagamitin ng bata sa pag-log in.",
-        validators=[username_exists],
+        validators=[validate_username, username_exists],
     )
     age = forms.IntegerField(
         required=False,

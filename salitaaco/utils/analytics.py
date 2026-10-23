@@ -1,27 +1,30 @@
-import os
 from collections import Counter
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Exists, OuterRef, Q, Sum
 from django.utils import timezone
 
 from salitaaco.models.customization import Customization
-from salitaaco.models.account_base import AccountBase
 from salitaaco.models.rating import Rating
 from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.word_usage import WordUsage
-from salitaaco.templatetags.format_bytes import format_bytes
 
 SIGNUP_CHART_DAYS = 14
 TOP_WORDS_LIMIT = 15
 
-UPLOAD_FOLDERS = [
-    AccountBase._meta.get_field("avatar").upload_to,
-    Customization._meta.get_field("image").upload_to,
-    Customization._meta.get_field("sound").upload_to,
-]
+
+def family_tile_taps(usages, word_field):
+    """
+    `usages` (WordUsage, or DailyUsage of words, whose word is in `word_field`)
+    without the taps of a family's own tiles: a name, a place at home. Only the
+    family's own taps of their tile are left out; the same word as an app tile,
+    tapped by anyone else, still counts.
+    """
+    own_tile = GuardianWord.objects.filter(word=OuterRef(word_field)).filter(
+        Q(guardian__user=OuterRef("user")) | Q(guardian__children__user=OuterRef("user"))
+    )
+    return usages.exclude(Exists(own_tile))
 
 
 def start_of_today():
@@ -32,18 +35,6 @@ def start_of_today():
 def bar_width(count, highest):
     """Width of a chart bar, as a whole percentage of the longest bar."""
     return round(count / max(1, highest) * 100)
-
-
-def storage_bytes():
-    """Disk space taken by uploads: profile pictures, tile pictures and recordings."""
-    total = 0
-    for folder in UPLOAD_FOLDERS:
-        path = os.path.join(settings.MEDIA_ROOT, folder)
-        if not os.path.isdir(path):
-            continue
-        with os.scandir(path) as entries:
-            total += sum(entry.stat().st_size for entry in entries if entry.is_file() and entry.name != ".gitkeep")
-    return total
 
 
 def overview():
@@ -66,23 +57,7 @@ def overview():
         "average_rating": round(average_rating, 2) if average_rating is not None else None,
         "average_stars": round(average_rating) if average_rating is not None else 0,
         "rating_count": Rating.objects.count(),
-        "storage_bytes": storage_bytes(),
     }
-
-
-def stat_cards(numbers):
-    """The overview numbers as the cards shown at the top of the dashboard."""
-    average_rating = numbers["average_rating"]
-    return [
-        {"label": "Kabuuang users", "value": numbers["total_users"], "sub": f"+{numbers['new_today']} ngayong araw"},
-        {"label": "Bago sa linggo", "value": numbers["new_this_week"], "sub": ""},
-        {"label": "Aktibo ngayong araw", "value": numbers["active_today"], "sub": f"{numbers['active_this_week']} sa linggo"},
-        {"label": "Average rating", "value": average_rating if average_rating is not None else "—", "sub": f"{numbers['rating_count']} na rating"},
-        {"label": "Custom na larawan", "value": numbers["total_images"], "sub": ""},
-        {"label": "Custom na tunog", "value": numbers["total_sounds"], "sub": ""},
-        {"label": "Kabuuang taps", "value": numbers["total_taps"], "sub": ""},
-        {"label": "Storage na ginamit", "value": format_bytes(numbers["storage_bytes"]), "sub": "larawan + tunog + avatar"},
-    ]
 
 
 def signups_by_day():
@@ -120,7 +95,7 @@ def top_words(limit=TOP_WORDS_LIMIT):
     name, a place at home), and are not counted here.
     """
     words = list(
-        WordUsage.objects.exclude(word__in=GuardianWord.objects.values("word"))
+        family_tile_taps(WordUsage.objects.all(), "word")
         .values("word")
         .annotate(total_uses=Sum("use_count"), user_count=Count("user", distinct=True))
         .order_by("-total_uses", "word")[:limit]

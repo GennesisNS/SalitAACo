@@ -123,7 +123,7 @@ class GcashSettingsTest(SystemBase):
         self.login_as("developer")
         response = self.send(gcash_qr=image_upload("qr.gif", "GIF", "image/gif"), gcash_number="tawagan mo ako")
         self.assertContains(response, "JPEG, PNG o WebP lang ang puwedeng larawan.")
-        self.assertContains(response, "Mga numero lang ang puwede sa GCash number.")
+        self.assertContains(response, "Mga numero lang ang puwede, hal. 0917 000 0000.")
         self.assertFalse(SiteSetting.load().has_gcash_qr)
 
     def test_saving_the_qr_code_leaves_the_other_settings_alone(self):
