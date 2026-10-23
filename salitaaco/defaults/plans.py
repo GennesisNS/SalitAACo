@@ -19,7 +19,7 @@ PAID_MONTHS = 1
 FREE_FAMILY_VOICE_LIMIT = 2
 
 # How many tiles and boards of their own a guardian can add, on the free plan
-# and on a paid one, until an admin changes them on System Settings > General.
+# and on a paid one, until an admin changes them on System Settings > Mga Plano.
 # Each counts across all of the guardian's family's boards. Over a limit, the
 # oldest ones up to it show and the rest are kept, hidden.
 DEFAULT_FREE_WORD_LIMIT = 0

@@ -24,9 +24,11 @@ def limit_field(label):
 class PlanLimitsForm(BaseForm):
     """
     How many tiles and boards of their own a guardian can add on the free plan
-    and on SalitAACo Plus, each across all of the guardian's family's boards.
+    and on a paid plan (SalitAACo Plus), each across all of the guardian's
+    family's boards. The page shows them grouped by plan, so each label only
+    says what is counted.
     """
-    free_word_limit = limit_field("Sariling tile sa Free")
-    plus_word_limit = limit_field("Sariling tile sa Plus")
-    free_board_limit = limit_field("Sariling board sa Free")
-    plus_board_limit = limit_field("Sariling board sa Plus")
+    free_word_limit = limit_field("Sariling tile")
+    free_board_limit = limit_field("Custom board")
+    plus_word_limit = limit_field("Sariling tile")
+    plus_board_limit = limit_field("Custom board")

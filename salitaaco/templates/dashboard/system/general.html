@@ -3,7 +3,7 @@
 {% block title %}General - SalitAACo{% endblock %}
 
 {% block heading %}System Settings: General{% endblock %}
-{% comment %}Four forms, told apart by the name of the button that sent them (see routes/system/general.py).{% endcomment %}
+{% comment %}Three forms, told apart by the name of the button that sent them (see routes/system/general.py).{% endcomment %}
 
 {% block main %}
 {% if setting.maintenance_mode %}
@@ -93,45 +93,8 @@
   {% endif %}
 </section>
 
-<section class="section" id="limits">
-  <form method="post" class="narrowForm settingsFields" novalidate>
-    {% csrf_token %}
-
-    <h2>Mga limit ng Free at Plus</h2>
-    <p class="desc">
-      Ilang sariling tile (sa Sariling Tile) at sariling board (sa Sariling Board) ang puwedeng gawin ng bawat
-      tagapag-alaga, ayon sa plano niya. Para sa lahat ng board ng isang tagapag-alaga at ng mga anak niya ang bawat
-      bilang; 0 para walang makagawa. Hindi binubura ang lampas sa bagong bilang: nakikita pa rin ang mga pinakaluma
-      hanggang sa bilang, at nakatago muna ang iba hanggang payagan ulit.
-    </p>
-
-    <div class="row">
-      <div>
-        <label for="{{ limits_form.free_word_limit.id_for_label }}">{{ limits_form.free_word_limit.label }}</label>
-        {{ limits_form.free_word_limit }}
-        <small class="fieldError">{{ limits_form.free_word_limit.errors }}</small>
-      </div>
-      <div>
-        <label for="{{ limits_form.plus_word_limit.id_for_label }}">{{ limits_form.plus_word_limit.label }}</label>
-        {{ limits_form.plus_word_limit }}
-        <small class="fieldError">{{ limits_form.plus_word_limit.errors }}</small>
-      </div>
-    </div>
-
-    <div class="row">
-      <div>
-        <label for="{{ limits_form.free_board_limit.id_for_label }}">{{ limits_form.free_board_limit.label }}</label>
-        {{ limits_form.free_board_limit }}
-        <small class="fieldError">{{ limits_form.free_board_limit.errors }}</small>
-      </div>
-      <div>
-        <label for="{{ limits_form.plus_board_limit.id_for_label }}">{{ limits_form.plus_board_limit.label }}</label>
-        {{ limits_form.plus_board_limit }}
-        <small class="fieldError">{{ limits_form.plus_board_limit.errors }}</small>
-      </div>
-    </div>
-
-    <button class="primaryBtn formActions" type="submit" name="limits_form">I-save ang mga limit</button>
-  </form>
-</section>
+<p class="note">
+  Ang mga limit ng sariling tile at custom board ng bawat plano ay nasa
+  <a href="{% url 'system_plans' %}#limits">System Settings › Mga Plano</a>.
+</p>
 {% endblock %}
