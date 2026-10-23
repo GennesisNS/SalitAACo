@@ -6,7 +6,6 @@ from django.shortcuts import redirect, render
 
 from salitaaco.forms.system.general_settings import GeneralSettingsForm
 from salitaaco.forms.system.payment_settings import PaymentSettingsForm
-from salitaaco.forms.system.plan_limits import PlanLimitsForm
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.perms_check import is_administrator, multi_user_test
@@ -16,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 FIELDS = ["contact_email", "contact_phone", "maintenance_mode", "maintenance_message"]
 PAYMENT_FIELDS = ["gcash_name", "gcash_number"]
-LIMIT_FIELDS = ["free_word_limit", "plus_word_limit", "free_board_limit", "plus_board_limit"]
 
 
 @active_nav("system_general")
@@ -24,26 +22,16 @@ LIMIT_FIELDS = ["free_word_limit", "plus_word_limit", "free_board_limit", "plus_
 @multi_user_test(is_administrator)
 def view_general_settings(request):
     """
-    System Settings > General: how to reach support, maintenance mode, where
-    guardians pay, and how many tiles and boards of their own each plan allows.
+    System Settings > General: how to reach support, maintenance mode, and
+    where guardians pay. The plans' limits are on Mga Plano (routes/system/plans.py).
     """
     setting = SiteSetting.load()
 
     settings_form = GeneralSettingsForm(initial={field: getattr(setting, field) for field in FIELDS})
     payment_form = PaymentSettingsForm(initial={field: getattr(setting, field) for field in PAYMENT_FIELDS})
-    limits_form = PlanLimitsForm(initial={field: getattr(setting, field) for field in LIMIT_FIELDS})
 
     if request.method == "POST":
-        if "limits_form" in request.POST:
-            limits_form = PlanLimitsForm(request.POST)
-            if limits_form.is_valid():
-                for field in LIMIT_FIELDS:
-                    setattr(setting, field, limits_form.cleaned_data[field])
-                setting.save()
-                messages.success(request, "Naka-save na ang mga limit ng Free at Plus.")
-                return redirect('system_general')
-
-        elif "payment_form" in request.POST:
+        if "payment_form" in request.POST:
             payment_form = PaymentSettingsForm(request.POST, request.FILES)
             if payment_form.is_valid():
                 for field in PAYMENT_FIELDS:
@@ -80,7 +68,6 @@ def view_general_settings(request):
     context = {
         "settings_form": settings_form,
         "payment_form": payment_form,
-        "limits_form": limits_form,
         "setting": setting,
     }
     return render(request, 'dashboard/system/general.html', context)

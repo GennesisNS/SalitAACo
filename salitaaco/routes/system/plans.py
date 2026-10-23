@@ -8,6 +8,9 @@ adds, edits, offers or not, and deletes here. The rules:
 - A new price is for the payments that follow; payments already sent keep theirs.
 - A plan that has payments is not deleted, as they are its record; it is
   taken off offer instead.
+
+Below the plans, "Mga Limit ng Plano": how many tiles and custom boards of
+their own a guardian can make on Free and on a paid plan (SiteSetting).
 """
 import logging
 
@@ -15,11 +18,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from salitaaco.forms.subscriptions.plan import PlanForm
+from salitaaco.forms.system.plan_limits import PlanLimitsForm
 from salitaaco.models.plan import Plan
+from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.perms_check import is_administrator, multi_user_test
 
@@ -27,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 FIELDS = ["name", "price", "features", "offered"]
 NEW_PLAN = "new"
+LIMIT_FIELDS = ["free_word_limit", "free_board_limit", "plus_word_limit", "plus_board_limit"]
 
 
 def plan_form(plan, plans, data=None):
@@ -58,9 +65,21 @@ def view_plans(request):
     forms = {plan.key: plan_form(plan, plans) for plan in plans}
     every_name = [plan.name for plan in plans]
     new_plan_form = PlanForm(prefix=NEW_PLAN, initial={"offered": True})
+    setting = SiteSetting.load()
+    limits_form = PlanLimitsForm(initial={field: getattr(setting, field) for field in LIMIT_FIELDS})
 
     if request.method == "POST":
-        if "new_plan_form" in request.POST:
+        if "limits_form" in request.POST:
+            limits_form = PlanLimitsForm(request.POST)
+            if limits_form.is_valid():
+                for field in LIMIT_FIELDS:
+                    setattr(setting, field, limits_form.cleaned_data[field])
+                setting.save()
+                logger.info("Admin %s changed the plan limits", request.user.username)
+                messages.success(request, "Naka-save na ang mga limit ng Free at Plus.")
+                return redirect(f"{reverse('system_plans')}#limits")
+
+        elif "new_plan_form" in request.POST:
             new_plan_form = PlanForm(request.POST, prefix=NEW_PLAN, taken_names=every_name)
             if new_plan_form.is_valid():
                 last = Plan.objects.aggregate(last=Max("position"))["last"] or 0
@@ -96,6 +115,10 @@ def view_plans(request):
         ],
         "new_plan_form": new_plan_form,
         "show_new_plan_modal": bool(new_plan_form.errors),
+        "limits_form": limits_form,
+        # The limits are Free's and every paid plan's: named here as the plans are.
+        "free_plan": next((plan for plan in plans if plan.is_default), None),
+        "paid_plans": [plan for plan in plans if not plan.is_default],
     }
     return render(request, 'dashboard/system/plans.html', context)
 

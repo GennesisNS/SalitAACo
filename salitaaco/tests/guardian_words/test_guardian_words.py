@@ -55,7 +55,7 @@ class GuardianWordsBase(UserBase):
         return {category["name"]: [item["w"] for item in category["items"]] for category in categories}
 
     def set_limits(self, **limits):
-        """Change the plans' limits, as an admin does on System Settings > General."""
+        """Change the plans' limits, as an admin does on System Settings > Mga Plano."""
         setting = SiteSetting.load()
         for field, value in limits.items():
             setattr(setting, field, value)
@@ -473,15 +473,15 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
 class PlanLimitsTest(GuardianWordsBase):
     LIMITS = {"free_word_limit": "3", "plus_word_limit": "30", "free_board_limit": "1", "plus_board_limit": "8"}
 
-    def test_an_admin_sets_the_four_limits(self):
-        url = reverse("system_general")
+    def test_an_admin_sets_the_four_limits_on_mga_plano(self):
+        url = reverse("system_plans")
         self.login_as("developer")
         page = self.client.get(url)
         for field, value in [("free_word_limit", 0), ("plus_word_limit", 20), ("free_board_limit", 0), ("plus_board_limit", 5)]:
             self.assertContains(page, f'name="{field}" value="{value}"')
 
         response = self.client.post(url, {"limits_form": "", **self.LIMITS})
-        self.assertRedirects(response, url)
+        self.assertRedirects(response, f"{url}#limits")
         self.assertEqual(messages_of(response), ["Naka-save na ang mga limit ng Free at Plus."])
         setting = SiteSetting.load()
         self.assertEqual(
@@ -493,7 +493,27 @@ class PlanLimitsTest(GuardianWordsBase):
         self.assertContains(response, "Hindi tama ang bilang.")
         self.assertEqual(SiteSetting.load().plus_board_limit, 8)
 
+    def test_the_limits_are_grouped_by_plan_below_the_plan_cards(self):
+        self.login_as("developer")
+        content = self.client.get(reverse("system_plans")).content.decode()
+        # Below the plan cards, Free's two fields together, then the paid plans' two.
+        order = [
+            'name="plus-name"', "<h2>Mga Limit ng Plano</h2>",
+            '<h3 id="freeLimitsTitle">Free</h3>', 'name="free_word_limit"', 'name="free_board_limit"',
+            '<h3 id="paidLimitsTitle">Mga bayad na plano</h3>', "Para sa mga naka-SalitAACo Plus.",
+            'name="plus_word_limit"', 'name="plus_board_limit"', 'name="limits_form"',
+        ]
+        positions = [content.index(text) for text in order]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_general_no_longer_has_them(self):
+        self.login_as("developer")
+        response = self.client.get(reverse("system_general"))
+        self.assertNotContains(response, 'name="limits_form"')
+        self.assertNotContains(response, 'name="plus_word_limit"')
+        self.assertContains(response, f'href="{reverse("system_plans")}#limits"')
+
     def test_only_admins_set_them(self):
         self.login_as("nanay")
-        self.client.post(reverse("system_general"), {"limits_form": "", **self.LIMITS})
+        self.client.post(reverse("system_plans"), {"limits_form": "", **self.LIMITS})
         self.assertEqual(SiteSetting.load().plus_word_limit, DEFAULT_PLUS_WORD_LIMIT)

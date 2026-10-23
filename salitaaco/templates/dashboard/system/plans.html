@@ -59,6 +59,52 @@
   </div>
 </section>
 
+<!-- ============== THE PLANS' LIMITS ============== -->
+<section class="section" id="limits">
+  <h2>Mga Limit ng Plano</h2>
+  <p class="desc">
+    Ilang sariling tile (sa Sariling Tile) at custom board (sa Mga Board ng isang anak) ang puwedeng gawin ng bawat
+    tagapag-alaga, ayon sa plano niya. Para sa lahat ng board ng isang tagapag-alaga at ng mga anak niya ang bawat
+    bilang; 0 para walang makagawa. Hindi binubura ang lampas sa bagong bilang: nakikita pa rin ang mga pinakaluma
+    hanggang sa bilang, at nakatago muna ang iba hanggang payagan ulit.
+  </p>
+
+  <form method="post" action="{% url 'system_plans' %}#limits" class="settingsFields" novalidate>
+    {% csrf_token %}
+    <div class="planGrid">
+      <div class="planCard" role="group" aria-labelledby="freeLimitsTitle">
+        <h3 id="freeLimitsTitle">{{ free_plan.name|default:"Free" }}</h3>
+        <p class="desc">Para sa mga tagapag-alagang walang bayad na plano.</p>
+
+        <label for="{{ limits_form.free_word_limit.id_for_label }}">{{ limits_form.free_word_limit.label }}</label>
+        {{ limits_form.free_word_limit }}
+        <small class="fieldError">{{ limits_form.free_word_limit.errors }}</small>
+
+        <label for="{{ limits_form.free_board_limit.id_for_label }}">{{ limits_form.free_board_limit.label }}</label>
+        {{ limits_form.free_board_limit }}
+        <small class="fieldError">{{ limits_form.free_board_limit.errors }}</small>
+      </div>
+
+      <div class="planCard" role="group" aria-labelledby="paidLimitsTitle">
+        <h3 id="paidLimitsTitle">Mga bayad na plano</h3>
+        <p class="desc">
+          Para sa mga naka-{% for plan in paid_plans %}{{ plan.name }}{% if not forloop.last %}, {% endif %}{% empty %}bayad na plano{% endfor %}.
+        </p>
+
+        <label for="{{ limits_form.plus_word_limit.id_for_label }}">{{ limits_form.plus_word_limit.label }}</label>
+        {{ limits_form.plus_word_limit }}
+        <small class="fieldError">{{ limits_form.plus_word_limit.errors }}</small>
+
+        <label for="{{ limits_form.plus_board_limit.id_for_label }}">{{ limits_form.plus_board_limit.label }}</label>
+        {{ limits_form.plus_board_limit }}
+        <small class="fieldError">{{ limits_form.plus_board_limit.errors }}</small>
+      </div>
+    </div>
+
+    <button class="primaryBtn" type="submit" name="limits_form">I-save ang mga limit</button>
+  </form>
+</section>
+
 <!-- ============== ADD A PLAN ============== -->
 <div class="settingsBackdrop hidden" data-modal="new-plan" data-open="{{ show_new_plan_modal|yesno:'true,false' }}">
   <div class="settingsBox narrow" role="dialog" aria-modal="true" aria-labelledby="newPlanTitle">
