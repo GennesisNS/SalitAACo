@@ -12,7 +12,6 @@ from . import (  # noqa: F401
     guardian_board,
     guardian_word,
     hidden_board,
-    institution,
     payment,
     plan,
     rating,

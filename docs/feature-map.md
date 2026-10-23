@@ -156,7 +156,6 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Users by status; make an account inactive or active | `users.view_users`, `users.set_user_status` | `users` `users/`, `set_user_status` `users/<id>/status/` | `SearchUserForm`, `UserStatusForm`, `SetUserStatusForm` | `dashboard/users/users.html` |
 | Boards: publish or hide (at least one stays published) | `boards.view_admin_boards`, `boards.set_board_status` | `admin_boards` `vocabulary/boards/`, `set_board_status` `vocabulary/boards/status/` | `SetBoardStatusForm` | `dashboard/vocabulary/boards.html` |
 | Words: list, add, edit, delete, each with an emoji or an uploaded picture | `words.view_words`, `words.edit_word`, `words.delete_word`, `words.view_added_word_image` | `words` `vocabulary/words/`, `edit_word` `…/<uuid>/`, `delete_word` `…/<uuid>/delete/`, `added_word_image` `…/<uuid>/image/` | `SearchWordForm`, `WordForm` | `dashboard/vocabulary/words.html`, `word.html` |
-| Institutions *(may be removed)* | `institutions.view_institutions`, `edit_institution`, `delete_institution` | `institutions` `institutions/`, `edit_institution` `…/<uuid>/`, `delete_institution` `…/<uuid>/delete/` | `InstitutionForm` | `dashboard/institutions/` |
 | Kita: the record of every payment and what became of it, by status, to look at only | `revenue.view_revenue` | `revenue` `revenue/` | `TransactionStatusForm` | `dashboard/revenue/revenue.html` |
 | Mga Subscription: guardians per plan, this month's earnings, and approving or rejecting the waiting payments | `subscriptions.view_subscriptions`, `subscriptions.approve_payment` | `subscriptions` `subscriptions/` (rejecting is a form of the page), `approve_payment` `subscriptions/payments/<uuid>/approve/` | `RejectPaymentForm` | `dashboard/subscriptions/subscriptions.html` |
 | System Settings: Mga Plano (add, edit, offer or not, delete the plans; below them, Mga Limit ng Plano: the Free and paid limits of own tiles and boards) | `plans.view_plans`, `plans.remove_plan` | `system_plans` `system/plans/`, `remove_plan` `system/plans/<id>/delete/` | `PlanForm`, `PlanLimitsForm` | `dashboard/system/plans.html` |
@@ -183,6 +182,7 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 | `BoardStatus` | Whether an admin has hidden a board from everyone |
 | `AddedWord` | A word an admin added to a board (an emoji or an uploaded picture) |
 | `SiteSetting` | The one row of site settings: support contact details, maintenance mode, the GCash QR code and account |
+| `Plan` | A plan guardians can be on, as an admin edited it. Seeded with Free and SalitAACo Plus |
 | `Institution` | The admin's record of a school or centre *(belongs to a page that may be removed)* |
 | `Plan` | A plan guardians can be on, as an admin edited it, with how many child accounts it allows. Seeded with Free (1 child) and SalitAACo Plus (3) |
 | `Payment` | A guardian's proof of a GCash payment, its status, and once approved the time on the plan it bought |
