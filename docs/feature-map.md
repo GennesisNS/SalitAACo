@@ -183,6 +183,8 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 | `AddedWord` | A word an admin added to a board (an emoji or an uploaded picture) |
 | `SiteSetting` | The one row of site settings: support contact details, maintenance mode, the GCash QR code and account |
 | `Plan` | A plan guardians can be on, as an admin edited it. Seeded with Free and SalitAACo Plus |
+| `Institution` | The admin's record of a school or centre *(belongs to a page that may be removed)* |
+| `Plan` | A plan guardians can be on, as an admin edited it, with how many child accounts it allows. Seeded with Free (1 child) and SalitAACo Plus (3) |
 | `Payment` | A guardian's proof of a GCash payment, its status, and once approved the time on the plan it bought |
 | `GuardianBoard` | A custom board a guardian made for their family (an emoji or an uploaded picture), shown after the app's boards once it has a tile |
 | `GuardianWord` | A tile a guardian added to a board (the app's or their own), shown on their family's boards (an emoji or an uploaded picture) |

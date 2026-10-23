@@ -20,7 +20,7 @@ from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.pagination import paginate
 from salitaaco.utils.perms_check import is_administrator, is_guardian, multi_user_test
-from salitaaco.utils.plans import current_plan, offered_plans, paid_until, pending_payment
+from salitaaco.utils.plans import child_slots, current_plan, offered_plans, paid_until, pending_payment
 from salitaaco.utils.uploads import MAX_UPLOAD_SIZE, random_upload_name
 
 
@@ -55,6 +55,8 @@ def view_plan(request):
 
     context = {
         "current_plan": plan,
+        # How many children the guardian has, of how many the plan allows, shown on its card.
+        "child_slots": child_slots(guardian, plan),
         "paid_until": paid_until(guardian),
         "pending_payment": waiting,
         # The plans on offer, and the guardian's own when it is no longer offered:

@@ -1,5 +1,7 @@
 from django import forms
 
+from salitaaco.defaults.plans import MAX_CHILD_LIMIT
+
 from ..helpers import BaseForm
 
 MAX_FEATURES = 12
@@ -7,8 +9,8 @@ MAX_FEATURES = 12
 
 class PlanForm(BaseForm):
     """
-    A plan as an admin edits it on Mga Subscription. The default plan has no
-    price or offered fields: it is always free and always offered.
+    A plan as an admin edits it on System Settings > Mga Plano. The default
+    plan has no price or offered fields: it is always free and always offered.
     """
     name = forms.CharField(
         required=True,
@@ -39,6 +41,20 @@ class PlanForm(BaseForm):
             "max_length": "Masyadong mahaba ang listahan (hanggang 1000 character).",
         },
         label="Mga kasama (isa kada linya)",
+    )
+    child_limit = forms.IntegerField(
+        required=True,
+        min_value=1,
+        max_value=MAX_CHILD_LIMIT,
+        widget=forms.NumberInput(attrs={"class": "input", "min": 1, "max": MAX_CHILD_LIMIT}),
+        error_messages={
+            "required": "Ilagay ang bilang.",
+            "invalid": "Hindi tama ang bilang.",
+            "min_value": "Kahit isang account ng bata.",
+            "max_value": f"Hanggang {MAX_CHILD_LIMIT} lang.",
+        },
+        label="Pinakamaraming account ng bata",
+        help_text="Hindi binubura ang mga bata ng tagapag-alagang lampas na rito; hindi lang siya makakapagdagdag.",
     )
     offered = forms.BooleanField(
         required=False,

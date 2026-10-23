@@ -22,6 +22,7 @@ from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.children import add_board_numbers, children_with_numbers, guardian_child_or_404
 from salitaaco.utils.pagination import paginate
 from salitaaco.utils.perms_check import is_guardian, multi_user_test
+from salitaaco.utils.plans import child_slots
 from salitaaco.utils.uploads import random_upload_name
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,16 @@ logger = logging.getLogger(__name__)
 @multi_user_test(is_guardian)
 def view_children(request):
     guardian = get_object_or_404(GuardianAccount, user=request.user)
+    # How many children the guardian's plan allows; over it, no more are made.
+    slots = child_slots(guardian)
 
     create_child_form = CreateChildForm()
 
     if request.method == "POST":
+        if not slots["can_add"]:
+            messages.error(request, slots["message"])
+            return redirect('children')
+
         create_child_form = CreateChildForm(request.POST)
         if create_child_form.is_valid():
             with transaction.atomic():
@@ -59,8 +66,9 @@ def view_children(request):
 
     context = {
         "create_child_form": create_child_form,
+        "child_slots": slots,
         # ?add=1 is how the overview's "add a child" button opens the form straight away.
-        "show_create_child_modal": bool(create_child_form.errors) or "add" in request.GET,
+        "show_create_child_modal": slots["can_add"] and (bool(create_child_form.errors) or "add" in request.GET),
         "children": page_obj,
         "page_obj": page_obj,
     }

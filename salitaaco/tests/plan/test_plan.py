@@ -243,7 +243,8 @@ class PlanPageTest(PlanBase):
     def test_the_sidebar_and_the_overview_lead_to_the_plan(self):
         self.login_as("nanay")
         response = self.client.get(reverse("overview"))
-        self.assertContains(response, f'href="{self.url}"', count=2)
+        # The sidebar, the Plano section, and the notice that her child fills Free's one account.
+        self.assertContains(response, f'href="{self.url}"', count=3)
         self.assertContains(response, "Kasalukuyang plano: <b>Free</b>")
 
         items = {

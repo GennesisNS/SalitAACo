@@ -1,14 +1,15 @@
 from django.db import models
 
-from salitaaco.defaults.plans import DEFAULT_PLAN, FREE_PERIOD, PAID_PERIOD
+from salitaaco.defaults.plans import DEFAULT_PAID_CHILD_LIMIT, DEFAULT_PLAN, FREE_PERIOD, PAID_PERIOD
 
 
 class Plan(models.Model):
     """
     A plan a guardian can be on, as the plan page, the public website and Mga
-    Subscription show it. An admin edits the name, price, features and whether
-    it is offered; plans are not added or deleted. The default plan (Free)
-    always costs nothing and is always offered.
+    Subscription show it. An admin adds plans, edits the name, price, features,
+    how many child accounts it allows and whether it is offered, and deletes
+    them, on System Settings > Mga Plano. The default plan (Free) always costs
+    nothing, is always offered and is never deleted.
     """
     plan_id = models.AutoField(primary_key=True)
     # How the code names a plan (defaults/plans.py); never shown and never edited.
@@ -20,6 +21,8 @@ class Plan(models.Model):
     features = models.TextField(blank=True)
     # A plan that is not offered cannot be chosen any more, but stays with whoever is on it.
     offered = models.BooleanField(default=True)
+    # How many child accounts a guardian on this plan can make.
+    child_limit = models.PositiveSmallIntegerField(default=DEFAULT_PAID_CHILD_LIMIT)
     # The order the plans are shown in.
     position = models.PositiveSmallIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)

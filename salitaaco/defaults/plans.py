@@ -27,6 +27,14 @@ DEFAULT_PLUS_WORD_LIMIT = 20
 DEFAULT_FREE_BOARD_LIMIT = 0
 DEFAULT_PLUS_BOARD_LIMIT = 5
 
+# How many child accounts a guardian can make on a plan, until an admin changes
+# it on the plan's card on System Settings > Mga Plano. A plan an admin adds
+# starts at the paid number. A guardian over their plan's limit (a paid plan
+# ended, or an admin lowered it) keeps every child; only adding more stops.
+DEFAULT_FREE_CHILD_LIMIT = 1
+DEFAULT_PAID_CHILD_LIMIT = 3
+MAX_CHILD_LIMIT = 50
+
 FREE_PERIOD = "habambuhay"
 PAID_PERIOD = "kada buwan"
 

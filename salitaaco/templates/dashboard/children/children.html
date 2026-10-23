@@ -10,10 +10,14 @@
   ang bawat bata para makapag-log in sa sarili niyang mga tile.
 </p>
 
+{% include "components/children/child_limit_notice.html" %}
+
 <section class="section">
   <div class="sectionHead">
-    <h2>Mga profile ng bata</h2>
+    <h2>Mga profile ng bata <small class="headNote">· {{ child_slots.count }} sa {{ child_slots.limit }} na account ng bata</small></h2>
+    {% if child_slots.can_add %}
     <button class="primaryBtn" type="button" data-open-modal="create-child">＋ Magdagdag ng bata</button>
+    {% endif %}
   </div>
 
   {% if children %}
@@ -28,6 +32,8 @@
 </section>
 
 <!-- ============== CREATE CHILD MODAL ============== -->
+<!-- Only while the guardian's plan allows another child. -->
+{% if child_slots.can_add %}
 <div class="settingsBackdrop hidden" data-modal="create-child" data-open="{{ show_create_child_modal|yesno:'true,false' }}">
   <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="createChildTitle">
     <div class="settingsHeader">
@@ -71,4 +77,5 @@
     </form>
   </div>
 </div>
+{% endif %}
 {% endblock %}
