@@ -12,11 +12,16 @@
   min-width: 0;
   padding: 12px 24px 40px 12px;
 }
+/* The page fills the room beside the sidebar, up to a limit so a very wide
+   screen does not stretch it into thin strips. The bar across the top keeps
+   the same width, so the account link stays above the page's right edge. */
+.topbar,
 .page {
-  max-width: 1120px;
+  max-width: 1680px;
 }
+/* A card of settings is as wide as the page, like every other section. */
 .page .pageCard {
-  max-width: 820px;
+  max-width: none;
   margin-left: 0;
 }
 
@@ -36,13 +41,52 @@
   background: var(--shell);
   color: var(--on-shell);
 }
-/* A long menu scrolls by itself, so the app's name and Log out stay in view. */
+/* A long menu scrolls by itself, so the app's name and Log out stay in view.
+   Its scrollbar shows only when the menu is too long: a thin, rounded, light
+   thumb on no track, with no arrows, kept clear of the menu items. */
 .sidebar nav {
   flex: 1;
   min-height: 0;
   margin: 0 -6px;
   padding: 0 6px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Chrome, Edge and Safari. The transparent border is the space around the
+   thumb, so it does not touch the items or the sidebar's edge. */
+.sidebar nav::-webkit-scrollbar {
+  width: 10px;
+}
+.sidebar nav::-webkit-scrollbar-track {
+  margin: 4px 0;
+  background: transparent;
+}
+.sidebar nav::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28) padding-box;
+}
+.sidebar nav::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45);
+}
+.sidebar nav::-webkit-scrollbar-thumb:active {
+  background-color: rgba(255, 255, 255, 0.55);
+}
+.sidebar nav::-webkit-scrollbar-button,
+.sidebar nav::-webkit-scrollbar-corner {
+  display: none;
+}
+/* Firefox, which has only these two settings. They are kept from the browsers
+   above, where they would replace the styles above. Firefox cannot style the
+   thumb on its own hover, so it brightens while the pointer is on the menu. */
+@supports not selector(::-webkit-scrollbar) {
+  .sidebar nav {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+  }
+  .sidebar nav:hover {
+    scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
+  }
 }
 .sidebar .brand {
   margin: 0 10px;
@@ -637,7 +681,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
-  max-width: 860px;
+  max-width: 1040px;
   margin-bottom: 20px;
 }
 .planCard {
@@ -896,7 +940,6 @@
 }
 .guide p,
 .guide ol {
-  max-width: 760px;
   margin: 12px 16px;
   font-size: 14px;
 }

@@ -13,7 +13,6 @@ import salitaaco.routes.children.voice as child_voice
 import salitaaco.routes.family_voices.family_voices as family_voices
 import salitaaco.routes.feedback.feedback as feedback
 import salitaaco.routes.guardian_words.guardian_words as guardian_words
-import salitaaco.routes.institutions.institutions as institutions
 import salitaaco.routes.overview.overview as overview
 import salitaaco.routes.plan.plan as plan
 import salitaaco.routes.privacy.privacy as privacy
@@ -101,11 +100,6 @@ urlpatterns = [
     path('vocabulary/words/<uuid:word_uuid>/delete/', words.delete_word, name='delete_word'),
     # An added word's uploaded picture is on everyone's boards, so every account is served it.
     path('vocabulary/words/<uuid:word_uuid>/image/', words.view_added_word_image, name='added_word_image'),
-
-    # Schools and centres. May be removed, with routes/institutions/.
-    path('institutions/', institutions.view_institutions, name='institutions'),
-    path('institutions/<uuid:institution_uuid>/', institutions.edit_institution, name='edit_institution'),
-    path('institutions/<uuid:institution_uuid>/delete/', institutions.delete_institution, name='delete_institution'),
 
     # Ratings and support messages. May be removed, with routes/feedback/.
     path('feedback/', feedback.view_feedback, name='feedback'),

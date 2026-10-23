@@ -71,7 +71,7 @@
     {% endif %}
   </p>
 
-  <form method="post" class="narrowForm settingsFields" novalidate>
+  <form method="post" class="settingsFields" novalidate>
     {% csrf_token %}
     <label for="{{ contact_form.child.id_for_label }}">{{ contact_form.child.label }}</label>
     {{ contact_form.child }}

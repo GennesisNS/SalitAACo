@@ -14,19 +14,24 @@
 {% endif %}
 
 <section class="section">
-  <form method="post" class="narrowForm settingsFields" novalidate>
+  <form method="post" class="settingsFields" novalidate>
     {% csrf_token %}
 
     <h2>Paano makakausap ang suporta</h2>
     <p class="desc">Ipinapakita ito sa mga tagapag-alaga sa pahinang “Tulong at Suporta”.</p>
 
-    <label for="{{ settings_form.contact_email.id_for_label }}">{{ settings_form.contact_email.label }}</label>
-    {{ settings_form.contact_email }}
-    <small class="fieldError">{{ settings_form.contact_email.errors }}</small>
-
-    <label for="{{ settings_form.contact_phone.id_for_label }}">{{ settings_form.contact_phone.label }}</label>
-    {{ settings_form.contact_phone }}
-    <small class="fieldError">{{ settings_form.contact_phone.errors }}</small>
+    <div class="row">
+      <div>
+        <label for="{{ settings_form.contact_email.id_for_label }}">{{ settings_form.contact_email.label }}</label>
+        {{ settings_form.contact_email }}
+        <small class="fieldError">{{ settings_form.contact_email.errors }}</small>
+      </div>
+      <div>
+        <label for="{{ settings_form.contact_phone.id_for_label }}">{{ settings_form.contact_phone.label }}</label>
+        {{ settings_form.contact_phone }}
+        <small class="fieldError">{{ settings_form.contact_phone.errors }}</small>
+      </div>
+    </div>
 
     <hr class="sectionDivider" />
 
@@ -53,7 +58,7 @@
 </section>
 
 <section class="section" id="gcash">
-  <form method="post" enctype="multipart/form-data" class="narrowForm settingsFields" novalidate>
+  <form method="post" enctype="multipart/form-data" class="settingsFields" novalidate>
     {% csrf_token %}
 
     <h2>Bayaran sa GCash</h2>
@@ -73,23 +78,31 @@
     <small class="fieldHelp">JPEG, PNG o WebP, hanggang 5 MB. I-download ang QR code mula sa GCash app (Receive › QR).</small>
     <small class="fieldError">{{ payment_form.gcash_qr.errors }}</small>
 
-    <label for="{{ payment_form.gcash_name.id_for_label }}">{{ payment_form.gcash_name.label }}</label>
-    {{ payment_form.gcash_name }}
-    <small class="fieldError">{{ payment_form.gcash_name.errors }}</small>
+    <div class="row">
+      <div>
+        <label for="{{ payment_form.gcash_name.id_for_label }}">{{ payment_form.gcash_name.label }}</label>
+        {{ payment_form.gcash_name }}
+        <small class="fieldError">{{ payment_form.gcash_name.errors }}</small>
+      </div>
+      <div>
+        <label for="{{ payment_form.gcash_number.id_for_label }}">{{ payment_form.gcash_number.label }}</label>
+        {{ payment_form.gcash_number }}
+        <small class="fieldHelp">Ipinapakita sa ilalim ng QR code, para ma-check ng tagapag-alaga kung kanino siya nagbabayad.</small>
+        <small class="fieldError">{{ payment_form.gcash_number.errors }}</small>
+      </div>
+    </div>
 
-    <label for="{{ payment_form.gcash_number.id_for_label }}">{{ payment_form.gcash_number.label }}</label>
-    {{ payment_form.gcash_number }}
-    <small class="fieldHelp">Ipinapakita sa ilalim ng QR code, para ma-check ng tagapag-alaga kung kanino siya nagbabayad.</small>
-    <small class="fieldError">{{ payment_form.gcash_number.errors }}</small>
-
-    <button class="primaryBtn formActions" type="submit" name="payment_form">I-save ang bayaran sa GCash</button>
+    <!-- Alisin sends the small form below this one, so the two buttons can sit side by side. -->
+    <div class="formActions rowActions">
+      <button class="primaryBtn" type="submit" name="payment_form">I-save ang bayaran sa GCash</button>
+      {% if setting.has_gcash_qr %}
+      <button class="secondaryBtn danger" type="submit" name="remove_gcash_qr" form="removeQrForm">Alisin ang QR code</button>
+      {% endif %}
+    </div>
   </form>
 
   {% if setting.has_gcash_qr %}
-  <form method="post" class="inlineForm narrowForm">
-    {% csrf_token %}
-    <button class="secondaryBtn danger" type="submit" name="remove_gcash_qr">Alisin ang QR code</button>
-  </form>
+  <form method="post" id="removeQrForm" class="inlineForm">{% csrf_token %}</form>
   {% endif %}
 </section>
 

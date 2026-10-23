@@ -119,14 +119,6 @@ dashboard_items = [
                 "icon": "type",
                 "roles": [ADMINISTRATOR],
             },
-            # May be removed, with routes/institutions/.
-            {
-                "name": "Mga Paaralan at Institusyon",
-                "id": "institutions",
-                "route": "institutions",
-                "icon": "building",
-                "roles": [ADMINISTRATOR],
-            },
         ],
     },
     {

@@ -139,7 +139,6 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `users/` | Mga User: every account, by status; make one inactive or active | Admins |
 | `vocabulary/boards/` | Mga Board: publish a board or hide it from everyone | Admins |
 | `vocabulary/words/` | Mga Salita at Simbolo: every word, and adding words to boards with an emoji or an uploaded picture | Admins |
-| `institutions/` | Mga Paaralan at Institusyon *(may be removed)* | Admins |
 | `revenue/`, `subscriptions/` | Kita: the record of every payment, by status, to look at only. Mga Subscription: guardians per plan, this month's earnings, and approving or rejecting the waiting payments | Admins |
 | `feedback/` | Feedback at mga Isyu: support messages and ratings *(may be removed)* | Admins |
 | `system/general/` | Support contact details, maintenance mode, the GCash QR code, how many tiles and boards a guardian can add on Free and on Plus | Admins |
@@ -189,7 +188,7 @@ salitaaco/
     dashboard/__init__.py   Every address under /dashboard/
     auth.py  board/  account/  settings/  error_handler.py
     overview/  children/  family_voices/  guardian_words/  plan/  support/   (guardian)
-    analytics/  reports/  users/  vocabulary/  institutions/  revenue/
+    analytics/  reports/  users/  vocabulary/  revenue/
     subscriptions/  feedback/  system/  privacy/                             (admin)
   models/               One model per file (account_base.py is shared by the three account models)
   forms/                One form per file, one folder per feature
@@ -311,7 +310,6 @@ Some pages were built so that each can be deleted cleanly. Each is its own route
 
 | Page | Routes folder | Also delete |
 | --- | --- | --- |
-| Mga Paaralan at Institusyon | `routes/institutions/` | `forms/institutions/`, `templates/components/institutions/`, `models/institution.py` and its line in `models/__init__.py`, migration `0016` |
 | Feedback at mga Isyu | `routes/feedback/` | Nothing more |
 | Privacy | `routes/privacy/` | `forms/privacy/` |
 
