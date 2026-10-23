@@ -42,10 +42,19 @@ def validate_voice_sample_size(file):
         raise ValidationError("Masyadong malaki ang recording (max 10MB).")
 
 
+# A keycap emoji (0️⃣ to 9️⃣, #️⃣, *️⃣) is a digit, "#" or "*", an optional
+# variation selector (U+FE0F) and the combining enclosing keycap (U+20E3).
+KEYCAP_EMOJI = re.compile("[0-9#*]️?⃣")
+
+
 def clean_symbol(value):
-    """A tile's or a board's picture: an emoji. Letters and digits would be a second label, not a picture."""
+    """
+    A tile's or a board's picture: an emoji. Letters and digits would be a
+    second label, not a picture; a digit inside a keycap emoji is the emoji's
+    own, so keycaps are taken out before looking for them.
+    """
     symbol = value.strip()
-    if re.search(r"[A-Za-z0-9<>&]", symbol):
+    if re.search(r"[A-Za-z0-9<>&]", KEYCAP_EMOJI.sub("", symbol)):
         raise ValidationError("Emoji ang ilagay, hindi titik o numero.")
     return symbol
 

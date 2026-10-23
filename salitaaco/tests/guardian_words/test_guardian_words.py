@@ -19,6 +19,7 @@ from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.payment import Payment
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.models.word_usage import WordUsage
+from salitaaco.tests.guardian_boards.test_guardian_boards import KEYCAPS, NOT_EMOJIS
 from salitaaco.tests.payments_base import make_payment, messages_of
 from salitaaco.tests.text_to_speech.test_text_to_speech import SharedTileAudioTestMixin
 from salitaaco.tests.users_base import UserBase, image_upload, make_guardian
@@ -74,6 +75,15 @@ class GuardianWordFormTest(GuardianWordsBase):
         # Another guardian's word is no concern of hers.
         self.assertTrue(GuardianWordForm({"board": "Tao", "word": "Kuya Jun", "emoji": "👦"}, guardian=self.tatay).is_valid())
 
+    def test_keycap_number_emojis_are_emojis_and_plain_numbers_are_not(self):
+        for keycap in KEYCAPS:
+            form = GuardianWordForm({"board": "Tao", "word": "Kuya Jun", "emoji": keycap}, guardian=self.nanay)
+            self.assertTrue(form.is_valid(), keycap)
+            self.assertEqual(form.cleaned_data["emoji"], keycap)
+        for number in NOT_EMOJIS:
+            form = GuardianWordForm({"board": "Tao", "word": "Kuya Jun", "emoji": number}, guardian=self.nanay)
+            self.assertEqual(form.errors["emoji"], ["Emoji ang ilagay, hindi titik o numero."], number)
+
 
 class GuardianWordsPageTest(GuardianWordsBase):
     def test_only_guardians_open_the_page_and_it_is_in_the_sidebar(self):
@@ -98,6 +108,11 @@ class GuardianWordsPageTest(GuardianWordsBase):
         word = GuardianWord.objects.get()
         self.assertEqual((word.guardian, word.board, word.word, word.emoji), (self.nanay, "Tao", "Kuya Jun", "👦"))
         self.assertContains(self.client.get(self.url), f"1 sa {DEFAULT_PLUS_WORD_LIMIT} na sariling tile")
+
+    def test_a_tile_is_added_with_a_keycap_number_emoji(self):
+        self.login_as("nanay")
+        self.assertRedirects(self.add(word="tatlo", board="Bagay", emoji="3️⃣"), self.url)
+        self.assertEqual(GuardianWord.objects.get().emoji, "3️⃣")
 
     def test_on_free_with_no_tiles_allowed_nothing_can_be_added(self):
         self.assertEqual(DEFAULT_FREE_WORD_LIMIT, 0)

@@ -28,6 +28,11 @@ from salitaaco.utils.plans import approve_payment
 
 NEW = "new-board"
 
+# 0️⃣ to 9️⃣ and 🔟, and a keycap typed without its variation selector (issues #20 and #21).
+KEYCAPS = [f"{digit}️⃣" for digit in "0123456789"] + ["🔟", "1⃣", "#️⃣", "*️⃣"]
+# Plain numbers, a digit with only the variation selector, and a keycap with a letter beside it.
+NOT_EMOJIS = ["0", "1", "123", "1️", "1️⃣a", "A1️⃣"]
+
 
 @override_settings(ELEVENLABS_API_KEY="", ELEVENLABS_VOICE_ID="")
 class GuardianBoardsBase(UserBase):
@@ -109,6 +114,14 @@ class GuardianBoardFormTest(GuardianBoardsBase):
             self.assertEqual(form.errors["icon_image"], [error])
         self.assertTrue(self.form(name="Paaralan", icon_kind="image", files={"icon_image": image_upload()}).is_valid())
 
+    def test_keycap_number_emojis_are_emojis_and_plain_numbers_are_not(self):
+        for keycap in KEYCAPS:
+            form = self.form(name="Bilang", emoji=keycap)
+            self.assertTrue(form.is_valid(), keycap)
+            self.assertEqual(form.cleaned_data["emoji"], keycap)
+        for number in NOT_EMOJIS:
+            self.assertEqual(self.form(name="Bilang", emoji=number).errors["emoji"], ["Emoji ang ilagay, hindi titik o numero."], number)
+
     def test_her_tiles_can_go_on_her_boards(self):
         self.make_board(self.nanay, "Bahay ni Lola")
         choices = [value for value, label in GuardianWordForm(guardian=self.nanay).fields["board"].choices]
@@ -146,6 +159,11 @@ class MgaBoardPageTest(GuardianBoardsBase):
         self.assertContains(response, f'data-open-modal="edit-board-{board.uuid}">I-edit</button>')
         self.assertContains(response, f'data-open-modal="delete-board-{board.uuid}">Burahin</button>')
         self.assertContains(response, f"1 sa {DEFAULT_PLUS_BOARD_LIMIT} na custom board")
+
+    def test_a_board_is_made_with_a_keycap_number_emoji(self):
+        self.login_as("nanay")
+        self.assertRedirects(self.add(name="Bilang", emoji="5️⃣"), self.url)
+        self.assertEqual(GuardianBoard.objects.get().emoji, "5️⃣")
 
     def test_a_board_with_an_uploaded_picture(self):
         self.login_as("nanay")
