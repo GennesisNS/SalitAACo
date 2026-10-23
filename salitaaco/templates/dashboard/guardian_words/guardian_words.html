@@ -58,7 +58,10 @@
           </td>
           <td data-label="Naidagdag">{{ word.created_at|date:"Y-m-d" }}</td>
           <td>
-            <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="delete-word-{{ word.uuid }}">Burahin</button>
+            <span class="rowActions">
+              <button class="secondaryBtn smallBtn" type="button" data-open-modal="edit-word-{{ word.uuid }}">I-edit</button>
+              <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="delete-word-{{ word.uuid }}">Burahin</button>
+            </span>
           </td>
         </tr>
         {% endwith %}
@@ -88,6 +91,28 @@
 
 {% for item in words %}
 {% with word=item.word %}
+<!-- ============== CHANGE "{{ word.word }}" ============== -->
+<div class="settingsBackdrop hidden" data-modal="edit-word-{{ word.uuid }}" data-open="{{ item.reopen|yesno:'true,false' }}">
+  <div class="settingsBox" role="dialog" aria-modal="true" aria-labelledby="editWordTitle-{{ word.uuid }}">
+    <div class="settingsHeader">
+      <h2 id="editWordTitle-{{ word.uuid }}">I-edit ang “{{ word.word }}”</h2>
+      <button class="closeBtn" type="button" data-close-modal="edit-word-{{ word.uuid }}" aria-label="Isara">&times;</button>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="settingsBody" novalidate>
+      {% csrf_token %}
+      <p class="desc">
+        Mananatili ang petsa kung kailan ito naidagdag. Kapag pinalitan ang salita, gagawin muli ang boses nito, at
+        lilipat sa bago ang bilang ng paggamit nito at ang sariling larawan o recording nito mula sa “Mga Tile”.
+      </p>
+      {% include "components/vocabulary/word_fields.html" with word_form=item.edit_form icon_url=item.icon_url %}
+      <div class="confirmRow">
+        <button class="secondaryBtn" type="button" data-close-modal="edit-word-{{ word.uuid }}">Kanselahin</button>
+        <button class="primaryBtn" type="submit" name="edit_word_form" value="{{ word.uuid }}">I-save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="confirmBackdrop hidden" data-modal="delete-word-{{ word.uuid }}">
   <form class="confirmBox" method="post" action="{% url 'remove_guardian_word' word.uuid %}" role="dialog" aria-modal="true">
     {% csrf_token %}

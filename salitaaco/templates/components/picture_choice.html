@@ -2,15 +2,13 @@
   The picture of a board or a word: an emoji, or a picture picked with the "Pumili ng larawan" button, which
   picture_choice.js shows small beside the button. The page loads static/js/picture_choice.js.
   form: a PictureChoiceForm (forms/picture_choice.py); icon_url: the uploaded picture it has, when it is being changed.
-  A form whose picture choice is not the user's to make (form.pictures_note) offers only the emoji, and says why.
+  A form whose picture upload is not the user's to make (form.pictures_note) says why in its place: it offers
+  only the emoji, or the emoji and keeping the picture the thing already has.
 {% endcomment %}
 <div class="pictureChoice" data-icon-choice data-max-megabytes="5">
   {# Required: an emoji or a picture, whichever is chosen. #}
   <p class="fieldLabel">{{ form.icon_kind.label }} <span class="required-mark">*</span></p>
-  {% if form.pictures_note %}
-  <small class="fieldHelp">{{ form.pictures_note }}</small>
-  <input type="hidden" name="{{ form.icon_kind.html_name }}" value="emoji" />
-  {% else %}
+  {% if form.icon_kind.field.choices|length > 1 %}
   <div class="tileSizeOptions iconKinds" role="radiogroup" aria-label="{{ form.icon_kind.label }}">
     {% for radio in form.icon_kind %}
     <label class="tileSizeOption" for="{{ radio.id_for_label }}">
@@ -18,6 +16,9 @@
     </label>
     {% endfor %}
   </div>
+  {% else %}
+  <small class="fieldHelp">{{ form.pictures_note }}</small>
+  <input type="hidden" name="{{ form.icon_kind.html_name }}" value="emoji" />
   {% endif %}
   <small class="fieldError">{{ form.icon_kind.errors }}</small>
 
@@ -28,7 +29,17 @@
     <small class="fieldError">{{ form.emoji.errors }}</small>
   </div>
 
-  {% if not form.pictures_note %}
+  {% if form.pictures_note %}
+  {% if form.icon_kind.field.choices|length > 1 %}
+  <div class="iconPart" data-icon-for="image">
+    <div class="filePicker">
+      {% if icon_url %}<img class="pickedImage" src="{{ icon_url }}" alt="" />{% endif %}
+      <span class="fileName">Ang kasalukuyang larawan</span>
+    </div>
+    <small class="fieldHelp">{{ form.pictures_note }}</small>
+  </div>
+  {% endif %}
+  {% else %}
   <div class="iconPart" data-icon-for="image">
     <div class="filePicker">
       <img class="pickedImage hidden" data-picked-image alt="" {% if icon_url %}src="{{ icon_url }}" data-saved-image="{{ icon_url }}"{% endif %} />
