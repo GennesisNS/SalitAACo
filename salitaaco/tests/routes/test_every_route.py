@@ -12,7 +12,6 @@ from salitaaco.models.customization import Customization
 from salitaaco.models.family_voice import FamilyVoice
 from salitaaco.models.guardian_board import GuardianBoard
 from salitaaco.models.guardian_word import GuardianWord
-from salitaaco.models.institution import Institution
 from salitaaco.models.plan import Plan
 from salitaaco.models.support_message import SupportMessage
 from salitaaco.tests.payments_base import make_payment, set_gcash_qr
@@ -25,7 +24,7 @@ ROLES = [None, "miguel", "nanay", "developer"]
 # Pages that take a form, sent empty: each says what is missing, never fails.
 FORM_PAGES = [
     "login", "register", "board", "profile", "settings", "children", "family_voices", "guardian_words", "support",
-    "plan", "reports", "users", "admin_boards", "set_board_status", "words", "institutions", "feedback",
+    "plan", "reports", "users", "admin_boards", "set_board_status", "words", "feedback",
     "system_general", "system_plans", "system_access", "system_privacy", "subscriptions", "increment_word_usage",
     "record_board_open",
 ]
@@ -77,7 +76,6 @@ class EveryRouteTest(UserBase):
         voice = FamilyVoice.objects.create(
             guardian=nanay, name="Lola", elevenlabs_voice_id="boses-lola", consent_at=timezone.now(), consent_version=TERMS_VERSION,
         )
-        institution = Institution.objects.create(name="Paaralan ng Maynila")
         message = SupportMessage.objects.create(guardian=nanay, message="Tulong po.")
 
         cls.route_args = {
@@ -105,8 +103,6 @@ class EveryRouteTest(UserBase):
             "edit_word": [added_word.uuid],
             "delete_word": [added_word.uuid],
             "added_word_image": [added_word.uuid],
-            "edit_institution": [institution.uuid],
-            "delete_institution": [institution.uuid],
             "resolve_support_message": [message.uuid],
             "remove_plan": [Plan.objects.get(key=PLUS).pk],
             "remove_admin": [cls.developer.pk],
