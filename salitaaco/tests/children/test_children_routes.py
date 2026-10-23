@@ -1,14 +1,21 @@
 import os
+from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.urls import reverse
+from django.utils import timezone
 
+from salitaaco.defaults.plans import FREE
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
+from salitaaco.models.payment import Payment
+from salitaaco.models.plan import Plan
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
+from salitaaco.tests.payments_base import make_payment
 from salitaaco.tests.users_base import GUARDIAN_PASSWORD, UserBase, image_upload, make_guardian, sound_upload
+from salitaaco.utils.plans import approve_payment
 from salitaaco.utils.uploads import random_upload_name
 
 
@@ -82,6 +89,13 @@ class ChildrenAccessTest(GuardianBase):
 
 
 class CreateChildTest(GuardianBase):
+    """Nanay is on Plus here, which allows 3 children; she has Miguel."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        approve_payment(make_payment(cls.nanay), cls.developer)
+
     def create(self, **changes):
         data = {
             "create_child_form": "", "display_name": "Bunso", "username": "bunso", "age": "5",
@@ -115,6 +129,80 @@ class CreateChildTest(GuardianBase):
         self.assertContains(response, "Ginagamit na ang username na ito.")
         self.assertFalse(User.objects.filter(username="bunso").exists())
         self.assertEqual(self.nanay.children.count(), 1)
+
+
+class ChildLimitTest(GuardianBase):
+    """
+    How many child accounts a guardian can make is their plan's (issue #16):
+    1 on Free and 3 on Plus to begin with. Nanay has Miguel; Tatay has nobody.
+    """
+
+    def create(self, username="bunso"):
+        data = {
+            "create_child_form": "", "display_name": "Bunso", "username": username, "age": "5",
+            "password": "Bunso#123", "confirm_password": "Bunso#123",
+        }
+        return self.client.post(reverse("children"), data)
+
+    def test_at_the_limit_no_child_is_made_and_the_guardian_is_told_why(self):
+        expected = "Hanggang 1 na account ng bata lang sa Free. Kunin ang SalitAACo Plus para makapagdagdag ng hanggang 3."
+        self.login_as("nanay")
+        response = self.client.get(reverse("children"))
+        self.assertContains(response, expected)
+        self.assertContains(response, f'<a href="{reverse("plan")}">Kunin ang SalitAACo Plus</a>')
+        self.assertContains(response, "1 sa 1 na account ng bata")
+        self.assertNotContains(response, 'data-open-modal="create-child"')
+        self.assertNotContains(response, 'name="create_child_form"')
+        # The overview's button that opens the form is gone too, with the same notice.
+        overview = self.client.get(reverse("overview"))
+        self.assertNotContains(overview, f'{reverse("children")}?add=1')
+        self.assertContains(overview, expected)
+
+        response = self.create()
+        self.assertRedirects(response, reverse("children"))
+        self.assertEqual(messages_of(response), [expected])
+        self.assertFalse(User.objects.filter(username="bunso").exists())
+
+    def test_under_the_limit_a_child_is_made(self):
+        self.login_as("tatay")
+        response = self.client.get(reverse("children"))
+        self.assertContains(response, "0 sa 1 na account ng bata")
+        self.assertContains(response, 'data-open-modal="create-child"')
+        self.assertRedirects(self.create(), reverse("children"))
+        self.assertEqual(self.tatay.children.count(), 1)
+
+    def test_getting_plus_allows_more_and_its_end_keeps_every_child(self):
+        approve_payment(make_payment(self.nanay), self.developer)
+        self.login_as("nanay")
+        self.assertRedirects(self.create("bunso"), reverse("children"))
+        self.assertRedirects(self.create("bunsoy"), reverse("children"))
+        response = self.create("bunsoy2")
+        self.assertEqual(messages_of(response)[-1], "Naabot mo na ang 3 na account ng bata sa SalitAACo Plus. Magbura muna ng isa para makapagdagdag ng bago.")
+        self.assertEqual(self.nanay.children.count(), 3)
+
+        # When Plus ends, she is back to Free's 1, and keeps all three.
+        Payment.objects.filter(guardian=self.nanay).update(ends_at=timezone.now() - timedelta(days=1))
+        response = self.client.get(reverse("children"))
+        self.assertContains(response, "3 sa 1 na account ng bata")
+        self.assertEqual(len(response.context["children"]), 3)
+        self.assertRedirects(self.create("bunsoy3"), reverse("children"))
+        self.assertEqual(self.nanay.children.count(), 3)
+
+    def test_an_admin_changes_a_plans_limit(self):
+        Plan.objects.filter(key=FREE).update(child_limit=2)
+        self.login_as("nanay")
+        self.assertRedirects(self.create(), reverse("children"))
+        self.assertEqual(self.nanay.children.count(), 2)
+
+    def test_the_plan_page_shows_how_many_are_used_beside_the_plan(self):
+        self.login_as("nanay")
+        response = self.client.get(reverse("plan"))
+        self.assertContains(response, '<p class="planChildren">Mga account ng bata: <b>1 / 1</b> ang nagamit</p>')
+        self.assertContains(response, '<p class="planChildren">Hanggang <b>3</b> account ng bata</p>')
+
+        approve_payment(make_payment(self.nanay), self.developer)
+        self.assertContains(self.client.get(reverse("plan")), "Mga account ng bata: <b>1 / 3</b> ang nagamit")
+        self.assertContains(self.client.get(reverse("overview")), "Mga account ng bata: <b>1 / 3</b> ang nagamit.")
 
 
 class ManageChildTest(GuardianBase):

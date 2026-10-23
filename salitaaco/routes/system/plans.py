@@ -8,6 +8,8 @@ adds, edits, offers or not, and deletes here. The rules:
 - A new price is for the payments that follow; payments already sent keep theirs.
 - A plan that has payments is not deleted, as they are its record; it is
   taken off offer instead.
+- Each plan says how many child accounts a guardian on it can make. A lower
+  number only stops adding; no child is deleted.
 
 Below the plans, "Mga Limit ng Plano": how many tiles and custom boards of
 their own a guardian can make on Free and on a paid plan (SiteSetting).
@@ -22,6 +24,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
+from salitaaco.defaults.plans import DEFAULT_PAID_CHILD_LIMIT
 from salitaaco.forms.subscriptions.plan import PlanForm
 from salitaaco.forms.system.plan_limits import PlanLimitsForm
 from salitaaco.models.plan import Plan
@@ -31,7 +34,7 @@ from salitaaco.utils.perms_check import is_administrator, multi_user_test
 
 logger = logging.getLogger(__name__)
 
-FIELDS = ["name", "price", "features", "offered"]
+FIELDS = ["name", "price", "features", "child_limit", "offered"]
 NEW_PLAN = "new"
 LIMIT_FIELDS = ["free_word_limit", "free_board_limit", "plus_word_limit", "plus_board_limit"]
 
@@ -64,7 +67,7 @@ def view_plans(request):
     plans = list(Plan.objects.annotate(payment_count=Count("payments")))
     forms = {plan.key: plan_form(plan, plans) for plan in plans}
     every_name = [plan.name for plan in plans]
-    new_plan_form = PlanForm(prefix=NEW_PLAN, initial={"offered": True})
+    new_plan_form = PlanForm(prefix=NEW_PLAN, initial={"offered": True, "child_limit": DEFAULT_PAID_CHILD_LIMIT})
     setting = SiteSetting.load()
     limits_form = PlanLimitsForm(initial={field: getattr(setting, field) for field in LIMIT_FIELDS})
 

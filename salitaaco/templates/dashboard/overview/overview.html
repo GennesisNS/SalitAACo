@@ -14,8 +14,11 @@
 <section class="section">
   <div class="sectionHead">
     <h2>Mga bata</h2>
+    {% if child_slots.can_add %}
     <a class="primaryBtn" href="{% url 'children' %}?add=1">＋ Magdagdag ng bata</a>
+    {% endif %}
   </div>
+  {% include "components/children/child_limit_notice.html" %}
 
   {% if children %}
   {% include "components/children/children_table.html" with children=children %}
@@ -33,6 +36,7 @@
   </div>
   <p class="desc">
     Kasalukuyang plano: <b>{{ current_plan.name }}</b>. Sakop ng isang plano ang lahat ng bata mo.
+    Mga account ng bata: <b>{{ child_slots.count }} / {{ child_slots.limit }}</b> ang nagamit.
   </p>
 </section>
 {% endblock %}
