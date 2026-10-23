@@ -49,6 +49,38 @@ def current_plan(guardian):
     return payment.plan if payment else default_plan()
 
 
+def child_slots(guardian, plan=None):
+    """
+    How many child accounts the guardian has and their plan (`plan`, when
+    already looked up) allows, whether they can make another, and when they
+    cannot, what they are told: the plan on offer that allows more, if there
+    is one, or to delete a child first. A guardian over the limit keeps every child.
+    """
+    plan = plan or current_plan(guardian)
+    count = guardian.children.count()
+    can_add = count < plan.child_limit
+    # A paid plan to get, never the free one to go back to.
+    roomier = (
+        offered_plans().exclude(pk=plan.pk).filter(price__gt=0, child_limit__gt=plan.child_limit)
+        .order_by("child_limit", "position").first()
+    )
+    if can_add:
+        message = ""
+    elif roomier is not None:
+        message = (f"Hanggang {plan.child_limit} na account ng bata lang sa {plan.name}. "
+                   f"Kunin ang {roomier.name} para makapagdagdag ng hanggang {roomier.child_limit}.")
+    else:
+        message = (f"Naabot mo na ang {plan.child_limit} na account ng bata sa {plan.name}. "
+                   "Magbura muna ng isa para makapagdagdag ng bago.")
+    return {
+        "count": count,
+        "limit": plan.child_limit,
+        "can_add": can_add,
+        "message": message,
+        "upgrade": roomier if not can_add else None,
+    }
+
+
 def family_voice_limit(guardian):
     """How many family voices the guardian can have: a few on a free plan, None (no limit) on a paid one."""
     return FREE_FAMILY_VOICE_LIMIT if current_plan(guardian).is_free else None

@@ -15,7 +15,7 @@ PAMILYA = "salitaaco-pami"
 
 class PlanFormTest(SimpleTestCase):
     def test_features_are_one_per_line_without_blank_lines(self):
-        form = PlanForm({"name": "Plus", "price": "199", "features": "  Isa \n\n Dalawa \n"})
+        form = PlanForm({"name": "Plus", "price": "199", "features": "  Isa \n\n Dalawa \n", "child_limit": "3"})
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["features"], "Isa\nDalawa")
 
@@ -29,9 +29,9 @@ class PlanFormTest(SimpleTestCase):
                          ["Hindi bababa sa ₱1 ang presyo ng bayad na plano."])
 
     def test_the_default_plan_has_no_price_or_offered_switch(self):
-        form = PlanForm({"name": "Libre", "features": "Isa"}, include_price=False)
+        form = PlanForm({"name": "Libre", "features": "Isa", "child_limit": "1"}, include_price=False)
         self.assertTrue(form.is_valid())
-        self.assertEqual(set(form.fields), {"name", "features"})
+        self.assertEqual(set(form.fields), {"name", "features", "child_limit"})
 
 
 class PlansBase(UserBase):
@@ -43,10 +43,15 @@ class PlansBase(UserBase):
         cls.nanay = make_guardian("nanay", "Nanay Rosa", children=[cls.miguel])
 
     def edit(self, plan_key, **data):
+        # A plan's child limit is left as it is unless a test changes it.
+        data = {"child_limit": str(Plan.objects.get(key=plan_key).child_limit), **data}
         return self.client.post(self.url, {"plan_form": plan_key, **{f"{plan_key}-{name}": value for name, value in data.items()}})
 
     def add(self, **data):
-        fields = {"name": "SalitAACo Pamilya", "price": "299", "features": "Lahat ng nasa Plus\nHanggang 5 bata", "offered": "on", **data}
+        fields = {
+            "name": "SalitAACo Pamilya", "price": "299", "features": "Lahat ng nasa Plus\nHanggang 5 bata",
+            "child_limit": "5", "offered": "on", **data,
+        }
         return self.client.post(self.url, {"new_plan_form": "", **{f"new-{name}": value for name, value in fields.items()}})
 
 
@@ -151,6 +156,23 @@ class PlansPageTest(PlansBase):
         self.assertContains(response, "Hindi tama ang presyo.")
         self.assertEqual(Plan.objects.get(key=PLUS).name, "SalitAACo Plus")
 
+    def test_each_plan_says_how_many_child_accounts_it_allows(self):
+        self.assertEqual([(plan.key, plan.child_limit) for plan in Plan.objects.all()], [(FREE, 1), (PLUS, 3)])
+        self.login_as("developer")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'name="free-child_limit" value="1"')
+        self.assertContains(response, 'name="plus-child_limit" value="3"')
+        self.assertContains(response, 'name="new-child_limit" value="3"')
+
+        self.assertRedirects(self.edit(FREE, name="Free", features="Isa", child_limit="2"), self.url)
+        self.assertRedirects(self.edit(PLUS, name="SalitAACo Plus", price="149", features="Isa", child_limit="10", offered="on"), self.url)
+        self.assertEqual([plan.child_limit for plan in Plan.objects.all()], [2, 10])
+
+        for value, error in [("0", "Kahit isang account ng bata."), ("51", "Hanggang 50 lang."), ("", "Ilagay ang bilang.")]:
+            response = self.edit(PLUS, name="SalitAACo Plus", price="149", features="Isa", child_limit=value, offered="on")
+            self.assertContains(response, error)
+        self.assertEqual(Plan.objects.get(key=PLUS).child_limit, 10)
+
 
 class AddPlanTest(PlansBase):
     def test_a_new_plan_comes_last_and_is_offered_to_guardians(self):
@@ -161,8 +183,8 @@ class AddPlanTest(PlansBase):
 
         plan = Plan.objects.last()
         self.assertEqual(
-            (plan.key, plan.name, plan.price, plan.feature_list, plan.offered),
-            (PAMILYA, "SalitAACo Pamilya", 299, ["Lahat ng nasa Plus", "Hanggang 5 bata"], True),
+            (plan.key, plan.name, plan.price, plan.feature_list, plan.child_limit, plan.offered),
+            (PAMILYA, "SalitAACo Pamilya", 299, ["Lahat ng nasa Plus", "Hanggang 5 bata"], 5, True),
         )
         self.assertEqual([plan.key for plan in Plan.objects.all()], [FREE, PLUS, PAMILYA])
         self.assertContains(self.client.get(self.url), f'name="{PAMILYA}-name" value="SalitAACo Pamilya"')

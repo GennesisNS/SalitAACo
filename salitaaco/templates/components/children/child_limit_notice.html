@@ -1,0 +1,10 @@
+{% comment %}
+  Why a guardian cannot add another child: their plan's limit is reached.
+  child_slots: from utils/plans.child_slots.
+{% endcomment %}
+{% if not child_slots.can_add %}
+<p class="pendingNote">
+  {{ child_slots.message }}
+  {% if child_slots.upgrade %}<a href="{% url 'plan' %}">Kunin ang {{ child_slots.upgrade.name }}</a>{% endif %}
+</p>
+{% endif %}

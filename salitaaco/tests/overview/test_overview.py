@@ -3,7 +3,9 @@ from django.urls import reverse
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.hidden_board import HiddenBoard
 from salitaaco.models.word_usage import WordUsage
+from salitaaco.tests.payments_base import make_payment
 from salitaaco.tests.users_base import UserBase, make_guardian
+from salitaaco.utils.plans import approve_payment
 
 
 class GuardianBase(UserBase):
@@ -62,6 +64,8 @@ class OverviewTest(GuardianBase):
         self.assertNotContains(response, "Miguel")
 
     def test_add_a_child_leads_to_the_form_already_open(self):
+        # On Plus, Nanay's two children leave room for a third.
+        approve_payment(make_payment(self.nanay), self.developer)
         self.login_as("nanay")
         add_url = f'{reverse("children")}?add=1'
         self.assertContains(self.client.get(reverse("overview")), f'href="{add_url}"')
@@ -72,6 +76,7 @@ class OverviewTest(GuardianBase):
 
 class ChildrenPageTest(GuardianBase):
     def test_children_are_a_table_and_the_form_is_a_modal(self):
+        approve_payment(make_payment(self.nanay), self.developer)
         self.login_as("nanay")
         response = self.client.get(reverse("children"))
 
