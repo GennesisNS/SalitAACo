@@ -5,6 +5,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
+from salitaaco.models.customization import Customization
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.site_setting import SiteSetting
 from salitaaco.models.word_usage import WordUsage
@@ -57,11 +58,57 @@ def shown_guardian_words(guardian):
     return list(guardian.words.all()[:word_limit(guardian)])
 
 
+def family_users(guardian):
+    return [guardian.user_id, *guardian.children.values_list("user_id", flat=True)]
+
+
 def delete_word_usage(guardian, text):
     """The counts of a word the guardian's family used, once the guardian's tile of it is gone."""
-    users = [guardian.user_id, *guardian.children.values_list("user_id", flat=True)]
+    users = family_users(guardian)
     WordUsage.objects.filter(user__in=users, word=text).delete()
     DailyUsage.objects.filter(user__in=users, kind=DailyUsage.WORD, name=text).delete()
+
+
+def rename_guardian_word(word, text):
+    """
+    Give a guardian's tile another word. What the family keeps by the word
+    goes with it: the counts of its taps (so the admin's lists, which leave
+    the family's own tiles out by their words, never see the old one) and each
+    user's own picture and recording of it. Should a user already have either
+    for the new word (an admin's word of that name was deleted), theirs stays
+    and the old tile's is let go. Its audio is made again apart, see
+    revoice_renamed_word.
+    """
+    old = word.word
+    if text == old:
+        return
+    users = family_users(word.guardian)
+    for usage in WordUsage.objects.filter(user__in=users, word=old):
+        taken = WordUsage.objects.filter(user_id=usage.user_id, word=text).first()
+        if taken is None:
+            usage.word = text
+            usage.save()
+        else:
+            taken.use_count += usage.use_count
+            taken.save()
+            usage.delete()
+    for usage in DailyUsage.objects.filter(user__in=users, kind=DailyUsage.WORD, name=old):
+        taken = DailyUsage.objects.filter(user_id=usage.user_id, day=usage.day, kind=DailyUsage.WORD, name=text).first()
+        if taken is None:
+            usage.name = text
+            usage.save()
+        else:
+            taken.use_count += usage.use_count
+            taken.save()
+            usage.delete()
+    for customization in Customization.objects.filter(user__in=users, word=old):
+        if Customization.objects.filter(user_id=customization.user_id, word=text).exists():
+            customization.reset()
+        else:
+            customization.word = text
+            customization.save()
+    word.word = text
+    word.save()
 
 
 def guardian_word_audio_directory(guardian):
@@ -129,6 +176,19 @@ def delete_guardian_word_audio(guardian, text):
         return
     for voice in guardian.family_voices.all():
         (family_voice_directory(voice) / tile_audio_file_name(text)).unlink(missing_ok=True)
+
+
+def revoice_renamed_word(word, old):
+    """
+    After a tile's word changed, remove the audio of the old word and voice
+    the new one, as a new tile is. The same audio file name (only the letter
+    case or the punctuation changed) is kept as it is. Returns False when
+    ElevenLabs refused any of it.
+    """
+    if tile_audio_file_name(old) == tile_audio_file_name(word.word):
+        return True
+    delete_guardian_word_audio(word.guardian, old)
+    return voice_guardian_word(word)
 
 
 def delete_guardian_word(word):

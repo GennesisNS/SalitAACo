@@ -7,6 +7,7 @@ from salitaaco.utils.board import all_boards
 from salitaaco.utils.guardian_words import (
     add_guardian_words,
     delete_guardian_word,
+    family_users,
     on_free_plan,
     shown_guardian_words,
 )
@@ -90,10 +91,6 @@ def boards_of(owner, owner_child):
     if owner_child is not None:
         return child_boards(owner_child)
     return family_boards(board_guardian(owner, owner_child))
-
-
-def family_users(guardian):
-    return [guardian.user_id, *guardian.children.values_list("user_id", flat=True)]
 
 
 def rename_guardian_board(board, name):

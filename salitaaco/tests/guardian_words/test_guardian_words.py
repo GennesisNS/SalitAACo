@@ -10,7 +10,7 @@ from django.utils import timezone
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
 from salitaaco.defaults.family_voice import TERMS_VERSION
 from salitaaco.defaults.plans import DEFAULT_FREE_WORD_LIMIT, DEFAULT_PLUS_WORD_LIMIT
-from salitaaco.forms.guardian_words.guardian_word import PLUS_PICTURES, GuardianWordForm
+from salitaaco.forms.guardian_words.guardian_word import PLUS_PICTURES, PLUS_PICTURES_KEPT, GuardianWordForm
 from salitaaco.models.added_word import AddedWord
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.daily_usage import DailyUsage
@@ -23,6 +23,7 @@ from salitaaco.tests.guardian_boards.test_guardian_boards import KEYCAPS, NOT_EM
 from salitaaco.tests.payments_base import make_payment, messages_of
 from salitaaco.tests.text_to_speech.test_text_to_speech import SharedTileAudioTestMixin
 from salitaaco.tests.users_base import UserBase, image_upload, make_guardian
+from salitaaco.utils import analytics
 from salitaaco.utils.account import delete_user_account
 from salitaaco.utils.family_voice import family_voice_directory, family_voice_progress, generate_family_voice_words
 from salitaaco.utils.guardian_words import guardian_word_audio_directory
@@ -50,6 +51,11 @@ class GuardianWordsBase(UserBase):
 
     def make_word(self, guardian, word, board="Tao", emoji="👦"):
         return GuardianWord.objects.create(guardian=guardian, board=board, word=word, emoji=emoji)
+
+    def edit(self, tile, **fields):
+        """Send a tile's "I-edit" window: the tile as it is, with `fields` changed."""
+        data = {"board": tile.board, "word": tile.word, "icon_kind": "emoji", "emoji": tile.emoji, **fields}
+        return self.client.post(self.url, {"edit_word_form": str(tile.uuid), **{f"word-{tile.pk}-{key}": value for key, value in data.items()}})
 
     def board_items(self, route, *args):
         categories = self.client.get(reverse(route, args=args)).context["board_data"]["categories"]
@@ -343,6 +349,118 @@ class GuardianWordPictureTest(GuardianWordsBase):
         self.assertFalse(default_storage.exists(name))
 
 
+class GuardianWordEditTest(GuardianWordsBase):
+    """A guardian changes a tile's word, board and symbol with "I-edit" (issue #17)."""
+
+    def test_each_tile_has_i_edit_beside_burahin_and_a_window_filled_with_it(self):
+        word = self.make_word(self.nanay, "Kuya Jun")
+        self.login_as("nanay")
+        response = self.client.get(self.url)
+        self.assertContains(response, f'data-open-modal="edit-word-{word.uuid}">I-edit</button>')
+        self.assertContains(response, f'data-open-modal="delete-word-{word.uuid}">Burahin</button>')
+        self.assertContains(response, f'data-modal="edit-word-{word.uuid}" data-open="false"')
+        prefix = f"word-{word.pk}"
+        self.assertContains(response, f'name="{prefix}-word" value="Kuya Jun"')
+        self.assertContains(response, '<option value="Tao" selected>Tao</option>')
+        self.assertContains(response, f'name="{prefix}-emoji" value="👦"')
+        self.assertContains(response, f'name="edit_word_form" value="{word.uuid}">I-save</button>')
+
+    def test_the_word_board_and_symbol_change_and_the_day_it_was_added_stays(self):
+        word = self.make_word(self.nanay, "Kuya Jun")
+        added = timezone.now() - timedelta(days=30)
+        GuardianWord.objects.filter(pk=word.pk).update(created_at=added)
+        word.refresh_from_db()
+
+        self.login_as("nanay")
+        response = self.edit(word, word="Kuya Junjun", board="Bagay", emoji="🧒")
+        self.assertRedirects(response, self.url)
+        self.assertEqual(messages_of(response), ["Naka-save na ang “Kuya Junjun”."])
+        word.refresh_from_db()
+        self.assertEqual((word.word, word.board, word.emoji, word.created_at), ("Kuya Junjun", "Bagay", "🧒", added))
+
+        page = self.client.get(self.url)
+        self.assertContains(page, "<b>Kuya Junjun</b>")
+        self.assertContains(page, f'<td data-label="Naidagdag">{timezone.localtime(added):%Y-%m-%d}</td>')
+        self.assertEqual(self.board_items("board")["Bagay"][-1], "Kuya Junjun")
+        self.assertNotIn("Kuya Jun", self.board_items("board")["Tao"])
+
+    def test_changing_only_the_board_keeps_an_uploaded_picture(self):
+        self.login_as("nanay")
+        self.client.post(self.url, {"word_form": "", "board": "Tao", "word": "Kuya Jun", "icon_kind": "image", "icon_image": image_upload()})
+        word = GuardianWord.objects.get()
+        picture = word.icon_image.name
+
+        self.edit(word, board="Bagay", icon_kind="image", emoji="")
+        word.refresh_from_db()
+        self.assertEqual((word.board, word.icon_image.name), ("Bagay", picture))
+
+        # The emoji in its place removes the picture.
+        self.edit(word, icon_kind="emoji", emoji="👦")
+        word.refresh_from_db()
+        self.assertEqual((word.emoji, word.has_icon_image), ("👦", False))
+        self.assertFalse(default_storage.exists(picture))
+
+    def test_required_fields_are_checked_and_the_window_reopens(self):
+        word = self.make_word(self.nanay, "Kuya Jun")
+        self.make_word(self.nanay, "sinigang", board="Pagkain")
+        self.login_as("nanay")
+        for fields, error in [
+            ({"word": ""}, "Ilagay ang salita."),
+            ({"board": ""}, "Pumili ng board."),
+            ({"emoji": ""}, "Ilagay ang simbolo."),
+            ({"word": "Sinigang"}, "May tile ka na para sa salitang ito."),
+            ({"word": "isda"}, "May tile na para sa salitang ito."),
+        ]:
+            response = self.edit(word, **fields)
+            self.assertEqual(response.status_code, 200, fields)
+            self.assertContains(response, error)
+            self.assertContains(response, f'data-modal="edit-word-{word.uuid}" data-open="true"')
+        word.refresh_from_db()
+        self.assertEqual((word.word, word.board, word.emoji), ("Kuya Jun", "Tao", "👦"))
+        # Saved as it is, it is not a copy of itself.
+        self.assertRedirects(self.edit(word), self.url)
+
+    def test_a_new_word_takes_its_counts_and_the_familys_own_picture_along(self):
+        word = self.make_word(self.nanay, "Kuya Jun")
+        for user in [self.miguel, self.nanay.user]:
+            WordUsage.record_use(user, "Kuya Jun")
+            DailyUsage.record(user, DailyUsage.WORD, "Kuya Jun")
+        customization = self.miguel.customizations.create(word="Kuya Jun")
+
+        self.login_as("nanay")
+        self.edit(word, word="Kuya Junjun")
+        self.assertFalse(WordUsage.objects.filter(word="Kuya Jun").exists())
+        self.assertFalse(DailyUsage.objects.filter(name="Kuya Jun").exists())
+        self.assertEqual(WordUsage.objects.filter(word="Kuya Junjun").count(), 2)
+        self.assertEqual(DailyUsage.objects.filter(name="Kuya Junjun").count(), 2)
+        customization.refresh_from_db()
+        self.assertEqual(customization.word, "Kuya Junjun")
+        # A family's own tile stays out of the admin's most-used words, under its new word too.
+        self.assertNotIn("Kuya Junjun", [row["word"] for row in analytics.top_words()])
+
+    def test_only_her_own_tiles(self):
+        other = self.make_word(self.tatay, "Lolo Ben")
+        self.make_word(self.nanay, "Kuya Jun")
+        self.login_as("nanay")
+        self.assertEqual(self.edit(other, word="Na-hack").status_code, 404)
+        other.refresh_from_db()
+        self.assertEqual(other.word, "Lolo Ben")
+
+    def test_on_free_a_tile_keeps_its_picture_but_no_new_one_is_taken(self):
+        self.login_as("nanay")
+        self.client.post(self.url, {"word_form": "", "board": "Tao", "word": "Kuya Jun", "icon_kind": "image", "icon_image": image_upload()})
+        word = GuardianWord.objects.get()
+        picture = word.icon_image.name
+        Payment.objects.filter(guardian=self.nanay).update(ends_at=timezone.now() - timedelta(days=1))
+
+        page = self.client.get(self.url)
+        self.assertContains(page, PLUS_PICTURES_KEPT)
+        self.assertNotContains(page, "📷 Pumili ng larawan")
+        self.edit(word, word="Kuya Junjun", icon_kind="image", emoji="", icon_image=image_upload())
+        word.refresh_from_db()
+        self.assertEqual((word.word, word.icon_image.name), ("Kuya Junjun", picture))
+
+
 @override_settings(ELEVENLABS_API_KEY="susi", ELEVENLABS_VOICE_ID="pinoy-boses")
 class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
     """A new tile is voiced in the shared voice and in each of the guardian's family voices."""
@@ -483,6 +601,33 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
         response = self.client.post(reverse("voice_guardian_word", args=[word.uuid]))
         self.assertEqual(messages_of(response), ["Nakatago ang tile na ito dahil lampas na ito sa limit ng plano mo."])
         self.elevenlabs.text_to_speech.assert_not_called()
+
+    def test_a_new_word_is_voiced_again_and_the_old_ones_audio_goes(self):
+        lola = self.make_family_voice("Lola")
+        self.login_as("nanay")
+        self.add()
+        word = GuardianWord.objects.get()
+        self.elevenlabs.text_to_speech.reset_mock()
+
+        response = self.edit(word, word="Kuya Junjun")
+        self.assertEqual(messages_of(response)[-1], "Naka-save na ang “Kuya Junjun”.")
+        self.assertEqual(
+            sorted(call.args for call in self.elevenlabs.text_to_speech.call_args_list),
+            [("boses-Lola", "Kuya Junjun"), ("pinoy-boses", "Kuya Junjun")],
+        )
+        self.assertTrue(self.shared_audio(self.nanay, "Kuya Junjun").exists())
+        self.assertFalse(self.shared_audio(self.nanay, "Kuya Jun").exists())
+        self.assertFalse(self.family_audio(lola, "Kuya Jun").exists())
+
+    def test_the_same_audio_file_is_kept_and_a_board_change_is_not_voiced(self):
+        self.login_as("nanay")
+        self.add()
+        word = GuardianWord.objects.get()
+        self.elevenlabs.text_to_speech.reset_mock()
+
+        self.edit(word, word="kuya jun", board="Bagay")
+        self.elevenlabs.text_to_speech.assert_not_called()
+        self.assertTrue(self.shared_audio(self.nanay, "kuya jun").exists())
 
 
 class PlanLimitsTest(GuardianWordsBase):
