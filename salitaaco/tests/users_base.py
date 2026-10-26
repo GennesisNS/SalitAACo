@@ -22,6 +22,15 @@ USERS = [
 
 GUARDIAN_PASSWORD = "nanay-password"
 
+# The default accounts migration 0027 makes, the child first: a guardian's child goes before the guardian.
+DEFAULT_USERNAMES = ["child@example.com", "guardian@example.com", "admin@example.com"]
+
+
+def remove_default_users():
+    """Delete the default accounts, so that a test counts only the accounts it makes itself."""
+    for username in DEFAULT_USERNAMES:
+        User.objects.filter(username=username).delete()
+
 
 def image_bytes(image_format="PNG"):
     buffer = io.BytesIO()
@@ -69,6 +78,8 @@ class UserBase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        # The test database is migrated like any other, default accounts and all; tests start without them.
+        remove_default_users()
         for name in GROUPS:
             Group.objects.get_or_create(name=name)
 

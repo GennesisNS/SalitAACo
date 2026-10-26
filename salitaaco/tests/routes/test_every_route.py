@@ -10,6 +10,7 @@ from salitaaco.models.added_word import AddedWord
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.family_voice import FamilyVoice
+from salitaaco.models.generated_report import GeneratedReport
 from salitaaco.models.guardian_board import GuardianBoard
 from salitaaco.models.guardian_word import GuardianWord
 from salitaaco.models.plan import Plan
@@ -24,7 +25,7 @@ ROLES = [None, "miguel", "nanay", "developer"]
 # Pages that take a form, sent empty: each says what is missing, never fails.
 FORM_PAGES = [
     "login", "register", "board", "profile", "settings", "children", "family_voices", "guardian_words", "support",
-    "plan", "reports", "users", "admin_boards", "set_board_status", "words", "feedback",
+    "plan", "reports", "generated_reports", "users", "admin_boards", "set_board_status", "words", "feedback",
     "system_general", "system_plans", "system_access", "system_privacy", "subscriptions", "increment_word_usage",
     "record_board_open",
 ]
@@ -77,6 +78,10 @@ class EveryRouteTest(UserBase):
             guardian=nanay, name="Lola", elevenlabs_voice_id="boses-lola", consent_at=timezone.now(), consent_version=TERMS_VERSION,
         )
         message = SupportMessage.objects.create(guardian=nanay, message="Tulong po.")
+        report = GeneratedReport.objects.create(
+            report_type="users", file_type="csv", start_date=timezone.localdate(), end_date=timezone.localdate(),
+            file=ContentFile(b"Ulat", name="ulat.csv"), generated_by=cls.developer,
+        )
 
         cls.route_args = {
             "view_customization_image": [customization.uuid],
@@ -107,6 +112,8 @@ class EveryRouteTest(UserBase):
             "remove_plan": [Plan.objects.get(key=PLUS).pk],
             "remove_admin": [cls.developer.pk],
             "approve_payment": [payment.uuid],
+            "view_generated_report": [report.uuid],
+            "remove_generated_report": [report.uuid],
         }
 
     def url(self, name):

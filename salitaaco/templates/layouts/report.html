@@ -1,0 +1,58 @@
+{% load static %}
+{% comment %}
+  A report from Mga Ulat as a page to print or save as PDF, after MYO's report-base layout: the app and the report's
+  ID and maker on top, its title and days, the report's own blocks, and on every printed page a footer with when and
+  by whom it was made and the page number. It is kept as a file when the report is made, so it is drawn without a
+  request and reads nothing from the database when it is opened.
+  report_id, generated_by, made_at: about the report; title, subheading: from it.
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="tl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}{% endblock %} - SalitAACo</title>
+    <link rel="stylesheet" href="{% static 'css/report.css' %}" />
+    <style>
+      /* On every printed page: when and by whom it was made, and which page it is. */
+      @page {
+        size: A4;
+        margin: 14mm 12mm 18mm;
+        @bottom-left { content: "Ginawa: {{ made_at }} · Ni: @{{ generated_by }}"; }
+        @bottom-right { content: "Pahina " counter(page) " ng " counter(pages) " · Report ID: {{ report_id }}"; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="printBar">
+      <button type="button" onclick="window.print()">I-print / I-save bilang PDF</button>
+      <span>Piliin ang “Save as PDF” sa printer para maging PDF.</span>
+    </div>
+
+    <header class="reportHeader">
+      <div class="reportBrand">
+        <span class="reportLogo" aria-hidden="true">💬</span>
+        <div>
+          <p class="reportSite">SalitAACo</p>
+          <p class="reportMeta"><span>Report ID:</span> <code>{{ report_id }}</code></p>
+          <p class="reportMeta"><span>Ginawa ni:</span> <code>@{{ generated_by }}</code></p>
+        </div>
+      </div>
+    </header>
+
+    <div class="reportTitle">
+      <h1>{% block heading %}{% endblock %}</h1>
+      <p>{% block subheading %}{% endblock %}</p>
+    </div>
+
+    <main>
+      {% block body %}{% endblock %}
+    </main>
+
+    <footer class="reportFooter">
+      <span>Ginawa: {{ made_at }}</span>
+      <span>Ni: @{{ generated_by }}</span>
+      <span>Report ID: {{ report_id }}</span>
+    </footer>
+  </body>
+</html>

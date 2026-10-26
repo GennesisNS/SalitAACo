@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from salitaaco.defaults.plans import APPROVED, PENDING, REJECTED
 from salitaaco.forms.revenue.transaction_status import ALL_STATUSES, TransactionStatusForm
@@ -88,7 +89,9 @@ class RevenuePageTest(UserBase):
 
         self.assertContains(response, 'data-open-modal="proof"', count=2)
         self.assertContains(response, reverse("view_payment_proof", args=[waiting.uuid]))
-        self.assertContains(response, f'{approved.starts_at:%Y-%m-%d} hanggang {approved.ends_at:%Y-%m-%d}')
+        # The page shows the days in the project's time zone, which is a day ahead of UTC before 8 in the morning.
+        starts, ends = timezone.localtime(approved.starts_at), timezone.localtime(approved.ends_at)
+        self.assertContains(response, f'{starts:%Y-%m-%d} hanggang {ends:%Y-%m-%d}')
 
     def test_posting_changes_nothing(self):
         payment = make_payment(self.nanay)

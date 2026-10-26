@@ -1,0 +1,42 @@
+{% extends "layouts/report.html" %}
+{% comment %}
+  Any report of Mga Ulat, to print: its key numbers, then each of its tables (utils/reports.py says what they hold).
+  content: the report, as utils/reports.py makes it.
+{% endcomment %}
+
+{% block title %}{{ content.title }}{% endblock %}
+
+{% block heading %}{{ content.title }}{% endblock %}
+
+{% block subheading %}{{ content.subheading }}{% endblock %}
+
+{% block body %}
+<h2>Mga pangunahing bilang</h2>
+<table>
+  <thead>
+    <tr><th>Sukatan</th><th>Halaga</th></tr>
+  </thead>
+  <tbody>
+    {% for label, value in content.summary %}
+    <tr><td>{{ label }}</td><td>{{ value }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% for section in content.sections %}
+<h2>{{ section.title }}</h2>
+<table>
+  <thead>
+    <tr>{% for header in section.headers %}<th>{{ header }}</th>{% endfor %}</tr>
+  </thead>
+  <tbody>
+    {% for row in section.rows %}
+    <tr>{% for value in row %}<td>{{ value|linebreaksbr }}</td>{% endfor %}</tr>
+    {% empty %}
+    <tr><td class="empty" colspan="{{ section.headers|length|default:1 }}">Walang laman sa mga araw na ito.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if section.note %}<p class="note">{{ section.note }}</p>{% endif %}
+{% endfor %}
+{% endblock %}

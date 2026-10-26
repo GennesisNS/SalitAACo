@@ -135,7 +135,8 @@ Addresses without a leading slash are under `/dashboard/`. Guardian and child pa
 | `tiles/` | Sariling Tile: tiles a guardian adds to their family's boards, up to their plan's limit | Guardians |
 | `support/` | Tulong at Suporta: guides, and a form for writing to the admins | Guardians |
 | `analytics/` | Admin dashboard | Admins |
-| `reports/`, `reports/export/` | Analytics at Ulat (growth, usage, retention, and Negosyo: guardians per plan, revenue by month, payments by status), and its CSV reports | Admins |
+| `reports/` | Analytics at Ulat: growth, usage, retention, and Negosyo (guardians per plan, revenue by month, payments by status) | Admins |
+| `generated-reports/` | Mga Ulat: make, keep, open and delete reports of users, payments and feedback, as a CSV or a page to print or save as PDF (see [Reports](#reports)) | Admins |
 | `users/` | Mga User: every account, by status; make one inactive or active | Admins |
 | `vocabulary/boards/` | Mga Board: publish a board or hide it from everyone | Admins |
 | `vocabulary/words/` | Mga Salita at Simbolo: every word, and adding words to boards with an emoji or an uploaded picture | Admins |
@@ -300,6 +301,19 @@ What the plans allow:
 - **Sariling Tile:** a tile of the family's own (a word, and an emoji or, on Plus, an uploaded picture kept in `media/guardian-word-images/` and shown only to the guardian and their children), on one of the app's boards or one of the family's own, shown on the guardian's own board and on every one of their children's. A new tile is voiced with ElevenLabs right away: in the shared voice (`ELEVENLABS_VOICE_ID`) and in each of the guardian's family voices. The shared voice's audio of a guardian's tile is kept in `media/guardian-tile-audio/<guardian>/`, apart from the vocabulary's audio in `static/audio/text-to-speech/`, and like every upload it is played only through a login-protected view, to the guardian and their children. If ElevenLabs refuses, the tile speaks in the device's voice and the page offers “Gawin ang boses” to try again; family voices also fill in missing words when the Boses ng Pamilya page is opened. “I-edit” on a tile changes its word, board and symbol; it keeps the day it was added. A new word takes the old one's counts and the family's own pictures and recordings of it along, and is voiced again (the old word's audio is deleted). On Free, a tile that has an uploaded picture keeps it, but no new picture is taken.
 
 Every other feature is open to every guardian. A family's own boards and tiles, which can be names and places, are left out of the admin's lists of most-opened boards and most-used words; deleting one deletes its counts too.
+
+## Reports
+
+**Mga Ulat** (`/dashboard/generated-reports/`, admins only) follows MYO's Generate Reports. **＋ Gumawa ng ulat** opens a window to choose:
+
+- **The kind of report:**
+  - **Mga User:** the accounts made in the days, by kind, and a table of the guardians' and admins' accounts.
+  - **Mga Bayad:** the payments sent in the days, by status and by plan, the money approved, and each payment.
+  - **Feedback:** the ratings given and the support messages sent in the days, with the ratings by stars.
+- **The file:** a CSV for Excel or Google Sheets, or a page to print or save as PDF. On that page, press **I-print / I-save bilang PDF** and choose "Save as PDF". Each printed page has the report ID and page number in its footer. MYO makes PDFs with WeasyPrint; this app does not, so nothing has to be installed.
+- **The days** (both counted) and **the columns** of each detail table.
+
+A report is made once and kept as a file in `media/reports/`, so opening it later shows it as it was. Its ID reads like `RPT-USR-20261026-0007`: the kind (USR, PAY, FBK), the day it was made and its number. Reports list guardians' and admins' usernames, never a child: children are only counted, and a child's rating is counted but not listed. An admin can delete a report with its file. What each report holds is in `salitaaco/utils/reports.py`; the kinds, columns and ID format are in `salitaaco/defaults/reports.py`.
 
 ## Maintenance mode
 

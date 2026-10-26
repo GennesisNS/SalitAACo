@@ -655,6 +655,37 @@
   vertical-align: middle;
 }
 
+/* ---------- Mga Ulat: a report's ID, and the window that makes a report ---------- */
+.reportId {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.reportForm {
+  margin-top: 16px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.columnChoices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px 14px;
+}
+.settingsBody .columnChoices label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+.columnChoices input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--switch-on);
+}
+
 /* ---------- Plans and payments ---------- */
 .planGrid {
   display: grid;

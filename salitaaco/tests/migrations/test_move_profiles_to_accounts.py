@@ -4,6 +4,8 @@ from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 
+from salitaaco.tests.users_base import remove_default_users
+
 BEFORE = [("salitaaco", "0002_seed_roles")]
 AFTER = [("salitaaco", "0005_delete_profile")]
 
@@ -23,6 +25,8 @@ class MoveProfilesToAccountsTest(TransactionTestCase):
     def setUp(self):
         # Whatever happens, leave the schema at the latest migration for the tests that run next.
         self.addCleanup(lambda: migrate(MigrationExecutor(connection).loader.graph.leaf_nodes()))
+        # Only this test's own users are carried back and forth, not migration 0027's default accounts.
+        remove_default_users()
 
         apps = migrate(BEFORE)
         User = apps.get_model("auth", "User")
