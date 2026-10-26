@@ -26,8 +26,8 @@ COPY . .
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 8001
+EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["gunicorn", "salitaaco.wsgi:application", "--bind", "0.0.0.0:8001"]
+CMD ["gunicorn", "salitaaco.wsgi:application", "--bind", "0.0.0.0:8000"]
