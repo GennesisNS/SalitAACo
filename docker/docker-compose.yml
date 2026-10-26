@@ -1,0 +1,37 @@
+services:
+  salitaaco-production:
+    container_name: salitaaco-production
+
+    volumes:
+      - ../media:/app/media
+      - ../db.sqlite3:/app/db.sqlite3
+      - ../staticfiles:/app/staticfiles
+
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+
+    env_file:
+      - ../.env
+
+    ports:
+      - "127.0.0.1:8001:8001"
+
+    restart: unless-stopped
+
+  nginx-static:
+    container_name: salitaaco-nginx-static
+    image: nginx:alpine
+
+    volumes:
+      - ../staticfiles:/app/staticfiles:ro
+      - ../media:/app/media:ro
+      - ./nginx.static.conf:/etc/nginx/conf.d/default.conf:ro
+
+    ports:
+      - "8002:80"
+
+    restart: unless-stopped
+
+    depends_on:
+      - salitaaco-production
