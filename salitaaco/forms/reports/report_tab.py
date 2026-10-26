@@ -6,11 +6,10 @@ GROWTH = "growth"
 USAGE = "usage"
 RETENTION = "retention"
 BUSINESS = "business"
-EXPORT = "export"
 
 
 class ReportTabForm(BaseForm):
-    """The tab the Analytics at Ulat page is on."""
+    """The tab the Analytics at Ulat page is on. Reports to download are on Mga Ulat."""
     tab = forms.ChoiceField(
         required=False,
         choices=[
@@ -18,7 +17,6 @@ class ReportTabForm(BaseForm):
             (USAGE, "Paggamit"),
             (RETENTION, "Pagbabalik"),
             (BUSINESS, "Negosyo"),
-            (EXPORT, "Mga ulat"),
         ],
         label="Tab",
     )

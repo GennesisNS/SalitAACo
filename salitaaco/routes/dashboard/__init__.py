@@ -12,6 +12,7 @@ import salitaaco.routes.children.usage as child_usage
 import salitaaco.routes.children.voice as child_voice
 import salitaaco.routes.family_voices.family_voices as family_voices
 import salitaaco.routes.feedback.feedback as feedback
+import salitaaco.routes.generated_reports.generated_reports as generated_reports
 import salitaaco.routes.guardian_words.guardian_words as guardian_words
 import salitaaco.routes.overview.overview as overview
 import salitaaco.routes.plan.plan as plan
@@ -87,7 +88,10 @@ urlpatterns = [
     # The admin dashboard. Its address is from when it was the only admin page.
     path('analytics/', analytics.view_analytics, name='analytics'),
     path('reports/', reports.view_reports, name='reports'),
-    path('reports/export/', reports.export_report, name='export_report'),
+    # Mga Ulat: the reports admins make and keep, as CSV files or pages to print.
+    path('generated-reports/', generated_reports.view_generated_reports, name='generated_reports'),
+    path('generated-reports/<uuid:report_uuid>/', generated_reports.view_generated_report, name='view_generated_report'),
+    path('generated-reports/<uuid:report_uuid>/delete/', generated_reports.remove_generated_report, name='remove_generated_report'),
 
     path('users/', users.view_users, name='users'),
     path('users/<int:user_id>/status/', users.set_user_status, name='set_user_status'),

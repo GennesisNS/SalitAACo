@@ -152,7 +152,8 @@ The app was restyled and given three sides (child, guardian, admin) and a public
 | Feature | Django view | URL name and path | Form | Template |
 | --- | --- | --- | --- | --- |
 | Dashboard | `analytics.view_analytics` | `analytics` `analytics/` | | `dashboard/analytics/analytics.html` |
-| Analytics at Ulat (growth, usage, retention, Negosyo), and CSV reports | `reports.view_reports`, `reports.export_report` | `reports` `reports/`, `export_report` `reports/export/` | `ReportTabForm`, `ExportReportForm` | `dashboard/reports/reports.html` |
+| Analytics at Ulat (growth, usage, retention, Negosyo) | `reports.view_reports` | `reports` `reports/` | `ReportTabForm` | `dashboard/reports/reports.html` |
+| Mga Ulat, after MYO's Generate Reports: users, payments and feedback reports as CSV or a page to print, kept and listed | `generated_reports.view_generated_reports`, `view_generated_report`, `remove_generated_report` | `generated_reports` `generated-reports/`, `view_generated_report` `…/<uuid>/`, `remove_generated_report` `…/<uuid>/delete/` | `UsersReportForm`, `PaymentsReportForm`, `FeedbackReportForm` | `dashboard/generated_reports/generated_reports.html`, `reports/printable.html` on `layouts/report.html` |
 | Users by status; make an account inactive or active | `users.view_users`, `users.set_user_status` | `users` `users/`, `set_user_status` `users/<id>/status/` | `SearchUserForm`, `UserStatusForm`, `SetUserStatusForm` | `dashboard/users/users.html` |
 | Boards: publish or hide (at least one stays published) | `boards.view_admin_boards`, `boards.set_board_status` | `admin_boards` `vocabulary/boards/`, `set_board_status` `vocabulary/boards/status/` | `SetBoardStatusForm` | `dashboard/vocabulary/boards.html` |
 | Words: list, add, edit, delete, each with an emoji or an uploaded picture | `words.view_words`, `words.edit_word`, `words.delete_word`, `words.view_added_word_image` | `words` `vocabulary/words/`, `edit_word` `…/<uuid>/`, `delete_word` `…/<uuid>/delete/`, `added_word_image` `…/<uuid>/image/` | `SearchWordForm`, `WordForm` | `dashboard/vocabulary/words.html`, `word.html` |
@@ -182,12 +183,11 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 | `BoardStatus` | Whether an admin has hidden a board from everyone |
 | `AddedWord` | A word an admin added to a board (an emoji or an uploaded picture) |
 | `SiteSetting` | The one row of site settings: support contact details, maintenance mode, the GCash QR code and account |
-| `Plan` | A plan guardians can be on, as an admin edited it. Seeded with Free and SalitAACo Plus |
-| `Institution` | The admin's record of a school or centre *(belongs to a page that may be removed)* |
 | `Plan` | A plan guardians can be on, as an admin edited it, with how many child accounts it allows. Seeded with Free (1 child) and SalitAACo Plus (3) |
 | `Payment` | A guardian's proof of a GCash payment, its status, and once approved the time on the plan it bought |
 | `GuardianBoard` | A custom board a guardian made for their family (an emoji or an uploaded picture), shown after the app's boards once it has a tile |
 | `GuardianWord` | A tile a guardian added to a board (the app's or their own), shown on their family's boards (an emoji or an uploaded picture) |
+| `GeneratedReport` | A report an admin made on Mga Ulat: its kind, days, who made it, and its file (a CSV or a page to print), kept as made. Its ID reads `RPT-USR-20261026-0007` |
 
 ### Rules
 
@@ -200,7 +200,8 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 - Family voices ask for consent as a step of its own before anything can be recorded.
 - In maintenance mode everyone but admins gets the maintenance page, children included.
 - A guardian has at most one payment waiting for an admin, and cannot send one while no GCash QR code is set. Only the guardian who sent a proof of payment and admins can open it.
-- Admins see counts of what is used, never the sentences built on a board; reports hold no names or usernames. A family's own boards and tiles are left out of the admin's counts and of the CSV reports (only the family's own taps of their tile; the same word as an app tile still counts for everyone else).
+- Admins see counts of what is used, never the sentences built on a board. A family's own boards and tiles are left out of the admin's counts (only the family's own taps of their tile; the same word as an app tile still counts for everyone else).
+- Reports on Mga Ulat list guardians' and admins' usernames, never a child: children, their ratings included, are only counted. A report is kept as made, and an admin can delete it.
 - Only a word one of the user's tiles says is counted when tapped, or given a picture or a recording.
 - Every route is opened by every role in `tests/routes/test_every_route.py`, which fails on any server error and on a new route without a sample. The 500 page is drawn without the database.
 

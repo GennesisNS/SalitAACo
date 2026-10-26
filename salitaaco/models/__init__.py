@@ -8,6 +8,7 @@ from . import (  # noqa: F401
     customization,
     daily_usage,
     family_voice,
+    generated_report,
     guardian_account,
     guardian_board,
     guardian_word,

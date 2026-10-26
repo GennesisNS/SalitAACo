@@ -1,0 +1,146 @@
+/* A report from Mga Ulat as a page to print or save as PDF (templates/layouts/report.html), after MYO's report
+   layout: plain black on white, so it prints the same whatever the app's theme. */
+* {
+  box-sizing: border-box;
+}
+body {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+  background: #ffffff;
+  color: #1f2937;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+}
+.printBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #4b5563;
+}
+.printBar button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #1e2f4f;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.reportHeader {
+  padding-bottom: 14px;
+  border-bottom: 2px solid #1e2f4f;
+}
+.reportBrand {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.reportLogo {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: #1e2f4f;
+  font-size: 32px;
+}
+.reportSite {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+.reportMeta {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+.reportMeta span {
+  color: #6b7280;
+  font-size: 12px;
+}
+.reportMeta code {
+  color: #374151;
+  font-family: Consolas, "Courier New", monospace;
+}
+.reportTitle {
+  padding: 16px;
+  text-align: center;
+}
+.reportTitle h1 {
+  margin: 0;
+  color: #374151;
+  font-size: 22px;
+}
+.reportTitle p {
+  margin: 4px 0 0;
+  color: #374151;
+  font-weight: 500;
+}
+h2 {
+  margin: 22px 0 8px;
+  color: #1e2f4f;
+  font-size: 16px;
+}
+table {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-collapse: collapse;
+  background: #f9fafb;
+}
+th,
+td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+}
+td.empty {
+  color: #6b7280;
+  text-align: center;
+}
+.note {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+.reportFooter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 28px;
+  padding-top: 6px;
+  border-top: 1px solid #d1d5db;
+  color: #6b7280;
+  font-size: 11px;
+}
+@media print {
+  body {
+    max-width: none;
+    padding: 0;
+  }
+  /* The page's own footer is printed in the page margin (@page in the layout) on every page instead. */
+  .printBar,
+  .reportFooter {
+    display: none;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}

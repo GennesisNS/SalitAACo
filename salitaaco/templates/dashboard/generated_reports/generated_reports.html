@@ -1,0 +1,146 @@
+{% extends "layouts/dashboard.html" %}
+{% load static %}
+
+{% block title %}Mga Ulat - SalitAACo{% endblock %}
+
+{% block heading %}Mga Ulat{% endblock %}
+
+{% block main %}
+<p class="pageIntro">
+  Gumawa at mag-download ng mga ulat sa iisang lugar: ng mga user, ng mga bayad, at ng feedback. Itinatabi ang bawat
+  ulat gaya noong ginawa ito. Nakalista sa mga ulat ang username ng mga tagapag-alaga at admin, pero hindi kailanman
+  ang anumang tungkol sa isang bata.
+</p>
+
+<section class="section" id="reports">
+  <div class="sectionHead">
+    <h2>Mga ulat</h2>
+    <button class="primaryBtn" type="button" data-open-modal="new-report">＋ Gumawa ng ulat</button>
+  </div>
+
+  {% if reports %}
+  <div class="tableWrap stackTable">
+    <table>
+      <thead>
+        <tr>
+          <th>Petsa ginawa</th>
+          <th>Report ID</th>
+          <th>Uri</th>
+          <th>Saklaw</th>
+          <th>File</th>
+          <th>Ginawa ni</th>
+          <th>Aksyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr>
+          <td data-label="Petsa ginawa">{{ report.created_at|date:"Y-m-d H:i" }}</td>
+          <td data-label="Report ID"><span class="reportId">{{ report.report_id }}</span></td>
+          <td data-label="Uri"><b>{{ report.get_report_type_display }}</b></td>
+          <td data-label="Saklaw">{{ report.start_date|date:"Y-m-d" }} hanggang {{ report.end_date|date:"Y-m-d" }}</td>
+          <td data-label="File">{% if report.file_type == "csv" %}CSV{% else %}Ipi-print / PDF{% endif %}</td>
+          <td data-label="Ginawa ni">{% if report.generated_by %}@{{ report.generated_by.username }}{% else %}—{% endif %}</td>
+          <td>
+            <span class="rowActions">
+              {% if report.file_type == "csv" %}
+              <a class="secondaryBtn smallBtn" href="{% url 'view_generated_report' report.uuid %}">I-download</a>
+              {% else %}
+              <a class="secondaryBtn smallBtn" href="{% url 'view_generated_report' report.uuid %}" target="_blank" rel="noopener">Buksan</a>
+              {% endif %}
+              <button class="secondaryBtn danger smallBtn" type="button" data-open-modal="delete-report-{{ report.uuid }}">Burahin</button>
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="emptyState">Wala pang nagagawang ulat. Pindutin ang “Gumawa ng ulat”.</p>
+  {% endif %}
+
+  {% include "components/pagination.html" with page_obj=reports page_param="page" anchor="#reports" %}
+</section>
+
+<!-- ============== MAKE A REPORT ============== -->
+<div class="settingsBackdrop hidden" data-modal="new-report" data-open="{% if open_type %}true{% else %}false{% endif %}">
+  <div class="settingsBox wide" role="dialog" aria-modal="true" aria-labelledby="newReportTitle">
+    <div class="settingsHeader">
+      <h2 id="newReportTitle">Gumawa ng ulat</h2>
+      <button class="closeBtn" type="button" data-close-modal="new-report" aria-label="Isara">&times;</button>
+    </div>
+    <div class="settingsBody" data-report-chooser>
+      <p class="fieldLabel">Uri ng ulat</p>
+      <div class="tileSizeOptions" role="radiogroup" aria-label="Uri ng ulat">
+        {% for item in report_forms %}
+        <label class="tileSizeOption" for="reportType-{{ item.type }}">
+          <input type="radio" name="report_type_choice" id="reportType-{{ item.type }}" value="{{ item.type }}" {% if item.type == chosen_type %}checked{% endif %} />
+          {{ item.label }}
+        </label>
+        {% endfor %}
+      </div>
+
+      {% for item in report_forms %}
+      {% with form=item.form %}
+      <form method="post" class="reportForm" data-report-form="{{ item.type }}" novalidate>
+        {% csrf_token %}
+        <label for="{{ form.file_type.id_for_label }}">{{ form.file_type.label }}</label>
+        {{ form.file_type }}
+        <small class="fieldError">{{ form.file_type.errors }}</small>
+
+        <div class="row">
+          <div>
+            <label for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+            {{ form.start_date }}
+            <small class="fieldError">{{ form.start_date.errors }}</small>
+          </div>
+          <div>
+            <label for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }}</label>
+            {{ form.end_date }}
+            <small class="fieldError">{{ form.end_date.errors }}</small>
+          </div>
+        </div>
+
+        {% for field in form %}
+        {% if field.name == "columns" or field.name == "rating_columns" or field.name == "message_columns" %}
+        <p class="fieldLabel">{{ field.label }}</p>
+        <div class="columnChoices">
+          {% for checkbox in field %}
+          <label for="{{ checkbox.id_for_label }}">{{ checkbox.tag }} {{ checkbox.choice_label }}</label>
+          {% endfor %}
+        </div>
+        <small class="fieldError">{{ field.errors }}</small>
+        {% endif %}
+        {% endfor %}
+
+        <div class="confirmRow">
+          <button class="secondaryBtn" type="button" data-close-modal="new-report">Kanselahin</button>
+          <button class="primaryBtn" type="submit" name="{{ item.button }}">Gumawa</button>
+        </div>
+      </form>
+      {% endwith %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Deleting a report is asked twice. -->
+{% for report in reports %}
+<div class="confirmBackdrop hidden" data-modal="delete-report-{{ report.uuid }}">
+  <form class="confirmBox" method="post" action="{% url 'remove_generated_report' report.uuid %}" role="dialog" aria-modal="true">
+    {% csrf_token %}
+    <h3>Burahin ang ulat na {{ report.report_id }}?</h3>
+    <p>Mawawala ang file nito. Hindi na ito maibabalik, pero puwedeng gumawa ulit ng bagong ulat.</p>
+    <div class="confirmRow">
+      <button class="secondaryBtn" type="button" data-close-modal="delete-report-{{ report.uuid }}">Huwag muna</button>
+      <button class="dangerBtn solid" type="submit">Oo, burahin</button>
+    </div>
+  </form>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/generated_reports.js' %}" defer></script>
+{% endblock %}

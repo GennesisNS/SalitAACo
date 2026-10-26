@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 
-from salitaaco.forms.reports.export_report import ExportReportForm
 from salitaaco.forms.reports.report_tab import ReportTabForm
 from salitaaco.models.daily_usage import DailyUsage
 from salitaaco.models.guardian_word import GuardianWord
@@ -94,19 +93,18 @@ class AdminStatsTest(ReportsBase):
 
 
 class ReportsPageTest(ReportsBase):
-    def test_only_admins_open_the_page_and_download_reports(self):
-        for url in [reverse("reports"), reverse("export_report") + "?report=usage"]:
-            self.assertTrue(self.client.get(url).url.startswith("/login/"))
-            for username in ["miguel", "nanay"]:
-                self.login_as(username)
-                self.assertEqual(self.client.get(url).status_code, 302, f"{username} {url}")
-            self.client.post(reverse("logout"))
+    def test_only_admins_open_the_page(self):
+        url = reverse("reports")
+        self.assertTrue(self.client.get(url).url.startswith("/login/"))
+        for username in ["miguel", "nanay"]:
+            self.login_as(username)
+            self.assertEqual(self.client.get(url).status_code, 302, username)
 
     def test_each_tab_opens_and_an_unknown_one_is_the_first(self):
         self.login_as("developer")
         for tab, heading in [
             ("growth", "Mga bagong sign-up"), ("usage", "Mga pindot kada araw"), ("retention", "Pagbabalik ng mga gumagamit"),
-            ("business", "Mga bayad ayon sa status"), ("export", "Mag-download ng ulat"),
+            ("business", "Mga bayad ayon sa status"),
         ]:
             response = self.client.get(reverse("reports"), {"tab": tab})
             self.assertEqual(response.context["tab"], tab)
@@ -116,6 +114,12 @@ class ReportsPageTest(ReportsBase):
         for data in [{}, {"tab": "wala-nito"}]:
             self.assertEqual(self.client.get(reverse("reports"), data).context["tab"], "growth")
         self.assertEqual(ReportTabForm({"tab": "usage"}).chosen(), "usage")
+
+    def test_the_csv_tab_is_gone_and_mga_ulat_is_linked(self):
+        # Reports to download are made on Mga Ulat now.
+        self.login_as("developer")
+        self.assertEqual(self.client.get(reverse("reports"), {"tab": "export"}).context["tab"], "growth")
+        self.assertContains(self.client.get(reverse("reports")), f'href="{reverse("generated_reports")}"')
 
     def test_the_business_tab_has_the_plans_and_the_money(self):
         approve_payment(make_payment(self.nanay), self.developer)
@@ -134,62 +138,8 @@ class ReportsPageTest(ReportsBase):
         self.assertContains(response, "Naka-SalitAACo Plus")
 
 
-class ExportReportTest(ReportsBase):
-    def export(self, **query):
-        self.login_as("developer")
-        return self.client.get(reverse("export_report"), query)
-
-    def lines(self, response):
-        return response.content.decode("utf-8-sig").splitlines()
-
-    def test_form_needs_a_report_and_dates_in_order(self):
-        self.assertEqual(ExportReportForm({}).errors["report"], ["Pumili ng ulat."])
-        self.assertEqual(ExportReportForm({"report": "passwords"}).errors["report"], ["Pumili ng ulat mula sa listahan."])
-        form = ExportReportForm({"report": "usage", "date_from": "2026-10-10", "date_to": "2026-10-01"})
-        self.assertEqual(form.errors["date_to"], ["Dapat hindi mas maaga ang “Hanggang” kaysa sa “Mula”."])
-        self.assertTrue(ExportReportForm({"report": "usage", "date_from": "2026-10-01", "date_to": "2026-10-01"}).is_valid())
-
-    def test_usage_per_day_within_the_dates(self):
-        self.used(DailyUsage.WORD, "kain", 4)
-        self.used(DailyUsage.BOARD, "Tao", 2)
-        self.used(DailyUsage.WORD, "inom", 3, days_ago=1, user=self.ana)
-        self.used(DailyUsage.WORD, "laro", 9, days_ago=10)
-        yesterday = self.today - timedelta(days=1)
-
-        response = self.export(report="usage", date_from=yesterday.isoformat())
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
-        self.assertEqual(response["Content-Disposition"], f'attachment; filename="salitaaco-usage-{self.today.isoformat()}.csv"')
-        self.assertEqual(self.lines(response), [
-            "araw,mga_pindot,mga_bukas_ng_board",
-            f"{yesterday.isoformat()},3,0",
-            f"{self.today.isoformat()},4,2",
-        ])
-        self.assertEqual(len(self.lines(self.export(report="usage"))), 4)
-        self.assertEqual(len(self.lines(self.export(report="usage", date_to=(self.today - timedelta(days=5)).isoformat()))), 2)
-
-    def test_words_over_all_time_are_the_totals_and_with_dates_the_days(self):
-        WordUsage.objects.create(user=self.miguel, word="kain", use_count=30)
-        WordUsage.objects.create(user=self.ana, word="kain", use_count=5)
-        WordUsage.objects.create(user=self.ana, word="inom", use_count=2)
-        self.used(DailyUsage.WORD, "kain", 4)
-
-        self.assertEqual(self.lines(self.export(report="words")), ["salita,mga_pindot", "kain,35", "inom,2"])
-        self.assertEqual(self.lines(self.export(report="words", date_from=self.today.isoformat())), ["salita,mga_pindot", "kain,4"])
-
-    def test_signups_per_day(self):
-        now = timezone.now()
-        User.objects.all().update(date_joined=now - timedelta(days=3))
-        User.objects.filter(pk=self.ana.pk).update(date_joined=now)
-
-        self.assertEqual(self.lines(self.export(report="signups")), [
-            "araw,mga_sign_up",
-            f"{(self.today - timedelta(days=3)).isoformat()},3",
-            f"{self.today.isoformat()},1",
-        ])
-
-    def test_the_words_report_leaves_out_a_familys_own_tiles(self):
+class TopWordsTest(ReportsBase):
+    def test_the_most_used_words_leave_out_a_familys_own_tiles(self):
         # Nanay's family has a tile of a name; Ana, of another family, taps an app word of the same spelling.
         GuardianWord.objects.create(guardian=self.nanay, board="Tao", word="Lola Nena", emoji="👵")
         GuardianWord.objects.create(guardian=self.nanay, board="Pagkain", word="pandesal", emoji="🥖")
@@ -197,26 +147,5 @@ class ExportReportTest(ReportsBase):
         WordUsage.objects.create(user=self.miguel, word="pandesal", use_count=4)
         WordUsage.objects.create(user=self.ana, word="pandesal", use_count=2)
         WordUsage.objects.create(user=self.miguel, word="kain", use_count=1)
-        self.used(DailyUsage.WORD, "Lola Nena", 3)
-        self.used(DailyUsage.WORD, "kain", 1)
 
-        self.assertEqual(self.lines(self.export(report="words")), ["salita,mga_pindot", "pandesal,2", "kain,1"])
-        self.assertEqual(self.lines(self.export(report="words", date_from=self.today.isoformat())), ["salita,mga_pindot", "kain,1"])
         self.assertEqual([(row["word"], row["total_uses"]) for row in analytics.top_words()], [("pandesal", 2), ("kain", 1)])
-
-    def test_reports_hold_counts_only(self):
-        WordUsage.objects.create(user=self.miguel, word="kain", use_count=3)
-        self.used(DailyUsage.WORD, "kain", 3)
-        for report in ["signups", "usage", "words"]:
-            text = self.export(report=report).content.decode("utf-8-sig")
-            for private in ["miguel", "Miguel", "nanay", "Nanay Rosa", "developer"]:
-                self.assertNotIn(private, text, report)
-
-    def test_a_request_that_is_not_valid_returns_to_the_reports_tab_with_the_reason(self):
-        response = self.export(report="usage", date_from="2026-10-10", date_to="2026-10-01")
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response["Content-Type"], "text/html; charset=utf-8")
-        self.assertContains(response, "Dapat hindi mas maaga ang “Hanggang” kaysa sa “Mula”.", status_code=400)
-        self.assertContains(response, "Mag-download ng ulat", status_code=400)
-
-        self.assertContains(self.export(), "Pumili ng ulat.", status_code=400)

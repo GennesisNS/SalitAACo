@@ -93,6 +93,13 @@ dashboard_items = [
                 "icon": "chart",
                 "roles": [ADMINISTRATOR],
             },
+            {
+                "name": "Mga Ulat",
+                "id": "generated_reports",
+                "route": "generated_reports",
+                "icon": "report",
+                "roles": [ADMINISTRATOR],
+            },
         ],
     },
     {
