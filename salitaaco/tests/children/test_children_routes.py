@@ -210,14 +210,16 @@ class ManageChildTest(GuardianBase):
         self.login_as("nanay")
         self.url = reverse("manage_child", args=[self.miguel_account.uuid])
 
-    def test_page_counts_the_childs_own_pictures_and_recordings(self):
+    def test_page_counts_the_childs_own_recordings(self):
         customization = Customization.objects.create(user=self.miguel, word="mama")
-        customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
+        customization.set_sound(random_upload_name("audio/webm"), sound_upload(), "audio/webm")
 
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual((response.context["image_count"], response.context["sound_count"]), (1, 0))
+        self.assertEqual(response.context["sound_count"], 1)
+        self.assertContains(response, "Mayroon na siyang 1 recording.")
+        self.assertContains(response, f'<a href="{reverse("guardian_words")}">Sariling Tile</a>')
         # The voice and the usage have pages of their own, which this one leads to.
         for route in ["child_boards", "child_voice", "child_usage"]:
             self.assertContains(response, f'href="{reverse(route, args=[self.miguel_account.uuid])}"')
@@ -304,7 +306,12 @@ class ManageChildTest(GuardianBase):
 
 
 class ChildBoardTest(GuardianBase):
-    """A guardian sets up their child's tiles on the child's board."""
+    """A guardian sets up their child's tiles on the child's board: on Plus, which a tile's own picture and recording are for."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        approve_payment(make_payment(cls.nanay), cls.developer)
 
     def setUp(self):
         self.login_as("nanay")
@@ -337,28 +344,24 @@ class ChildBoardTest(GuardianBase):
         self.assertEqual(board_data["increment_usage_url"], reverse("increment_word_usage"))
         self.assertContains(response, "I-rate ang app")
 
-    def test_guardian_uploads_and_resets_the_childs_tiles(self):
-        response = self.client.post(self.url, {"tile_image_form": "1", "word": "mama", "image": image_upload()})
-        self.assertRedirects(response, self.url)
+    def test_guardian_records_and_resets_the_childs_tiles(self):
         response = self.client.post(self.url, {"tile_sound_form": "1", "word": "mama", "sound": sound_upload()})
         self.assertRedirects(response, self.url)
 
-        # The tile belongs to the child, not to the guardian who made it.
+        # The recording belongs to the child, not to the guardian who made it.
         customization = Customization.objects.get(word="mama")
         self.assertEqual(customization.user, self.miguel)
-        self.assertTrue(customization.has_image and customization.has_sound)
+        self.assertTrue(customization.has_sound)
         self.assertFalse(Customization.objects.filter(user=self.nanay.user).exists())
 
-        # The guardian can see and hear it, and so can the child.
-        image_url = reverse("view_customization_image", args=[customization.uuid])
+        # The guardian can hear it, and so can the child.
         sound_url = reverse("view_customization_sound", args=[customization.uuid])
         for client in [self.client, self.client_class()]:
             if client is not self.client:
                 self.assertTrue(client.login(username="miguel", password="lihim1234"))
-            for url, content_type in [(image_url, "image/png"), (sound_url, "audio/webm")]:
-                response = client.get(url)
-                self.assertEqual((response.status_code, response["Content-Type"]), (200, content_type))
-                response.close()
+            response = client.get(sound_url)
+            self.assertEqual((response.status_code, response["Content-Type"]), (200, "audio/webm"))
+            response.close()
 
         response = self.client.post(reverse("reset_customization", args=[customization.uuid]))
         self.assertRedirects(response, self.url)
@@ -366,17 +369,17 @@ class ChildBoardTest(GuardianBase):
 
     def test_another_guardian_cannot_touch_the_childs_tiles(self):
         customization = Customization.objects.create(user=self.miguel, word="mama")
-        customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
+        customization.set_sound(random_upload_name("audio/webm"), sound_upload(), "audio/webm")
 
         self.login_as("tatay")
-        self.assertEqual(self.client.get(reverse("view_customization_image", args=[customization.uuid])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("view_customization_sound", args=[customization.uuid])).status_code, 404)
         self.assertEqual(self.client.post(reverse("reset_customization", args=[customization.uuid])).status_code, 404)
-        self.assertEqual(self.client.post(self.url, {"tile_image_form": "1", "word": "papa", "image": image_upload()}).status_code, 404)
+        self.assertEqual(self.client.post(self.url, {"tile_sound_form": "1", "word": "papa", "sound": sound_upload()}).status_code, 404)
         self.assertEqual(Customization.objects.count(), 1)
 
-    def test_child_cannot_see_the_guardians_own_tiles(self):
+    def test_child_cannot_hear_the_guardians_own_tiles(self):
         customization = Customization.objects.create(user=self.nanay.user, word="papa")
-        customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
+        customization.set_sound(random_upload_name("audio/webm"), sound_upload(), "audio/webm")
 
         self.login_as("miguel")
-        self.assertEqual(self.client.get(reverse("view_customization_image", args=[customization.uuid])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("view_customization_sound", args=[customization.uuid])).status_code, 404)

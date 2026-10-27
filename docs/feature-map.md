@@ -19,7 +19,7 @@ The record of what each route of the PHP application became, and of what was add
 | PHP table | Django model | Notes |
 | --- | --- | --- |
 | `users` | `auth.User` + one of `ChildAccount`, `GuardianAccount`, `AdminAccount` | `User` holds username, password, `date_joined` (was `created_at`), `last_login`. The account holds display name and avatar; a child's also holds age and the link to their guardian. `is_admin` became an `AdminAccount` in the `Administrator` group; every other old user becomes a `ChildAccount` with no guardian. (A single `Profile` model did this job until migration 0005.) |
-| `customizations` | `Customization` | Blobs became files under `media/customization-images/` and `media/customization-sounds/` |
+| `customizations` | `Customization` | Sound blobs became files under `media/customization-sounds/`. Picture blobs became files too, until migration 0029 removed a tile's own picture |
 | `word_usage` | `WordUsage` | |
 | `ratings` | `Rating` | The 1 to 5 check constraint is kept |
 
@@ -35,10 +35,10 @@ URL names are given with their path. Paths without a leading slash are under `/d
 | `auth: check` | none | | | | Dropped: no page called it, and server-rendered pages know who is logged in |
 | `/home` (logged in) | `board.view_board` | `board` `board/` | | `dashboard/board/board.html` | Done |
 | `app: list` | part of `view_board` | | | sent to the page as JSON | Done |
-| `app: save_image` | `view_board` (`tile_image_form`) | `board` | `UploadTileImageForm` | | Done |
+| `app: save_image` | Removed: a tile's picture is not changed on the board (pictures are on Sariling Tile) | | | | Removed |
 | `app: save_sound` | `view_board` (`tile_sound_form`) | `board` | `UploadTileSoundForm` | | Done |
 | `app: reset` | `customizations.reset_customization` | `reset_customization` `board/customizations/reset/<uuid>/` | | | Done |
-| `app: image` | `customizations.view_customization_image` | `view_customization_image` `board/customizations/<uuid>/image/` | | | Done |
+| `app: image` | Removed, with the board's tile pictures (migration 0029) | | | | Removed |
 | `app: sound` | `customizations.view_customization_sound` | `view_customization_sound` `board/customizations/<uuid>/sound/` | | | Done |
 | `app: increment_usage` | `usage.increment_word_usage` | `increment_word_usage` `board/usage/increment/` | `TileWordForm` | JSON | Done |
 | `app: frequent_list` | `usage.list_frequent_words`, and part of `view_board` | `list_frequent_words` `board/usage/frequent/` | | JSON | Done |
@@ -203,6 +203,7 @@ It is its own app in the top-level `public/` folder. The project lists it in `IN
 - Admins see counts of what is used, never the sentences built on a board. A family's own boards and tiles are left out of the admin's counts (only the family's own taps of their tile; the same word as an app tile still counts for everyone else).
 - Reports on Mga Ulat list guardians' and admins' usernames, never a child: children, their ratings included, are only counted. A report is kept as made, and an admin can delete it.
 - Only a word one of the user's tiles says is counted when tapped, or given a picture or a recording.
+- A tile's own recording is for paid plans; on Free it is kept, not played, until renewal. A tile's picture is not changed on the board, only on Sariling Tile (a guardian's own tiles) and Mga Salita (an admin's).
 - Every route is opened by every role in `tests/routes/test_every_route.py`, which fails on any server error and on a new route without a sample. The 500 page is drawn without the database.
 
 Kept from the PHP application against the MYO conventions, because behaviour wins:

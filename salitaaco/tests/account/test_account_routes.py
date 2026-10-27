@@ -176,14 +176,13 @@ class DeleteAccountTest(UserBase):
         profile = ChildAccount.objects.get(user=self.miguel)
         profile.set_avatar(random_upload_name("image/png"), image_upload(), "image/png")
         customization = Customization.objects.create(user=self.miguel, word="mama")
-        customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
         customization.set_sound(random_upload_name("audio/webm"), sound_upload(), "audio/webm")
         WordUsage.record_use(self.miguel, "kain")
         Rating.objects.create(user=self.miguel, rating=5)
-        paths = [profile.avatar.path, customization.image.path, customization.sound.path]
+        paths = [profile.avatar.path, customization.sound.path]
 
         ana_customization = Customization.objects.create(user=self.ana, word="mama")
-        ana_customization.set_image(random_upload_name("image/png"), image_upload(), "image/png")
+        ana_customization.set_sound(random_upload_name("audio/webm"), sound_upload(), "audio/webm")
 
         self.login_as("miguel")
         response = self.client.post(reverse("profile"), {"delete_account_form": "", "password": "lihim1234"})
@@ -198,5 +197,5 @@ class DeleteAccountTest(UserBase):
             self.assertFalse(os.path.exists(path), path)
 
         # Another account's data is untouched, and the session is over.
-        self.assertTrue(os.path.exists(Customization.objects.get(user=self.ana).image.path))
+        self.assertTrue(os.path.exists(Customization.objects.get(user=self.ana).sound.path))
         self.assertTrue(self.client.get(reverse("board")).url.startswith("/login/"))

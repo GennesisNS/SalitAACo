@@ -102,7 +102,7 @@ def delete_user_account(user):
 
     file_names = []
     for customization in Customization.objects.filter(user=user):
-        file_names += [customization.image.name, customization.sound.name]
+        file_names.append(customization.sound.name)
     for payment in Payment.objects.filter(guardian__user=user):
         file_names.append(payment.proof.name)
     for board in GuardianBoard.objects.filter(guardian__user=user):

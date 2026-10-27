@@ -49,9 +49,7 @@
 <!-- ============== FEATURE USAGE ============== -->
 <div class="statsGrid">
   {% include "components/analytics/stat_card.html" with label="Kabuuang taps" value=overview.total_taps %}
-  {% include "components/analytics/stat_card.html" with label="Mga tile na binago" value=customized_tiles sub="may sariling larawan o tunog" %}
-  {% include "components/analytics/stat_card.html" with label="Custom na larawan" value=overview.total_images %}
-  {% include "components/analytics/stat_card.html" with label="Custom na tunog" value=overview.total_sounds %}
+  {% include "components/analytics/stat_card.html" with label="Mga tile na may sariling recording" value=overview.total_sounds %}
   {% include "components/analytics/stat_card.html" with label="Boses ng pamilya" value=family_voices %}
 </div>
 

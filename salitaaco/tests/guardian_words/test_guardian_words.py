@@ -631,7 +631,12 @@ class GuardianWordAudioTest(SharedTileAudioTestMixin, GuardianWordsBase):
 
 
 class PlanLimitsTest(GuardianWordsBase):
-    LIMITS = {"free_word_limit": "3", "plus_word_limit": "30", "free_board_limit": "1", "plus_board_limit": "8"}
+    # The tile and board limits, and each plan's card of child and voice limits, all sent by one button.
+    LIMITS = {
+        "free_word_limit": "3", "plus_word_limit": "30", "free_board_limit": "1", "plus_board_limit": "8",
+        "free-limits-child_limit": "1", "free-limits-family_voice_limit": "2",
+        "plus-limits-child_limit": "3", "plus-limits-family_voice_limit": "",
+    }
 
     def test_an_admin_sets_the_four_limits_on_mga_plano(self):
         url = reverse("system_plans")
@@ -642,7 +647,7 @@ class PlanLimitsTest(GuardianWordsBase):
 
         response = self.client.post(url, {"limits_form": "", **self.LIMITS})
         self.assertRedirects(response, f"{url}#limits")
-        self.assertEqual(messages_of(response), ["Naka-save na ang mga limit ng Free at Plus."])
+        self.assertEqual(messages_of(response), ["Naka-save na ang mga limit ng mga plano."])
         setting = SiteSetting.load()
         self.assertEqual(
             (setting.free_word_limit, setting.plus_word_limit, setting.free_board_limit, setting.plus_board_limit),
@@ -656,12 +661,16 @@ class PlanLimitsTest(GuardianWordsBase):
     def test_the_limits_are_grouped_by_plan_below_the_plan_cards(self):
         self.login_as("developer")
         content = self.client.get(reverse("system_plans")).content.decode()
-        # Below the plan cards, Free's two fields together, then the paid plans' two.
+        # Below the plan cards: Free's tile and board limits, the paid plans', then each plan's child and voice limits.
         order = [
             'name="plus-name"', "<h2>Mga Limit ng Plano</h2>",
-            '<h3 id="freeLimitsTitle">Free</h3>', 'name="free_word_limit"', 'name="free_board_limit"',
-            '<h3 id="paidLimitsTitle">Mga bayad na plano</h3>', "Para sa mga naka-SalitAACo Plus.",
-            'name="plus_word_limit"', 'name="plus_board_limit"', 'name="limits_form"',
+            '<h3 id="freeLimitsTitle">Free: tile at board</h3>', 'name="free_word_limit"', 'name="free_board_limit"',
+            '<h3 id="paidLimitsTitle">Mga bayad na plano: tile at board</h3>', "Para sa mga naka-SalitAACo Plus.",
+            'name="plus_word_limit"', 'name="plus_board_limit"',
+            '<h3 id="familyLimitsTitle-free">Free: bata at boses</h3>', 'name="free-limits-child_limit"',
+            'name="free-limits-family_voice_limit"',
+            '<h3 id="familyLimitsTitle-plus">SalitAACo Plus: bata at boses</h3>', 'name="plus-limits-child_limit"',
+            'name="plus-limits-family_voice_limit"', 'name="limits_form"',
         ]
         positions = [content.index(text) for text in order]
         self.assertEqual(positions, sorted(positions))

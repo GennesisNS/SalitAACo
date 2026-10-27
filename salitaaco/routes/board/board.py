@@ -7,7 +7,6 @@ from django.urls import reverse
 
 from salitaaco.defaults.board import FEELINGS_BOARD
 from salitaaco.defaults.vocabulary import VERB_CATEGORY
-from salitaaco.forms.board.upload_tile_image import UploadTileImageForm
 from salitaaco.forms.board.upload_tile_sound import UploadTileSoundForm
 from salitaaco.forms.rating.submit_rating import SubmitRatingForm
 from salitaaco.models.child_account import ChildAccount
@@ -17,6 +16,7 @@ from salitaaco.utils.account import get_user_account
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.board import board_words, quick_words
 from salitaaco.utils.children import guardian_child_or_404
+from salitaaco.utils.customizations import PLUS_CUSTOMIZATION, can_customize_tiles
 from salitaaco.utils.family_voice import family_voice_urls
 from salitaaco.utils.guardian_boards import board_guardian, boards_of
 from salitaaco.utils.guardian_words import guardian_word_audio_urls, shown_guardian_words
@@ -54,10 +54,11 @@ def view_board(request, child_uuid=None):
     # The child whose board this is (None on a guardian's or an admin's own), and its boards.
     owner_child = managed_child or ChildAccount.objects.filter(user=owner).select_related("family_voice").first()
     categories = boards_of(owner, owner_child)
-    # A picture or a recording is only for a tile these boards have.
+    # A tile's own recording is only for a tile these boards have, and only on a paid plan.
+    # (Its picture is not changed on the board: see Sariling Tile and Mga Salita.)
     words = board_words(categories)
+    can_customize = can_customize_tiles(owner, owner_child)
 
-    tile_image_form = UploadTileImageForm()
     tile_sound_form = UploadTileSoundForm()
     rating_form = SubmitRatingForm(initial={
         "rating": user_rating.rating if user_rating else "",
@@ -65,19 +66,8 @@ def view_board(request, child_uuid=None):
     })
 
     if request.method == "POST":
-        if "tile_image_form" in request.POST:
-            tile_image_form = UploadTileImageForm(request.POST, request.FILES, words=words)
-            if tile_image_form.is_valid():
-                image = tile_image_form.cleaned_data['image']
-                customization, _ = Customization.objects.get_or_create(
-                    user=owner,
-                    word=tile_image_form.cleaned_data['word'],
-                )
-                customization.set_image(random_upload_name(image.content_type), image, image.content_type)
-                messages.success(request, "Nai-save na ang larawan ng tile.")
-            else:
-                # The upload form has no visible fields, so its error is shown as a toast.
-                messages.error(request, first_form_error(tile_image_form))
+        if "tile_sound_form" in request.POST and not can_customize:
+            messages.error(request, PLUS_CUSTOMIZATION)
             return redirect(board_url)
 
         if "tile_sound_form" in request.POST:
@@ -91,6 +81,7 @@ def view_board(request, child_uuid=None):
                 customization.set_sound(random_upload_name(sound.content_type), sound, sound.content_type)
                 messages.success(request, "Nai-save na ang tunog ng tile.")
             else:
+                # The upload form has no visible fields, so its error is shown as a toast.
                 messages.error(request, first_form_error(tile_sound_form))
             return redirect(board_url)
 
@@ -107,23 +98,23 @@ def view_board(request, child_uuid=None):
                 messages.success(request, "Salamat sa iyong rating!")
                 return redirect(board_url)
 
+    # The tiles' own recordings, which play before the family voice and the app's;
+    # on Free they are kept but not played, until the plan allows them again.
     customizations = [
         {
             "uuid": str(customization.uuid),
             "word": customization.word,
-            "has_image": customization.has_image,
             "has_sound": customization.has_sound,
-            "image_url": f"{reverse('view_customization_image', args=[customization.uuid])}?v={customization.version}",
             "sound_url": f"{reverse('view_customization_sound', args=[customization.uuid])}?v={customization.version}",
             "reset_url": reverse('reset_customization', args=[customization.uuid]),
         }
-        for customization in Customization.objects.filter(user=owner)
+        for customization in (Customization.objects.filter(user=owner) if can_customize else [])
     ]
 
-    # The voice for tiles nobody recorded by hand: the child's family voice where it
-    # already has the word, otherwise the app's shared voice.
     # The guardian's own tiles that show, up to their plan's limit.
     own_words = shown_guardian_words(board_guardian(owner, owner_child))
+    # The voice for tiles nobody recorded by hand: the child's family voice where it
+    # already has the word, otherwise the app's shared voice.
     tile_audio = tile_audio_urls()
     tile_audio.update(guardian_word_audio_urls(own_words))
     if owner_child and owner_child.family_voice:
@@ -133,10 +124,10 @@ def view_board(request, child_uuid=None):
         "managed_child": managed_child,
         # Drawn at the size its owner chose in Settings, so a guardian sees a child's board as the child does.
         "tile_size": (managed_child or get_user_account(request.user)).tile_size,
-        "tile_image_form": tile_image_form,
         "tile_sound_form": tile_sound_form,
         "rating_form": rating_form,
         "show_rating_modal": bool(rating_form.errors),
+        "can_customize": can_customize,
         "board_data": {
             # The app's boards and the family's own, with the family's own tiles;
             # a child's are the ones their guardian left on.
@@ -154,6 +145,8 @@ def view_board(request, child_uuid=None):
             "increment_usage_url": None if managed_child else reverse('increment_word_usage'),
             "board_open_url": None if managed_child else reverse('record_board_open'),
             "frequent_words_url": None if managed_child else reverse('list_frequent_words'),
+            # Edit mode (a tile's own recording) is for paid plans.
+            "can_customize": can_customize,
         },
     }
     return render(request, 'dashboard/board/board.html', context)

@@ -80,14 +80,16 @@ def import_user(row):
 
 
 def import_customization(user, row):
-    """Copy one row of the old `customizations` table, writing its blobs out as files."""
+    """
+    Copy one row of the old `customizations` table, writing its recording out
+    as a file. A tile's own picture is no longer kept (migration 0029), so the
+    old picture is left behind, and a row with only a picture is not copied.
+    """
+    if not row.get("sound_data"):
+        return None
     customization = Customization.objects.create(user=user, word=row["word"])
-    if row.get("image_data"):
-        mime = safe_mime(row.get("image_mime"), "image", "application/octet-stream")
-        customization.set_image(random_upload_name(mime), ContentFile(bytes(row["image_data"])), mime)
-    if row.get("sound_data"):
-        mime = safe_mime(row.get("sound_mime"), "audio", "application/octet-stream")
-        customization.set_sound(random_upload_name(mime), ContentFile(bytes(row["sound_data"])), mime)
+    mime = safe_mime(row.get("sound_mime"), "audio", "application/octet-stream")
+    customization.set_sound(random_upload_name(mime), ContentFile(bytes(row["sound_data"])), mime)
     if row.get("updated_at"):
         Customization.objects.filter(pk=customization.pk).update(updated_at=legacy_time(row["updated_at"]))
     return customization

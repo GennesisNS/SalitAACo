@@ -51,7 +51,6 @@ def overview():
         "new_this_week": User.objects.filter(date_joined__gte=week_ago).count(),
         "active_today": User.objects.filter(last_login__gte=today, last_login__lt=tomorrow).count(),
         "active_this_week": User.objects.filter(last_login__gte=week_ago).count(),
-        "total_images": Customization.objects.exclude(image="").count(),
         "total_sounds": Customization.objects.exclude(sound="").count(),
         "total_taps": WordUsage.objects.aggregate(total=Sum("use_count"))["total"] or 0,
         "average_rating": round(average_rating, 2) if average_rating is not None else None,

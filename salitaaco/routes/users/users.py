@@ -46,7 +46,6 @@ def view_users(request):
         users = users.filter(is_active=False)
 
     users = users.select_related(*ACCOUNT_RELATIONS).annotate(
-        image_count=Count("customizations", filter=Q(customizations__image__gt=""), distinct=True),
         sound_count=Count("customizations", filter=Q(customizations__sound__gt=""), distinct=True),
         total_taps=Coalesce(
             Subquery(

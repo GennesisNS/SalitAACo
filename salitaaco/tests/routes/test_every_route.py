@@ -71,7 +71,6 @@ class EveryRouteTest(UserBase):
         guardian_word = picture(GuardianWord.objects.create(guardian=nanay, board=board.name, word="Kuya Jun", emoji="👦"))
         added_word = picture(AddedWord.objects.create(board="Pagkain", word="pandesal", emoji="🥖"))
         customization = Customization.objects.create(user=cls.miguel, word="kain")
-        customization.set_image("larawan.png", ContentFile(image_bytes()), "image/png")
         customization.set_sound("tunog.webm", ContentFile(b"\x1a\x45\xdf\xa3" + b"\0" * 64), "audio/webm")
         child.set_avatar("mukha.png", ContentFile(image_bytes()), "image/png")
         voice = FamilyVoice.objects.create(
@@ -84,7 +83,6 @@ class EveryRouteTest(UserBase):
         )
 
         cls.route_args = {
-            "view_customization_image": [customization.uuid],
             "view_customization_sound": [customization.uuid],
             "reset_customization": [customization.uuid],
             "manage_child": [child.uuid],

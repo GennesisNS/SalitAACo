@@ -1,7 +1,7 @@
 import os
 
 from django.contrib.messages import get_messages
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from salitaaco.models.customization import Customization
 from salitaaco.models.word_usage import WordUsage
@@ -18,7 +18,6 @@ class BoardAccessTest(UserBase):
         routes = [
             reverse("board"),
             reverse("list_frequent_words"),
-            reverse("view_customization_image", args=[customization.uuid]),
             reverse("view_customization_sound", args=[customization.uuid]),
         ]
         for route in routes:
@@ -60,106 +59,91 @@ class BoardAccessTest(UserBase):
 
 
 class TileCustomizationTest(UserBase):
-    def upload_image(self, word="mama", **upload):
-        return self.client.post(reverse("board"), {"tile_image_form": "1", "word": word, "image": image_upload(**upload)})
+    """A tile's own recording, made on the board. A tile's picture is not changed on the board."""
 
     def upload_sound(self, word="mama", **upload):
         return self.client.post(reverse("board"), {"tile_sound_form": "1", "word": word, "sound": sound_upload(**upload)})
 
-    def test_upload_image_then_sound_keeps_one_row_per_word(self):
+    def test_a_recording_is_kept_for_the_word(self):
         self.login_as("miguel")
-
-        response = self.upload_image()
-        self.assertRedirects(response, reverse("board"))
-        self.assertEqual(messages_of(response), ["Nai-save na ang larawan ng tile."])
-
         response = self.upload_sound()
         self.assertRedirects(response, reverse("board"))
         self.assertEqual(messages_of(response), ["Nai-save na ang tunog ng tile."])
 
         customization = Customization.objects.get(user=self.miguel, word="mama")
-        self.assertTrue(customization.has_image)
         self.assertTrue(customization.has_sound)
-        self.assertEqual(customization.image_mime, "image/png")
         self.assertEqual(customization.sound_mime, "audio/webm")
-        self.assertTrue(customization.image.name.endswith(".png"))
-        self.assertNotIn("larawan", customization.image.name)
+        self.assertTrue(customization.sound.name.startswith("customization-sounds/"))
 
-    def test_replacing_an_image_removes_the_old_file(self):
+    def test_a_new_recording_removes_the_old_file(self):
         self.login_as("miguel")
-        self.upload_image()
-        old_path = Customization.objects.get(word="mama").image.path
-
-        self.upload_image(name="bago.jpg", image_format="JPEG", content_type="image/jpeg")
+        self.upload_sound()
+        old_path = Customization.objects.get(word="mama").sound.path
+        self.upload_sound(content_type="audio/ogg")
 
         customization = Customization.objects.get(word="mama")
-        self.assertEqual(customization.image_mime, "image/jpeg")
+        self.assertEqual(customization.sound_mime, "audio/ogg")
         self.assertFalse(os.path.exists(old_path))
-        self.assertTrue(os.path.exists(customization.image.path))
+        self.assertTrue(os.path.exists(customization.sound.path))
 
-    def test_rejected_upload_shows_the_reason_and_saves_nothing(self):
+    def test_there_is_no_picture_to_change_on_the_board(self):
         self.login_as("miguel")
-        response = self.upload_image(name="larawan.bmp", image_format="BMP", content_type="image/bmp")
+        response = self.client.get(reverse("board"))
+        self.assertNotContains(response, "tileImageForm")
+        with self.assertRaises(NoReverseMatch):
+            reverse("view_customization_image", args=[Customization.objects.create(user=self.miguel, word="mama").uuid])
+        # A picture sent the old way is not taken.
+        response = self.client.post(reverse("board"), {"tile_image_form": "1", "word": "papa", "image": image_upload()})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Customization.objects.filter(word="papa").exists())
+
+    def test_a_recording_is_only_for_a_tile_on_the_board(self):
+        self.login_as("miguel")
+        response = self.upload_sound(word="kahit ano")
         self.assertRedirects(response, reverse("board"))
-        self.assertEqual(messages_of(response), ["Hindi suportadong file type ng larawan."])
-        self.assertFalse(Customization.objects.exists())
-
-    def test_a_picture_or_recording_is_only_for_a_tile_on_the_board(self):
-        self.login_as("miguel")
-        for response in [self.upload_image(word="kahit ano"), self.upload_sound(word="kahit ano")]:
-            self.assertRedirects(response, reverse("board"))
-            self.assertEqual(messages_of(response)[-1], "Walang ganitong tile sa board.")
+        self.assertEqual(messages_of(response)[-1], "Walang ganitong tile sa board.")
         self.assertFalse(Customization.objects.exists())
         # A verb tile is set up in the form it shows.
-        self.assertEqual(messages_of(self.upload_image(word="kumain"))[-1], "Nai-save na ang larawan ng tile.")
+        self.assertEqual(messages_of(self.upload_sound(word="kumain"))[-1], "Nai-save na ang tunog ng tile.")
 
-    def test_owner_is_served_the_files(self):
+    def test_owner_is_served_the_recording(self):
         self.login_as("miguel")
-        self.upload_image()
         self.upload_sound()
         customization = Customization.objects.get(word="mama")
-
-        response = self.client.get(reverse("view_customization_image", args=[customization.uuid]))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Content-Type"], "image/png")
-        self.assertEqual(response["Cache-Control"], "private, max-age=86400")
-        self.assertTrue(b"".join(response.streaming_content).startswith(b"\x89PNG"))
 
         response = self.client.get(reverse("view_customization_sound", args=[customization.uuid]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "audio/webm")
+        self.assertEqual(response["Cache-Control"], "private, max-age=86400")
         response.close()
 
-    def test_other_users_cannot_see_or_reset_a_customization(self):
+    def test_other_users_cannot_hear_or_reset_a_customization(self):
         self.login_as("miguel")
-        self.upload_image()
+        self.upload_sound()
         customization = Customization.objects.get(word="mama")
 
         self.login_as("ana")
-        self.assertEqual(self.client.get(reverse("view_customization_image", args=[customization.uuid])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("view_customization_sound", args=[customization.uuid])).status_code, 404)
         self.assertEqual(self.client.post(reverse("reset_customization", args=[customization.uuid])).status_code, 404)
         self.assertTrue(Customization.objects.filter(pk=customization.pk).exists())
 
     def test_missing_media_is_not_found(self):
         self.login_as("miguel")
-        self.upload_image()
-        customization = Customization.objects.get(word="mama")
+        customization = Customization.objects.create(user=self.miguel, word="mama")
         self.assertEqual(self.client.get(reverse("view_customization_sound", args=[customization.uuid])).status_code, 404)
 
-    def test_reset_deletes_the_row_and_its_files(self):
+    def test_reset_deletes_the_row_and_its_recording(self):
         self.login_as("miguel")
-        self.upload_image()
         self.upload_sound()
         customization = Customization.objects.get(word="mama")
-        paths = [customization.image.path, customization.sound.path]
+        path = customization.sound.path
 
         self.assertEqual(self.client.get(reverse("reset_customization", args=[customization.uuid])).status_code, 405)
         response = self.client.post(reverse("reset_customization", args=[customization.uuid]))
 
         self.assertRedirects(response, reverse("board"))
         self.assertFalse(Customization.objects.exists())
-        for path in paths:
-            self.assertFalse(os.path.exists(path))
+        self.assertFalse(os.path.exists(path))
 
 
 class WordUsageTest(UserBase):
