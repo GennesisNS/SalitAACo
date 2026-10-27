@@ -14,10 +14,6 @@ DEFAULT_PLAN = FREE
 # approved while the guardian is still on the plan adds to the end of it.
 PAID_MONTHS = 1
 
-# How many family voices a guardian on a free plan can have. A paid plan has no
-# limit. Voices made while on a paid plan stay when it ends; only adding more stops.
-FREE_FAMILY_VOICE_LIMIT = 2
-
 # How many tiles and boards of their own a guardian can add, on the free plan
 # and on a paid one, until an admin changes them on System Settings > Mga Plano.
 # Each counts across all of the guardian's family's boards. Over a limit, the
@@ -34,6 +30,12 @@ DEFAULT_PLUS_BOARD_LIMIT = 5
 DEFAULT_FREE_CHILD_LIMIT = 1
 DEFAULT_PAID_CHILD_LIMIT = 3
 MAX_CHILD_LIMIT = 50
+
+# How many family voices a guardian can make on a plan is set the same way,
+# on the plan's card; empty is no limit. Migration 0028 started the free plan
+# at 2 and every other plan at no limit. Voices made when a plan allowed more
+# stay when it ends; only adding more stops.
+MAX_FAMILY_VOICE_LIMIT = 50
 
 FREE_PERIOD = "habambuhay"
 PAID_PERIOD = "kada buwan"

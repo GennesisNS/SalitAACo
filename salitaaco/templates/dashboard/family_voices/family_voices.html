@@ -9,10 +9,10 @@
 <div class="pageCard">
   <div class="settingsHeader">
     <h2>🎙️ Boses ng Pamilya <span class="planTag">Plus</span></h2>
-    {% if elevenlabs_is_set_up and at_family_voice_limit %}
-    <a class="primaryBtn" href="{% url 'plan' %}">Kunin ang Plus para makapagdagdag</a>
-    {% elif elevenlabs_is_set_up %}
+    {% if elevenlabs_is_set_up and voice_slots.can_add %}
     <button class="primaryBtn" type="button" data-open-modal="add-family-voice">＋ Magdagdag ng boses</button>
+    {% elif elevenlabs_is_set_up and voice_slots.upgrade %}
+    <a class="primaryBtn" href="{% url 'plan' %}">Kunin ang {{ voice_slots.upgrade.name }} para makapagdagdag</a>
     {% endif %}
   </div>
   <div class="settingsBody">
@@ -24,15 +24,15 @@
 
     {% if not elevenlabs_is_set_up %}
     <p class="emptyState">Hindi pa naka-set up ang paggawa ng boses sa app na ito.</p>
-    {% elif at_family_voice_limit %}
+    {% elif not voice_slots.can_add %}
     <p class="pendingNote">
-      Naabot mo na ang <b>{{ family_voice_limit }} boses</b> ng libreng plano. Hindi ka na makakapagdagdag ng boses hangga't
-      hindi ka naka-SalitAACo Plus. <a href="{% url 'plan' %}">Kunin ang Plus</a>
+      {{ voice_slots.message }}
+      {% if voice_slots.upgrade %}<a href="{% url 'plan' %}">Kunin ang {{ voice_slots.upgrade.name }}</a>{% endif %}
     </p>
-    {% elif family_voice_limit is not None %}
+    {% elif voice_slots.limit is not None %}
     <p class="fieldHelp">
-      Sa libreng plano, hanggang {{ family_voice_limit }} boses ng pamilya ang puwede ({{ voices|length }} na ang nagawa
-      mo). Walang limit sa SalitAACo Plus.
+      Sa {{ voice_slots.plan.name }}, hanggang {{ voice_slots.limit }} boses ng pamilya ang puwede
+      ({{ voice_slots.count }} na ang nagawa mo).
     </p>
     {% endif %}
 
@@ -79,7 +79,7 @@
   </div>
 </div>
 
-{% if elevenlabs_is_set_up and not at_family_voice_limit %}
+{% if elevenlabs_is_set_up and voice_slots.can_add %}
 <!-- ============== ADD A FAMILY VOICE ============== -->
 <div class="settingsBackdrop hidden" data-modal="add-family-voice" data-open="{{ show_add_family_voice_modal|yesno:'true,false' }}">
   <div class="settingsBox wide" role="dialog" aria-modal="true" aria-labelledby="addVoiceTitle">

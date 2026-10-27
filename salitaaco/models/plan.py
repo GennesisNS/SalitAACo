@@ -7,8 +7,8 @@ class Plan(models.Model):
     """
     A plan a guardian can be on, as the plan page, the public website and Mga
     Subscription show it. An admin adds plans, edits the name, price, features,
-    how many child accounts it allows and whether it is offered, and deletes
-    them, on System Settings > Mga Plano. The default plan (Free) always costs
+    how many child accounts and family voices it allows and whether it is
+    offered, and deletes them, on System Settings > Mga Plano. The default plan (Free) always costs
     nothing, is always offered and is never deleted.
     """
     plan_id = models.AutoField(primary_key=True)
@@ -23,6 +23,8 @@ class Plan(models.Model):
     offered = models.BooleanField(default=True)
     # How many child accounts a guardian on this plan can make.
     child_limit = models.PositiveSmallIntegerField(default=DEFAULT_PAID_CHILD_LIMIT)
+    # How many family voices a guardian on this plan can make; empty for no limit.
+    family_voice_limit = models.PositiveSmallIntegerField(blank=True, null=True)
     # The order the plans are shown in.
     position = models.PositiveSmallIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
