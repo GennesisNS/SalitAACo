@@ -13,20 +13,23 @@ adds, edits, offers or not, and deletes here. The rules:
   nothing is deleted.
 
 Below the plans, "Mga Limit ng Plano": how many tiles and custom boards of
-their own a guardian can make on Free and on a paid plan (SiteSetting).
+their own a guardian can make on Free and on a paid plan (SiteSetting), and a
+card for each plan with how many child accounts and family voices it allows
+(Plan). One button saves them all.
 """
 import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
-from salitaaco.defaults.plans import DEFAULT_PAID_CHILD_LIMIT
 from salitaaco.forms.subscriptions.plan import PlanForm
+from salitaaco.forms.system.plan_family_limits import PlanFamilyLimitsForm
 from salitaaco.forms.system.plan_limits import PlanLimitsForm
 from salitaaco.models.plan import Plan
 from salitaaco.models.site_setting import SiteSetting
@@ -35,9 +38,19 @@ from salitaaco.utils.perms_check import is_administrator, multi_user_test
 
 logger = logging.getLogger(__name__)
 
-FIELDS = ["name", "price", "features", "child_limit", "family_voice_limit", "offered"]
+FIELDS = ["name", "price", "features", "offered"]
 NEW_PLAN = "new"
 LIMIT_FIELDS = ["free_word_limit", "free_board_limit", "plus_word_limit", "plus_board_limit"]
+FAMILY_LIMIT_FIELDS = ["child_limit", "family_voice_limit"]
+
+
+def family_limits_form(plan, data=None):
+    """One plan's child-account and family-voice limits, its fields named after the plan, for its card in the limits."""
+    return PlanFamilyLimitsForm(
+        data,
+        prefix=f"{plan.key}-limits",
+        initial={field: getattr(plan, field) for field in FAMILY_LIMIT_FIELDS},
+    )
 
 
 def plan_form(plan, plans, data=None):
@@ -68,19 +81,27 @@ def view_plans(request):
     plans = list(Plan.objects.annotate(payment_count=Count("payments")))
     forms = {plan.key: plan_form(plan, plans) for plan in plans}
     every_name = [plan.name for plan in plans]
-    new_plan_form = PlanForm(prefix=NEW_PLAN, initial={"offered": True, "child_limit": DEFAULT_PAID_CHILD_LIMIT})
+    new_plan_form = PlanForm(prefix=NEW_PLAN, initial={"offered": True})
     setting = SiteSetting.load()
     limits_form = PlanLimitsForm(initial={field: getattr(setting, field) for field in LIMIT_FIELDS})
+    family_forms = {plan.key: family_limits_form(plan) for plan in plans}
 
     if request.method == "POST":
         if "limits_form" in request.POST:
+            # Saved together: the tile and board limits, and each plan's child and voice limits.
             limits_form = PlanLimitsForm(request.POST)
-            if limits_form.is_valid():
-                for field in LIMIT_FIELDS:
-                    setattr(setting, field, limits_form.cleaned_data[field])
-                setting.save()
+            family_forms = {plan.key: family_limits_form(plan, request.POST) for plan in plans}
+            if limits_form.is_valid() and all(form.is_valid() for form in family_forms.values()):
+                with transaction.atomic():
+                    for field in LIMIT_FIELDS:
+                        setattr(setting, field, limits_form.cleaned_data[field])
+                    setting.save()
+                    for plan in plans:
+                        for field in FAMILY_LIMIT_FIELDS:
+                            setattr(plan, field, family_forms[plan.key].cleaned_data[field])
+                        plan.save()
                 logger.info("Admin %s changed the plan limits", request.user.username)
-                messages.success(request, "Naka-save na ang mga limit ng Free at Plus.")
+                messages.success(request, "Naka-save na ang mga limit ng mga plano.")
                 return redirect(f"{reverse('system_plans')}#limits")
 
         elif "new_plan_form" in request.POST:
@@ -120,9 +141,11 @@ def view_plans(request):
         "new_plan_form": new_plan_form,
         "show_new_plan_modal": bool(new_plan_form.errors),
         "limits_form": limits_form,
-        # The limits are Free's and every paid plan's: named here as the plans are.
+        # The tile and board limits are Free's and every paid plan's: named here as the plans are.
         "free_plan": next((plan for plan in plans if plan.is_default), None),
         "paid_plans": [plan for plan in plans if not plan.is_default],
+        # The child and voice limits are each plan's own, a card for each.
+        "family_limits": [{"plan": plan, "form": family_forms[plan.key]} for plan in plans],
     }
     return render(request, 'dashboard/system/plans.html', context)
 

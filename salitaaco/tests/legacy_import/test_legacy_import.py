@@ -95,7 +95,7 @@ class ImportUserTest(UserBase):
 
 
 class ImportUserDataTest(UserBase):
-    def test_customization_blobs_become_files(self):
+    def test_a_recording_becomes_a_file_and_the_old_picture_is_left_behind(self):
         customization = legacy_import.import_customization(self.miguel, {
             "word": "mama",
             "image_data": image_bytes(),
@@ -106,25 +106,25 @@ class ImportUserDataTest(UserBase):
         })
         customization.refresh_from_db()
 
-        self.assertEqual((customization.image_mime, customization.sound_mime), ("image/png", "audio/webm"))
+        self.assertEqual(customization.sound_mime, "audio/webm")
         with customization.sound.open("rb") as sound:
             self.assertEqual(sound.read(), b"recorded sound")
         self.assertEqual(customization.updated_at.isoformat(), "2026-09-02T04:00:00+00:00")
 
-    def test_customization_with_only_a_sound(self):
-        customization = legacy_import.import_customization(self.miguel, {
-            "word": "papa", "image_data": None, "image_mime": None,
-            "sound_data": b"recorded sound", "sound_mime": "audio/webm", "updated_at": None,
+    def test_a_row_with_only_a_picture_is_not_copied(self):
+        result = legacy_import.import_customization(self.miguel, {
+            "word": "papa", "image_data": image_bytes(), "image_mime": "image/png",
+            "sound_data": None, "sound_mime": None, "updated_at": None,
         })
-        self.assertFalse(customization.has_image)
-        self.assertTrue(customization.has_sound)
+        self.assertIsNone(result)
+        self.assertFalse(Customization.objects.exists())
 
     def test_content_type_of_the_wrong_family_is_not_trusted(self):
         customization = legacy_import.import_customization(self.miguel, {
-            "word": "mama", "image_data": b"<script>", "image_mime": "text/html",
-            "sound_data": None, "sound_mime": None, "updated_at": None,
+            "word": "mama", "image_data": None, "image_mime": None,
+            "sound_data": b"<script>", "sound_mime": "text/html", "updated_at": None,
         })
-        self.assertEqual(customization.image_mime, "application/octet-stream")
+        self.assertEqual(customization.sound_mime, "application/octet-stream")
 
     def test_word_usage_and_rating_are_copied(self):
         legacy_import.import_word_usage(self.miguel, {
@@ -146,13 +146,13 @@ class ImportUserDataTest(UserBase):
 
     def test_imported_customization_is_served_to_its_owner(self):
         customization = legacy_import.import_customization(self.miguel, {
-            "word": "mama", "image_data": image_bytes(), "image_mime": "image/png",
-            "sound_data": None, "sound_mime": None, "updated_at": None,
+            "word": "mama", "image_data": None, "image_mime": None,
+            "sound_data": b"recorded sound", "sound_mime": "audio/webm", "updated_at": None,
         })
         self.login_as("miguel")
 
-        response = self.client.get(reverse("view_customization_image", args=[customization.uuid]))
+        response = self.client.get(reverse("view_customization_sound", args=[customization.uuid]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(response["Content-Type"], "audio/webm")
         response.close()
         self.assertEqual(Customization.objects.filter(user=self.miguel).count(), 1)

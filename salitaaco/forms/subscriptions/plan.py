@@ -1,7 +1,5 @@
 from django import forms
 
-from salitaaco.defaults.plans import MAX_CHILD_LIMIT, MAX_FAMILY_VOICE_LIMIT
-
 from ..helpers import BaseForm
 
 MAX_FEATURES = 12
@@ -11,6 +9,8 @@ class PlanForm(BaseForm):
     """
     A plan as an admin edits it on System Settings > Mga Plano. The default
     plan has no price or offered fields: it is always free and always offered.
+    How many child accounts and family voices it allows are set below the plans,
+    with the other limits (forms/system/plan_family_limits.py).
     """
     name = forms.CharField(
         required=True,
@@ -41,34 +41,6 @@ class PlanForm(BaseForm):
             "max_length": "Masyadong mahaba ang listahan (hanggang 1000 character).",
         },
         label="Mga kasama (isa kada linya)",
-    )
-    child_limit = forms.IntegerField(
-        required=True,
-        min_value=1,
-        max_value=MAX_CHILD_LIMIT,
-        widget=forms.NumberInput(attrs={"class": "input", "min": 1, "max": MAX_CHILD_LIMIT}),
-        error_messages={
-            "required": "Ilagay ang bilang.",
-            "invalid": "Hindi tama ang bilang.",
-            "min_value": "Kahit isang account ng bata.",
-            "max_value": f"Hanggang {MAX_CHILD_LIMIT} lang.",
-        },
-        label="Pinakamaraming account ng bata",
-        help_text="Hindi binubura ang mga bata ng tagapag-alagang lampas na rito; hindi lang siya makakapagdagdag.",
-    )
-    # Left empty, the plan has no limit.
-    family_voice_limit = forms.IntegerField(
-        required=False,
-        min_value=0,
-        max_value=MAX_FAMILY_VOICE_LIMIT,
-        widget=forms.NumberInput(attrs={"class": "input", "min": 0, "max": MAX_FAMILY_VOICE_LIMIT, "placeholder": "Walang limit"}),
-        error_messages={
-            "invalid": "Hindi tama ang bilang.",
-            "min_value": "Hindi tama ang bilang.",
-            "max_value": f"Hanggang {MAX_FAMILY_VOICE_LIMIT} lang.",
-        },
-        label="Pinakamaraming boses ng pamilya",
-        help_text="Iwanang blangko para walang limit; 0 para walang makagawa. Hindi binubura ang mga boses na nagawa na.",
     )
     offered = forms.BooleanField(
         required=False,

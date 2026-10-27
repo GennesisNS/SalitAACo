@@ -15,7 +15,7 @@ boardData.categories.forEach((board) => {
   boards[board.name] = board;
 });
 
-const customList = {}; // { word: {has_image, has_sound, image_url, sound_url, reset_url} }
+const customList = {}; // { word: {has_sound, sound_url, reset_url} }: a tile's own recording
 boardData.customizations.forEach((it) => {
   customList[it.word] = it;
 });
@@ -79,6 +79,8 @@ remember(RESTORE_KEY, "0");
 
 // A guardian who opened a child's board is there to set up its tiles, so it starts in edit mode.
 editMode = boardData.managed || recall(EDIT_KEY) === "1";
+// Edit mode sets a tile's own picture and recording, which is for paid plans.
+const canCustomize = boardData.can_customize !== false;
 
 // The Settings page links here with ?edit=1 to open the board in edit mode.
 const pageUrl = new URL(location.href);
@@ -214,11 +216,10 @@ function el(tag, className, text) {
   return node;
 }
 
-// The picture of the tile `item` that says `label`: this user's own picture of it,
-// the picture uploaded with the tile (a word an admin or a guardian added), or its emoji.
-function tilePicture(item, label, imageClass, emojiClass) {
-  const custom = customList[label] || {};
-  const url = custom.has_image ? custom.image_url : item && item.img;
+// The picture of the tile `item`: the one uploaded with it (a word an admin or a
+// guardian added), or its emoji. A tile's picture is not changed on the board.
+function tilePicture(item, imageClass, emojiClass) {
+  const url = item && item.img;
   if (!url) return el("span", emojiClass, (item && item.e) || "📝");
   const img = el("img", imageClass);
   img.src = url;
@@ -302,15 +303,11 @@ function renderTiles(grid, items) {
       c.appendChild(useCountMark);
     }
     if (custom.has_sound) c.appendChild(el("span", "soundmark", "🎙️"));
-    c.appendChild(tilePicture(item, label, "customimg", "emoji"));
+    c.appendChild(tilePicture(item, "customimg", "emoji"));
     c.appendChild(el("span", "", label));
 
     if (editMode) {
       const editRow = el("div", "editRow");
-      const imgBtn = el("button", "", "🖼️");
-      imgBtn.type = "button";
-      imgBtn.title = "Palitan ang larawan";
-      imgBtn.onclick = () => pickImage(label);
       const recBtn = el("button", "", "🎙️");
       recBtn.type = "button";
       recBtn.title = "Mag-record ng tunog";
@@ -319,7 +316,7 @@ function renderTiles(grid, items) {
       resetBtn.type = "button";
       resetBtn.title = "I-reset";
       resetBtn.onclick = () => resetTile(label);
-      editRow.append(imgBtn, recBtn, resetBtn);
+      editRow.append(recBtn, resetBtn);
       c.appendChild(editRow);
     } else {
       c.type = "button";
@@ -329,31 +326,23 @@ function renderTiles(grid, items) {
   });
 }
 
-document.getElementById("editModeBtn").onclick = () => {
-  setEditMode(!editMode);
-};
+// On Free there is no button: edit mode stays off.
+const editModeBtn = document.getElementById("editModeBtn");
+if (editModeBtn) {
+  editModeBtn.onclick = () => {
+    setEditMode(!editMode);
+  };
+}
 function setEditMode(next) {
-  editMode = next;
+  editMode = next && canCustomize;
   // What a guardian does on a child's board must not change how their own board opens.
   if (!boardData.managed) remember(EDIT_KEY, editMode ? "1" : "0");
-  const barBtn = document.getElementById("editModeBtn");
-  barBtn.classList.toggle("editing", editMode);
-  barBtn.textContent = editMode ? "✓ Tapos na mag-edit" : "✏️ I-edit ang mga cell";
+  if (editModeBtn) {
+    editModeBtn.classList.toggle("editing", editMode);
+    editModeBtn.textContent = editMode ? "✓ Tapos na mag-edit" : "✏️ I-edit ang mga cell";
+  }
   renderGrid();
 }
-
-/* ---- editable images: the hidden upload form is submitted as soon as a file is picked ---- */
-const tileImageForm = document.getElementById("tileImageForm");
-const tileImageFile = document.getElementById("tileImageFile");
-function pickImage(word) {
-  document.getElementById("tileImageWord").value = word;
-  tileImageFile.click();
-}
-tileImageFile.onchange = () => {
-  if (!tileImageFile.files[0] || !document.getElementById("tileImageWord").value) return;
-  keepScreenAcrossReload();
-  tileImageForm.submit();
-};
 
 /* ---- recordable sounds: the recording is placed in the hidden upload form and submitted ---- */
 const tileSoundForm = document.getElementById("tileSoundForm");
@@ -405,7 +394,7 @@ async function toggleRecord(word, btnEl) {
   }
 }
 
-/* ---- reset a tile back to its default emoji and voice ---- */
+/* ---- reset a tile back to its default voice ---- */
 const resetTileForm = document.getElementById("resetTileForm");
 function resetTile(word) {
   const custom = customList[word];
@@ -440,7 +429,7 @@ function renderSentence() {
   }
   words.forEach((w, i) => {
     const t = el("span", i === playingIndex ? "tag playing" : "tag");
-    t.append(tilePicture(findTile(w), w, "tagImage", "tagEmoji"), w);
+    t.append(tilePicture(findTile(w), "tagImage", "tagEmoji"), w);
     t.title = "Pindutin para alisin";
     t.onclick = () => {
       words.splice(i, 1);

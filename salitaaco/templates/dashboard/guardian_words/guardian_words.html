@@ -83,8 +83,8 @@
     <button class="primaryBtn formActions" type="submit" name="word_form">＋ Idagdag ang tile</button>
   </form>
   <p class="fieldHelp">
-    Gagawin ang boses ng bagong tile sa boses ng app at sa bawat boses ng pamilya mo. Puwede mo ring lagyan ito ng
-    sariling larawan o recording mula sa “Mga Tile”, gaya ng ibang tile.
+    Gagawin ang boses ng bagong tile sa boses ng app at sa bawat boses ng pamilya mo. Puwede mo ring i-record dito ang
+    sarili mong boses mula sa “Mga Tile” (🎙️), gaya ng ibang tile.
   </p>
   {% endif %}
 </section>
@@ -102,7 +102,7 @@
       {% csrf_token %}
       <p class="desc">
         Mananatili ang petsa kung kailan ito naidagdag. Kapag pinalitan ang salita, gagawin muli ang boses nito, at
-        lilipat sa bago ang bilang ng paggamit nito at ang sariling larawan o recording nito mula sa “Mga Tile”.
+        lilipat sa bago ang bilang ng paggamit nito at ang sariling recording nito mula sa “Mga Tile”.
       </p>
       {% include "components/vocabulary/word_fields.html" with word_form=item.edit_form icon_url=item.icon_url %}
       <div class="confirmRow">

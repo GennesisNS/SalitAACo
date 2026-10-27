@@ -29,15 +29,6 @@ def get_customization_or_404(request, customization_uuid):
 
 @login_required(login_url='/login/')
 @multi_user_test(is_app_user)
-def view_customization_image(request, customization_uuid):
-    customization = get_customization_or_404(request, customization_uuid)
-    if not customization.has_image:
-        raise Http404()
-    return private_file_response(customization.image, customization.image_mime)
-
-
-@login_required(login_url='/login/')
-@multi_user_test(is_app_user)
 def view_customization_sound(request, customization_uuid):
     customization = get_customization_or_404(request, customization_uuid)
     if not customization.has_sound:

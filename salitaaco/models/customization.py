@@ -4,15 +4,16 @@ import uuid
 
 class Customization(models.Model):
     """
-    A user's own picture and/or recorded sound for one word on the board.
-    There is at most one row per (user, word); resetting a tile deletes the row.
+    A user's own recorded sound for one word on the board, which plays before
+    the family voice and the app's voice. There is at most one row per (user,
+    word); resetting a tile deletes the row. A tile's picture is not changed
+    here: it is its emoji, or the picture uploaded with it (Sariling Tile, Mga
+    Salita); migration 0029 deleted the pictures made on the board before.
     """
     customization_id = models.AutoField(primary_key=True)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='customizations')
     word = models.CharField(max_length=100)
-    image = models.ImageField(upload_to='customization-images/', blank=True)
-    image_mime = models.CharField(max_length=50, blank=True)
     sound = models.FileField(upload_to='customization-sounds/', blank=True)
     sound_mime = models.CharField(max_length=50, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -23,25 +24,13 @@ class Customization(models.Model):
         ]
 
     @property
-    def has_image(self):
-        return bool(self.image)
-
-    @property
     def has_sound(self):
         return bool(self.sound)
 
     @property
     def version(self):
-        """Changes whenever the row does, so the browser re-fetches replaced media."""
+        """Changes whenever the row does, so the browser re-fetches a replaced recording."""
         return int(self.updated_at.timestamp())
-
-    def set_image(self, file_name, content, mime):
-        """Replace the picture, removing the previous file from storage."""
-        if self.image:
-            self.image.delete(save=False)
-        self.image.save(file_name, content, save=False)
-        self.image_mime = mime
-        self.save()
 
     def set_sound(self, file_name, content, mime):
         """Replace the recording, removing the previous file from storage."""
@@ -52,13 +41,11 @@ class Customization(models.Model):
         self.save()
 
     def delete_files(self):
-        if self.image:
-            self.image.delete(save=False)
         if self.sound:
             self.sound.delete(save=False)
 
     def reset(self):
-        """Put the tile back to its default: remove the files and the row."""
+        """Put the tile back to its default: remove the recording and the row."""
         self.delete_files()
         self.delete()
 

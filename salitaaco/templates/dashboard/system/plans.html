@@ -39,16 +39,6 @@
       {{ form.features }}
       <small class="fieldError">{{ form.features.errors }}</small>
 
-      <label for="{{ form.child_limit.id_for_label }}">{{ form.child_limit.label }}</label>
-      {{ form.child_limit }}
-      <small class="fieldHelp">{{ form.child_limit.help_text }}</small>
-      <small class="fieldError">{{ form.child_limit.errors }}</small>
-
-      <label for="{{ form.family_voice_limit.id_for_label }}">{{ form.family_voice_limit.label }}</label>
-      {{ form.family_voice_limit }}
-      <small class="fieldHelp">{{ form.family_voice_limit.help_text }}</small>
-      <small class="fieldError">{{ form.family_voice_limit.errors }}</small>
-
       {% if form.offered %}
       <div class="switchRow">
         <label class="switch">
@@ -78,13 +68,18 @@
     bilang; 0 para walang makagawa. Hindi binubura ang lampas sa bagong bilang: nakikita pa rin ang mga pinakaluma
     hanggang sa bilang, at nakatago muna ang iba hanggang payagan ulit.
   </p>
+  <p class="desc">
+    Ilang account ng bata at boses ng pamilya ang puwede ay sariling bilang ng bawat plano. Hindi binubura ang mga bata
+    o boses na lampas na rito; hindi lang makakapagdagdag ng bago.
+  </p>
 
   <form method="post" action="{% url 'system_plans' %}#limits" class="settingsFields" novalidate>
     {% csrf_token %}
-    <div class="planGrid">
+    <!-- Two rows of cards: the tile and board limits above, each plan's child and voice limits below. -->
+    <div class="planGrid limitsGrid">
       <div class="planCard" role="group" aria-labelledby="freeLimitsTitle">
-        <h3 id="freeLimitsTitle">{{ free_plan.name|default:"Free" }}</h3>
-        <p class="desc">Para sa mga tagapag-alagang walang bayad na plano.</p>
+        <h3 id="freeLimitsTitle">{{ free_plan.name|default:"Free" }}: tile at board</h3>
+        <p class="desc">Para sa mga naka-{{ free_plan.name|default:"Free" }}.</p>
 
         <label for="{{ limits_form.free_word_limit.id_for_label }}">{{ limits_form.free_word_limit.label }}</label>
         {{ limits_form.free_word_limit }}
@@ -96,7 +91,7 @@
       </div>
 
       <div class="planCard" role="group" aria-labelledby="paidLimitsTitle">
-        <h3 id="paidLimitsTitle">Mga bayad na plano</h3>
+        <h3 id="paidLimitsTitle">Mga bayad na plano: tile at board</h3>
         <p class="desc">
           Para sa mga naka-{% for plan in paid_plans %}{{ plan.name }}{% if not forloop.last %}, {% endif %}{% empty %}bayad na plano{% endfor %}.
         </p>
@@ -109,6 +104,26 @@
         {{ limits_form.plus_board_limit }}
         <small class="fieldError">{{ limits_form.plus_board_limit.errors }}</small>
       </div>
+    </div>
+
+    <div class="planGrid limitsGrid">
+      {% for item in family_limits %}
+      {% with form=item.form %}
+      <div class="planCard" role="group" aria-labelledby="familyLimitsTitle-{{ item.plan.key }}">
+        <h3 id="familyLimitsTitle-{{ item.plan.key }}">{{ item.plan.name }}: bata at boses</h3>
+        <p class="desc">Para sa mga naka-{{ item.plan.name }}.</p>
+
+        <label for="{{ form.child_limit.id_for_label }}">{{ form.child_limit.label }}</label>
+        {{ form.child_limit }}
+        <small class="fieldError">{{ form.child_limit.errors }}</small>
+
+        <label for="{{ form.family_voice_limit.id_for_label }}">{{ form.family_voice_limit.label }}</label>
+        {{ form.family_voice_limit }}
+        <small class="fieldHelp">{{ form.family_voice_limit.help_text }}</small>
+        <small class="fieldError">{{ form.family_voice_limit.errors }}</small>
+      </div>
+      {% endwith %}
+      {% endfor %}
     </div>
 
     <button class="primaryBtn" type="submit" name="limits_form">I-save ang mga limit</button>
@@ -136,15 +151,7 @@
       <label for="{{ form.features.id_for_label }}">{{ form.features.label }}</label>
       {{ form.features }}
       <small class="fieldError">{{ form.features.errors }}</small>
-
-      <label for="{{ form.child_limit.id_for_label }}">{{ form.child_limit.label }}</label>
-      {{ form.child_limit }}
-      <small class="fieldError">{{ form.child_limit.errors }}</small>
-
-      <label for="{{ form.family_voice_limit.id_for_label }}">{{ form.family_voice_limit.label }}</label>
-      {{ form.family_voice_limit }}
-      <small class="fieldHelp">{{ form.family_voice_limit.help_text }}</small>
-      <small class="fieldError">{{ form.family_voice_limit.errors }}</small>
+      <small class="fieldHelp">Itatakda ang bilang ng bata at boses nito sa “Mga Limit ng Plano” sa ibaba.</small>
 
       <div class="switchRow">
         <label class="switch">

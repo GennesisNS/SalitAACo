@@ -17,17 +17,22 @@
     <h3>Pag-edit ng mga Tile / Cell</h3>
     <p class="desc">
       Dito matatagpuan ang toggle para mag-edit ng mga tile. Kapag naka-on, lalabas sa bawat tile ang mga button
-      para: magpalit ng larawan (🖼️), mag-record ng tunog (🎙️), o ibalik sa default (↺).
+      para: mag-record ng tunog (🎙️), o ibalik sa default (↺).
     </p>
     <div class="tilesCard">
+      {% if can_customize %}
       <a class="iconbtn blockBtn" href="{% url 'board' %}?edit=1">
         ✏️ Buksan ang Edit Mode
       </a>
+      {% elif is_child %}
+      <p class="pendingNote">Hindi pa puwedeng baguhin ang mga tile.</p>
+      {% else %}
+      <p class="pendingNote">{{ plus_customization }} <a href="{% url 'plan' %}">Kunin ang Plus</a></p>
+      {% endif %}
       <p>
         💡 Tips: <br />
-        • 🖼️ <b>Larawan</b> – Mag-upload ng litrato para sa salita (hal. totoong larawan ng "Nanay").<br />
         • 🎙️ <b>Tunog</b> – Mag-record ng sariling boses para sa salita (maririnig kapag pinindot ang ▶ Patugtugin).<br />
-        • ↺ <b>I-reset</b> – Ibalik ang default na emoji at gamitin ang boses ng TTS.
+        • ↺ <b>I-reset</b> – Burahin ang recording at gamitin muli ang karaniwang boses.
       </p>
     </div>
   </div>

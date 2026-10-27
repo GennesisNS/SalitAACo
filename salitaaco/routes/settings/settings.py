@@ -8,6 +8,7 @@ from salitaaco.forms.settings.tile_size import TileSizeForm
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.utils.account import get_user_account
 from salitaaco.utils.active_nav import active_nav
+from salitaaco.utils.customizations import PLUS_CUSTOMIZATION, can_customize_tiles
 from salitaaco.utils.family_voice import family_voice_preview_url
 from salitaaco.utils.perms_check import is_app_user, multi_user_test
 from salitaaco.utils.tile_audio import tile_audio_urls
@@ -58,6 +59,9 @@ def view_settings(request):
         voice_choices = list(zip(voice_form["family_voice"], previews))
 
     context = {
+        # Edit mode (a tile's own picture and recording) is for paid plans.
+        "can_customize": can_customize_tiles(request.user, child),
+        "plus_customization": PLUS_CUSTOMIZATION,
         "tile_size_form": tile_size_form,
         "tile_size": account.tile_size,
         "voice_form": voice_form,

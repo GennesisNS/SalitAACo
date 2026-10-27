@@ -694,6 +694,17 @@
   max-width: 1040px;
   margin-bottom: 20px;
 }
+/* Mga Limit ng Plano: two cards to a row across the whole section (the tile and board limits,
+   then each plan's child and voice limits), each row's cards of one height. */
+.planGrid.limitsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: none;
+}
+@media (max-width: 640px) {
+  .planGrid.limitsGrid {
+    grid-template-columns: 1fr;
+  }
+}
 .planCard {
   position: relative;
   display: flex;

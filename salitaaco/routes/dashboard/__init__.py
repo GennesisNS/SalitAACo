@@ -33,7 +33,6 @@ urlpatterns = [
     path('', RedirectView.as_view(pattern_name='board'), name='dashboard'),
 
     path('board/', board.view_board, name='board'),
-    path('board/customizations/<uuid:customization_uuid>/image/', customizations.view_customization_image, name='view_customization_image'),
     path('board/customizations/<uuid:customization_uuid>/sound/', customizations.view_customization_sound, name='view_customization_sound'),
     path('board/customizations/reset/<uuid:customization_uuid>/', customizations.reset_customization, name='reset_customization'),
     path('board/usage/increment/', usage.increment_word_usage, name='increment_word_usage'),

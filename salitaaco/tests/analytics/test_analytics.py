@@ -10,7 +10,7 @@ from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.customization import Customization
 from salitaaco.models.rating import Rating
 from salitaaco.models.word_usage import WordUsage
-from salitaaco.tests.users_base import UserBase, image_upload, make_guardian, sound_upload
+from salitaaco.tests.users_base import UserBase, make_guardian, sound_upload
 from salitaaco.utils import analytics
 from salitaaco.utils.pagination import paginate
 from salitaaco.utils.uploads import random_upload_name
@@ -61,10 +61,7 @@ class AnalyticsNumbersTest(UserBase):
         User.objects.filter(pk=cls.ana.pk).update(date_joined=now - timedelta(days=10), last_login=now - timedelta(days=8))
 
         mama = Customization.objects.create(user=cls.miguel, word="mama")
-        mama.set_image(random_upload_name("image/png"), image_upload(), "image/png")
         mama.set_sound(random_upload_name("audio/webm"), sound_upload(size=96), "audio/webm")
-        papa = Customization.objects.create(user=cls.miguel, word="papa")
-        papa.set_image(random_upload_name("image/png"), image_upload(), "image/png")
 
         WordUsage.objects.create(user=cls.miguel, word="kain", use_count=5)
         WordUsage.objects.create(user=cls.miguel, word="inom", use_count=2)
@@ -81,7 +78,6 @@ class AnalyticsNumbersTest(UserBase):
         self.assertEqual(numbers["new_this_week"], 2)
         self.assertEqual(numbers["active_today"], 1)
         self.assertEqual(numbers["active_this_week"], 1)
-        self.assertEqual(numbers["total_images"], 2)
         self.assertEqual(numbers["total_sounds"], 1)
         self.assertEqual(numbers["total_taps"], 11)
         self.assertEqual(numbers["average_rating"], 4.5)
@@ -126,11 +122,11 @@ class AnalyticsNumbersTest(UserBase):
         users = {user.username: user for user in self.client.get(reverse("users")).context["users"]}
 
         miguel = users["miguel"]
-        self.assertEqual((miguel.image_count, miguel.sound_count, miguel.total_taps, miguel.rating_stars), (2, 1, 7, 5))
+        self.assertEqual((miguel.sound_count, miguel.total_taps, miguel.rating_stars), (1, 7, 5))
         self.assertEqual((miguel.account.display_name, miguel.account.age, miguel.account.ROLE_LABEL), ("Miguel", 7, "Bata"))
 
         developer = users["developer"]
-        self.assertEqual((developer.image_count, developer.sound_count, developer.total_taps), (0, 0, 0))
+        self.assertEqual((developer.sound_count, developer.total_taps), (0, 0))
         self.assertIsNone(developer.rating_stars)
         self.assertEqual((developer.account.display_name, developer.account.age, developer.account.ROLE_LABEL), ("Developer", None, "Admin"))
 

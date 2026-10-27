@@ -69,9 +69,13 @@
 
     <h3>Mga Tile ng Bata</h3>
     <p class="desc">
-      Buksan ang mga tile ni {{ child.display_name }} para magpalit ng larawan o mag-record ng tunog para sa kanya.
-      Mayroon na siyang {{ image_count }} sariling larawan at {{ sound_count }} recording.
+      Buksan ang mga tile ni {{ child.display_name }} para i-record ang sarili mong boses sa isang tile (🎙️): iyon ang
+      maririnig niya kapag pinindot ito, bago ang boses ng pamilya. Mayroon na siyang {{ sound_count }} recording.
+      Ang larawan ng sarili mong tile ay sa <a href="{% url 'guardian_words' %}">Sariling Tile</a>.
     </p>
+    {% if not can_customize %}
+    <p class="pendingNote">{{ plus_customization }} <a href="{% url 'plan' %}">Kunin ang Plus</a></p>
+    {% endif %}
     <a class="iconbtn blockBtn" href="{% url 'child_board' child.uuid %}">
       ✏️ Ayusin ang mga tile ni {{ child.display_name }}
     </a>

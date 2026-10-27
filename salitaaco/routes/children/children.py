@@ -20,6 +20,7 @@ from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.utils.account import add_to_group, delete_user_account
 from salitaaco.utils.active_nav import active_nav
 from salitaaco.utils.children import add_board_numbers, children_with_numbers, guardian_child_or_404
+from salitaaco.utils.customizations import PLUS_CUSTOMIZATION, can_customize_tiles
 from salitaaco.utils.pagination import paginate
 from salitaaco.utils.perms_check import is_guardian, multi_user_test
 from salitaaco.utils.plans import child_slots
@@ -124,8 +125,6 @@ def manage_child(request, child_uuid):
                 messages.success(request, f"Permanente nang nabura ang account ni {display_name}.")
                 return redirect('children')
 
-    customizations = Customization.objects.filter(user=child.user)
-
     context = {
         "child": child,
         "child_form": child_form,
@@ -133,8 +132,10 @@ def manage_child(request, child_uuid):
         "password_form": password_form,
         "delete_child_form": delete_child_form,
         "show_delete_child_modal": bool(delete_child_form.errors),
-        "image_count": customizations.exclude(image="").count(),
-        "sound_count": customizations.exclude(sound="").count(),
+        # The tiles the guardian recorded their own voice on, which is for paid plans.
+        "sound_count": Customization.objects.filter(user=child.user).exclude(sound="").count(),
+        "can_customize": can_customize_tiles(child.user, child),
+        "plus_customization": PLUS_CUSTOMIZATION,
     }
     return render(request, 'dashboard/children/child.html', context)
 
