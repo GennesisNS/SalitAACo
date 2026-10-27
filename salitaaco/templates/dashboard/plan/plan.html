@@ -27,8 +27,14 @@
     <p class="planPrice">₱{{ item.plan.price }} <small>{{ item.plan.period }}</small></p>
     {% if item.is_current %}
     <p class="planChildren">Mga account ng bata: <b>{{ child_slots.count }} / {{ child_slots.limit }}</b> ang nagamit</p>
+    <p class="planChildren">
+      Boses ng pamilya: {% if voice_slots.limit is None %}<b>{{ voice_slots.count }}</b>, walang limit{% else %}<b>{{ voice_slots.count }} / {{ voice_slots.limit }}</b> ang nagamit{% endif %}
+    </p>
     {% else %}
     <p class="planChildren">Hanggang <b>{{ item.plan.child_limit }}</b> account ng bata</p>
+    <p class="planChildren">
+      {% if item.plan.family_voice_limit is None %}Walang limit sa boses ng pamilya{% else %}Hanggang <b>{{ item.plan.family_voice_limit }}</b> boses ng pamilya{% endif %}
+    </p>
     {% endif %}
     <ul class="planFeatures">
       {% for feature in item.plan.feature_list %}

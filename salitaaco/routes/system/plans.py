@@ -8,8 +8,9 @@ adds, edits, offers or not, and deletes here. The rules:
 - A new price is for the payments that follow; payments already sent keep theirs.
 - A plan that has payments is not deleted, as they are its record; it is
   taken off offer instead.
-- Each plan says how many child accounts a guardian on it can make. A lower
-  number only stops adding; no child is deleted.
+- Each plan says how many child accounts and family voices a guardian on it
+  can make (voices may have no limit). A lower number only stops adding;
+  nothing is deleted.
 
 Below the plans, "Mga Limit ng Plano": how many tiles and custom boards of
 their own a guardian can make on Free and on a paid plan (SiteSetting).
@@ -34,7 +35,7 @@ from salitaaco.utils.perms_check import is_administrator, multi_user_test
 
 logger = logging.getLogger(__name__)
 
-FIELDS = ["name", "price", "features", "child_limit", "offered"]
+FIELDS = ["name", "price", "features", "child_limit", "family_voice_limit", "offered"]
 NEW_PLAN = "new"
 LIMIT_FIELDS = ["free_word_limit", "free_board_limit", "plus_word_limit", "plus_board_limit"]
 

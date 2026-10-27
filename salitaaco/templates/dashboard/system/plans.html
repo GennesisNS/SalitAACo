@@ -44,6 +44,11 @@
       <small class="fieldHelp">{{ form.child_limit.help_text }}</small>
       <small class="fieldError">{{ form.child_limit.errors }}</small>
 
+      <label for="{{ form.family_voice_limit.id_for_label }}">{{ form.family_voice_limit.label }}</label>
+      {{ form.family_voice_limit }}
+      <small class="fieldHelp">{{ form.family_voice_limit.help_text }}</small>
+      <small class="fieldError">{{ form.family_voice_limit.errors }}</small>
+
       {% if form.offered %}
       <div class="switchRow">
         <label class="switch">
@@ -135,6 +140,11 @@
       <label for="{{ form.child_limit.id_for_label }}">{{ form.child_limit.label }}</label>
       {{ form.child_limit }}
       <small class="fieldError">{{ form.child_limit.errors }}</small>
+
+      <label for="{{ form.family_voice_limit.id_for_label }}">{{ form.family_voice_limit.label }}</label>
+      {{ form.family_voice_limit }}
+      <small class="fieldHelp">{{ form.family_voice_limit.help_text }}</small>
+      <small class="fieldError">{{ form.family_voice_limit.errors }}</small>
 
       <div class="switchRow">
         <label class="switch">

@@ -8,10 +8,11 @@ from django.utils import timezone
 
 from salitaaco.backends.text_to_speech.elevenlabs import ElevenLabsError
 from salitaaco.defaults.family_voice import PREVIEW_WORD, TERMS_VERSION, WORDS_PER_REQUEST
-from salitaaco.defaults.plans import FREE_FAMILY_VOICE_LIMIT
+from salitaaco.defaults.plans import FREE, PLUS
 from salitaaco.forms.family_voices.add_family_voice import AddFamilyVoiceForm
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.models.family_voice import FamilyVoice
+from salitaaco.models.plan import Plan
 from salitaaco.tests.payments_base import make_payment
 from salitaaco.tests.users_base import UserBase, make_guardian, sound_upload
 from salitaaco.utils.account import delete_user_account
@@ -165,8 +166,9 @@ class FamilyVoiceLimitTest(FamilyVoiceBase):
         self.make_voice(name="Lola")
         self.login_as("nanay")
         response = self.client.get(reverse("family_voices"))
-        self.assertEqual((response.context["family_voice_limit"], response.context["at_family_voice_limit"]), (FREE_FAMILY_VOICE_LIMIT, False))
-        self.assertContains(response, "hanggang 2 boses ng pamilya ang puwede (1 na ang nagawa")
+        slots = response.context["voice_slots"]
+        self.assertEqual((slots["limit"], slots["count"], slots["can_add"]), (2, 1, True))
+        self.assertContains(response, "Sa Free, hanggang 2 boses ng pamilya ang puwede\n      (1 na ang nagawa mo).")
         self.assertContains(response, 'data-open-modal="add-family-voice"')
 
     def test_on_free_a_third_voice_is_refused_before_elevenlabs_is_asked(self):
@@ -174,15 +176,16 @@ class FamilyVoiceLimitTest(FamilyVoiceBase):
         self.make_voice(name="Lolo")
         self.login_as("nanay")
 
+        expected = "Hanggang 2 boses ng pamilya lang sa Free. Kunin ang SalitAACo Plus para makapagdagdag pa."
         response = self.client.get(reverse("family_voices"))
-        self.assertContains(response, "Naabot mo na ang <b>2 boses</b> ng libreng plano.")
-        self.assertContains(response, f'<a class="primaryBtn" href="{reverse("plan")}">Kunin ang Plus para makapagdagdag</a>')
+        self.assertContains(response, expected)
+        self.assertContains(response, f'<a class="primaryBtn" href="{reverse("plan")}">Kunin ang SalitAACo Plus para makapagdagdag</a>')
         self.assertNotContains(response, 'data-open-modal="add-family-voice"')
         self.assertNotContains(response, 'data-modal="add-family-voice"')
 
         response = self.add()
         self.assertRedirects(response, reverse("family_voices"))
-        self.assertEqual(messages_of(response), ["Hanggang 2 boses lang sa libreng plano. Kunin ang Plus para makapagdagdag pa."])
+        self.assertEqual(messages_of(response), [expected])
         self.elevenlabs.add_voice.assert_not_called()
         self.assertEqual(FamilyVoice.objects.filter(guardian=self.nanay).count(), 2)
 
@@ -193,11 +196,28 @@ class FamilyVoiceLimitTest(FamilyVoiceBase):
         self.login_as("nanay")
 
         response = self.client.get(reverse("family_voices"))
-        self.assertIsNone(response.context["family_voice_limit"])
-        self.assertNotContains(response, "libreng plano")
+        self.assertIsNone(response.context["voice_slots"]["limit"])
+        self.assertNotContains(response, "hanggang")
 
         self.assertRedirects(self.add(), reverse("family_voices"))
         self.assertEqual(FamilyVoice.objects.filter(guardian=self.nanay).count(), 3)
+
+    def test_an_admin_sets_each_plans_limit(self):
+        # Free allows one more voice; Plus is limited to 3, so at 3 there is no plan to get and a voice goes first.
+        Plan.objects.filter(key=FREE).update(family_voice_limit=3)
+        Plan.objects.filter(key=PLUS).update(family_voice_limit=3)
+        for name in ["Lola", "Lolo"]:
+            self.make_voice(name=name)
+        self.login_as("nanay")
+        self.assertRedirects(self.add(), reverse("family_voices"))
+
+        response = self.client.get(reverse("family_voices"))
+        self.assertContains(response, "Naabot mo na ang 3 boses ng pamilya sa Free. Magbura muna ng isa para makapagdagdag ng bago.")
+        self.assertNotContains(response, "Kunin ang")
+
+        # 0 allows none at all.
+        Plan.objects.filter(key=FREE).update(family_voice_limit=0)
+        self.assertFalse(self.client.get(reverse("family_voices")).context["voice_slots"]["can_add"])
 
     def test_voices_made_on_plus_stay_when_it_ends(self):
         for name in ["Lola", "Lolo", "Tita"]:
@@ -206,7 +226,7 @@ class FamilyVoiceLimitTest(FamilyVoiceBase):
 
         response = self.client.get(reverse("family_voices"))
         self.assertEqual(len(response.context["voices"]), 3)
-        self.assertTrue(response.context["at_family_voice_limit"])
+        self.assertFalse(response.context["voice_slots"]["can_add"])
         # The voices stay, to hear and to delete: only adding is closed.
         self.assertContains(response, 'data-open-modal="delete-voice-', count=3)
         self.assertContains(response, "▶ Subukan", count=3)

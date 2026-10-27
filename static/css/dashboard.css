@@ -723,13 +723,16 @@
   font-size: 14px;
   font-weight: 400;
 }
-/* How many child accounts a plan allows; on the guardian's own plan, how many they have made of them. */
+/* How many child accounts and family voices a plan allows; on the guardian's own plan, how many they have made. */
 .planChildren {
   margin: 0 0 12px;
   padding: 8px 12px;
   border-radius: var(--radius-m);
   background: var(--raised);
   font-size: 14px;
+}
+.planChildren + .planChildren {
+  margin-top: -6px;
 }
 .planFeatures {
   flex: 1;

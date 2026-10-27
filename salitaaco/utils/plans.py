@@ -1,10 +1,10 @@
 import calendar
 
 from django.db import transaction
-from django.db.models import Count, Max, Sum
+from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 
-from salitaaco.defaults.plans import APPROVED, DEFAULT_PLAN, FREE_FAMILY_VOICE_LIMIT, PAID_MONTHS, PENDING, REJECTED
+from salitaaco.defaults.plans import APPROVED, DEFAULT_PLAN, PAID_MONTHS, PENDING, REJECTED
 from salitaaco.models.guardian_account import GuardianAccount
 from salitaaco.models.payment import Payment
 from salitaaco.models.plan import Plan
@@ -81,9 +81,38 @@ def child_slots(guardian, plan=None):
     }
 
 
-def family_voice_limit(guardian):
-    """How many family voices the guardian can have: a few on a free plan, None (no limit) on a paid one."""
-    return FREE_FAMILY_VOICE_LIMIT if current_plan(guardian).is_free else None
+def family_voice_slots(guardian, plan=None):
+    """
+    How many family voices the guardian has and their plan (`plan`, when
+    already looked up) allows (None: no limit), whether they can make
+    another, and when they cannot, what they are told: the plan on offer that
+    allows more, if there is one, or to delete a voice first. A guardian over
+    the limit keeps every voice.
+    """
+    plan = plan or current_plan(guardian)
+    count = guardian.family_voices.count()
+    limit = plan.family_voice_limit
+    can_add = limit is None or count < limit
+    # A paid plan to get, never the free one to go back to: one with no limit, or a higher one.
+    roomier = None if can_add else (
+        offered_plans().exclude(pk=plan.pk).filter(price__gt=0)
+        .filter(Q(family_voice_limit__isnull=True) | Q(family_voice_limit__gt=limit))
+        .order_by("position", "plan_id").first()
+    )
+    if can_add:
+        message = ""
+    elif roomier is not None:
+        message = f"Hanggang {limit} boses ng pamilya lang sa {plan.name}. Kunin ang {roomier.name} para makapagdagdag pa."
+    else:
+        message = f"Naabot mo na ang {limit} boses ng pamilya sa {plan.name}. Magbura muna ng isa para makapagdagdag ng bago."
+    return {
+        "plan": plan,
+        "count": count,
+        "limit": limit,
+        "can_add": can_add,
+        "message": message,
+        "upgrade": roomier,
+    }
 
 
 def paid_until(guardian):

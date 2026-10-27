@@ -31,7 +31,7 @@ class PlanFormTest(SimpleTestCase):
     def test_the_default_plan_has_no_price_or_offered_switch(self):
         form = PlanForm({"name": "Libre", "features": "Isa", "child_limit": "1"}, include_price=False)
         self.assertTrue(form.is_valid())
-        self.assertEqual(set(form.fields), {"name", "features", "child_limit"})
+        self.assertEqual(set(form.fields), {"name", "features", "child_limit", "family_voice_limit"})
 
 
 class PlansBase(UserBase):
@@ -43,8 +43,10 @@ class PlansBase(UserBase):
         cls.nanay = make_guardian("nanay", "Nanay Rosa", children=[cls.miguel])
 
     def edit(self, plan_key, **data):
-        # A plan's child limit is left as it is unless a test changes it.
-        data = {"child_limit": str(Plan.objects.get(key=plan_key).child_limit), **data}
+        # A plan's limits are left as they are unless a test changes them (an empty voice limit is no limit).
+        plan = Plan.objects.get(key=plan_key)
+        voices = "" if plan.family_voice_limit is None else str(plan.family_voice_limit)
+        data = {"child_limit": str(plan.child_limit), "family_voice_limit": voices, **data}
         return self.client.post(self.url, {"plan_form": plan_key, **{f"{plan_key}-{name}": value for name, value in data.items()}})
 
     def add(self, **data):
@@ -172,6 +174,38 @@ class PlansPageTest(PlansBase):
             response = self.edit(PLUS, name="SalitAACo Plus", price="149", features="Isa", child_limit=value, offered="on")
             self.assertContains(response, error)
         self.assertEqual(Plan.objects.get(key=PLUS).child_limit, 10)
+
+    def test_each_plan_says_how_many_family_voices_it_allows(self):
+        # Free keeps the 2 it allowed before migration 0028; Plus has no limit, as before.
+        self.assertEqual([(plan.key, plan.family_voice_limit) for plan in Plan.objects.all()], [(FREE, 2), (PLUS, None)])
+        self.login_as("developer")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'name="free-family_voice_limit" value="2"')
+        # Plus's is empty: the field shows "Walang limit" in its place.
+        self.assertContains(response, 'name="plus-family_voice_limit" class="input" min="0" max="50" placeholder="Walang limit"')
+        self.assertContains(response, "Iwanang blangko para walang limit")
+
+        self.assertRedirects(self.edit(FREE, name="Free", features="Isa", family_voice_limit="4"), self.url)
+        self.assertRedirects(self.edit(PLUS, name="SalitAACo Plus", price="149", features="Isa", family_voice_limit="10", offered="on"), self.url)
+        self.assertEqual([plan.family_voice_limit for plan in Plan.objects.all()], [4, 10])
+        # Emptied, it is no limit again.
+        self.edit(PLUS, name="SalitAACo Plus", price="149", features="Isa", family_voice_limit="", offered="on")
+        self.assertIsNone(Plan.objects.get(key=PLUS).family_voice_limit)
+
+        for value, error in [("-1", "Hindi tama ang bilang."), ("51", "Hanggang 50 lang.")]:
+            response = self.edit(FREE, name="Free", features="Isa", family_voice_limit=value)
+            self.assertContains(response, error)
+        self.assertEqual(Plan.objects.get(key=FREE).family_voice_limit, 4)
+
+        # A new plan starts with no limit.
+        self.add()
+        self.assertIsNone(Plan.objects.last().family_voice_limit)
+
+    def test_the_guardian_sees_each_plans_voice_limit(self):
+        self.login_as("nanay")
+        response = self.client.get(reverse("plan"))
+        self.assertContains(response, "Boses ng pamilya: <b>0 / 2</b> ang nagamit")
+        self.assertContains(response, "Walang limit sa boses ng pamilya")
 
 
 class AddPlanTest(PlansBase):
