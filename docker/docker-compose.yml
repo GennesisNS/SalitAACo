@@ -36,3 +36,7 @@ services:
 
     depends_on:
       - salitaaco-production
+
+networks:
+  shared-database:
+    external: true
