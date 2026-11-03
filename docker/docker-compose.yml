@@ -1,3 +1,4 @@
+name: salitaaco
 services:
   salitaaco-production:
     container_name: salitaaco-production
