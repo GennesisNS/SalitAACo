@@ -17,3 +17,7 @@ class AddAdminForm(RegisterForm):
         label="Pangalan ng admin",
         validators=[name_validator],
     )
+    # Signing up as a guardian also asks these; an admin's account is made for them, by another admin.
+    email = None
+    age = None
+    privacy_consent = None

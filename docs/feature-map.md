@@ -1,6 +1,6 @@
 # Feature map: PHP application to Django
 
-The record of what each route of the PHP application became, and of what was added since. The PHP application is in [`legacy/`](../legacy/).
+The record of what each route of the PHP application became, and of what was added since. The PHP application itself has been removed from the repository; it is in the Git history before its removal.
 
 ## Decisions
 
@@ -89,7 +89,7 @@ The PHP application had one kind of user. The Django project now has three, each
 
 | Feature | Django view | URL name and path | Form | Template |
 | --- | --- | --- | --- | --- |
-| Sign-up makes a guardian | `auth.register_view` | `register` `/register/` | `RegisterForm` | `auth/register.html` |
+| Sign-up makes a guardian: name, email, age (18 or older), username, password, and agreeing to the privacy notice | `auth.register_view` | `register` `/register/` | `RegisterForm` | `auth/register.html`, `components/privacy_terms.html` |
 | A guardian's children; create a child | `children.view_children` | `children` `children/` | `CreateChildForm` | `dashboard/children/children.html` |
 | A child's page: profile, usage, new password, delete | `children.manage_child` | `manage_child` `children/<uuid>/` | `ProfileInformationForm`, `UploadAvatarForm`, `ResetChildPasswordForm`, `DeleteChildForm` | `dashboard/children/child.html` |
 | A child's picture | `children.view_child_avatar`, `children.remove_child_avatar` | `view_child_avatar` `children/<uuid>/avatar/`, `remove_child_avatar` `children/<uuid>/avatar/remove/` | | |

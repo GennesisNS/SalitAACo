@@ -5,12 +5,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from salitaaco.defaults.privacy import PRIVACY_TERMS_VERSION
 from salitaaco.defaults.user_roles import GUARDIAN
 from salitaaco.forms.authentication import LoginForm, RegisterForm
 from salitaaco.models.guardian_account import GuardianAccount
+from salitaaco.models.site_setting import SiteSetting
 from salitaaco.utils.account import add_to_group, get_user_account, home_route
 
 logger = logging.getLogger(__name__)
@@ -80,11 +83,16 @@ def register_view(request):
             with transaction.atomic():
                 user = User.objects.create_user(
                     username=register_form.cleaned_data['username'],
+                    email=register_form.cleaned_data['email'],
                     password=register_form.cleaned_data['password'],
                 )
                 GuardianAccount.objects.create(
                     user=user,
                     display_name=register_form.cleaned_data['display_name'],
+                    age=register_form.cleaned_data['age'],
+                    # The form refuses a sign-up without the consent, so it is given now.
+                    privacy_consent_at=timezone.now(),
+                    privacy_consent_version=PRIVACY_TERMS_VERSION,
                 )
                 add_to_group(user, GUARDIAN)
             logger.info("New guardian account registered: %s", user.username)
@@ -93,6 +101,9 @@ def register_view(request):
 
     context = {
         "register_form": register_form,
+        "privacy_terms_version": PRIVACY_TERMS_VERSION,
+        # The notice says whom to contact about the guardian's rights.
+        "site_setting": SiteSetting.load(),
     }
     return render(request, 'auth/register.html', context)
 

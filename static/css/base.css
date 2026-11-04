@@ -975,6 +975,46 @@ a.cell:active {
   color: var(--warn);
 }
 
+/* ---------- A checkbox agreeing to a notice (sign-up, family voices) ---------- */
+/* A rounded box that fills with the accent colour and shows a tick when checked. */
+.consentCheck input[type="checkbox"] {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  flex-shrink: 0;
+  border: 2px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--card);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.consentCheck input[type="checkbox"]::after {
+  content: "";
+  width: 10px;
+  height: 5px;
+  margin-top: -3px;
+  border: solid var(--on-accent);
+  border-width: 0 0 2.5px 2.5px;
+  transform: rotate(-45deg) scale(0);
+  transition: transform 0.15s;
+}
+.consentCheck input[type="checkbox"]:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.consentCheck input[type="checkbox"]:checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+/* The notice's name, which opens it, reads as part of the sentence. */
+.consentCheck .linkBtn {
+  font-size: inherit;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
 /* ---------- Log in, sign up and error pages ---------- */
 .authScreen {
   min-height: 100vh;
@@ -1027,6 +1067,31 @@ a.cell:active {
   margin: 14px 0 6px;
   font-size: 14px;
   font-weight: 600;
+}
+/* On sign-up the consent is a row of its own, which takes the accent colour once agreed to. */
+.authBox .consentCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--raised);
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.authBox .consentCheck:hover {
+  border-color: var(--line-strong);
+}
+.authBox .consentCheck:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  color: var(--ink);
 }
 .authBox button.go {
   width: 100%;

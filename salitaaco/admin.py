@@ -40,8 +40,9 @@ class FamilyVoiceAdmin(admin.ModelAdmin):
 
 @admin.register(GuardianAccount)
 class GuardianAccountAdmin(admin.ModelAdmin):
-    list_display = ("display_name", "user", "created_at")
-    search_fields = ("display_name", "user__username")
+    list_display = ("display_name", "user", "age", "privacy_consent_version", "created_at")
+    search_fields = ("display_name", "user__username", "user__email")
+    readonly_fields = ("privacy_consent_at", "privacy_consent_version")
 
 
 @admin.register(AdminAccount)

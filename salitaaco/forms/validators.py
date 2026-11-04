@@ -8,11 +8,18 @@ import re
 
 MIN_USERNAME_LENGTH = 3
 MAX_PASSWORD_LENGTH = 128
+# A guardian gives consent for their children's data (components/privacy_terms.html), so is an adult.
+MIN_GUARDIAN_AGE = 18
 
 
 def username_exists(value):
     if User.objects.filter(username__iexact=value).exists():
         raise ValidationError("Ginagamit na ang username na ito.")
+
+
+def email_exists(value):
+    if User.objects.filter(email__iexact=value).exists():
+        raise ValidationError("May account na ang email na ito.")
 
 
 def validate_username(value):

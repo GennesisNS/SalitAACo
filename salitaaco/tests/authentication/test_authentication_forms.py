@@ -1,3 +1,5 @@
+from django.contrib.auth.models import User
+
 from salitaaco.forms.authentication import LoginForm, RegisterForm
 from salitaaco.tests.users_base import UserBase
 
@@ -17,13 +19,38 @@ class LoginFormTest(UserBase):
 class RegisterFormTest(UserBase):
     def valid_data(self, **changes):
         return {
-            "display_name": "Bagong Bata", "username": "bago",
-            "password": "Bagong#123", "confirm_password": "Bagong#123", **changes,
+            "display_name": "Bagong Bata", "email": "bago@example.com", "age": "35", "username": "bago",
+            "password": "Bagong#123", "confirm_password": "Bagong#123", "privacy_consent": "on", **changes,
         }
 
     def test_valid(self):
         form = RegisterForm(self.valid_data())
         self.assertTrue(form.is_valid(), form.errors)
+
+    def test_email_age_and_privacy_consent_are_required(self):
+        form = RegisterForm(self.valid_data(email="", age="", privacy_consent=""))
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors["email"], ["Ilagay ang email mo."])
+        self.assertEqual(form.errors["age"], ["Ilagay ang edad mo."])
+        self.assertEqual(form.errors["privacy_consent"], ["Kailangang sumang-ayon sa Paalala sa Privacy para makagawa ng account."])
+
+    def test_email_must_be_an_email_address(self):
+        for email in ["bago", "bago@", "bago example.com"]:
+            self.assertEqual(RegisterForm(self.valid_data(email=email)).errors["email"], ["Hindi tama ang email address."], email)
+
+    def test_email_must_be_free_ignoring_case(self):
+        User.objects.filter(username="miguel").update(email="miguel@example.com")
+        for email in ["miguel@example.com", "MIGUEL@Example.com"]:
+            self.assertEqual(RegisterForm(self.valid_data(email=email)).errors["email"], ["May account na ang email na ito."], email)
+
+    def test_a_guardian_is_18_or_older(self):
+        self.assertTrue(RegisterForm(self.valid_data(age="18")).is_valid())
+        for age, error in [
+            ("17", "18 taong gulang pataas lang ang puwedeng gumawa ng account."),
+            ("121", "Hindi tama ang edad."),
+            ("tatlumpu", "Hindi tama ang edad."),
+        ]:
+            self.assertEqual(RegisterForm(self.valid_data(age=age)).errors["age"], [error], age)
 
     def test_display_name_is_required(self):
         form = RegisterForm(self.valid_data(display_name="  "))

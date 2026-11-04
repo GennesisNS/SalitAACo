@@ -24,8 +24,8 @@ class AccountBase(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Only children have an age. The other accounts answer None, so pages that
-    # list every kind of account can ask any of them.
+    # Only children and guardians have an age. Admin accounts answer None, so
+    # pages that list every kind of account can ask any of them.
     age = None
 
     class Meta:

@@ -2,7 +2,7 @@
 
 A Filipino AAC (augmentative and alternative communication) web app. A child taps picture tiles to build a sentence, which the app speaks aloud. Their guardian sets the board up for them: which boards they see, their own tiles with pictures, family voices, and their own voice recorded on a tile. Admins run the site: accounts, boards and words, feedback and settings. A public website at `/` introduces the app.
 
-This is a Django project. It was converted from a PHP application, which is kept in [`legacy/`](legacy/) for reference until the conversion has been checked against it (see [The PHP application](#the-php-application)).
+This is a Django project. It was converted from a PHP application, which has since been removed from the repository (it is in the Git history). [`docs/feature-map.md`](docs/feature-map.md) records what each of its routes became, and `import_php_data` still copies its data (see [Importing data from the PHP application](#importing-data-from-the-php-application)).
 
 ## What you need
 
@@ -79,7 +79,7 @@ Every password, a guardian's or a child's, needs 8 to 128 characters with an upp
 #### A guardian
 
 1. Open <http://localhost:8000/register/> (or "Magsimula" on the public website).
-2. Fill in **Pangalan mo**, **Username**, **Password** and **Kumpirmahin ang Password**, then sign up.
+2. Fill in **Pangalan mo**, **Email**, **Edad mo**, **Username**, **Password** and **Kumpirmahin ang Password**, read the **Paalala sa Privacy** and tick that you agree, then sign up. A guardian must be 18 or older, and an email can be used by one account only, whatever its case. The date and the version of the notice agreed to (`PRIVACY_TERMS_VERSION` in `defaults/privacy.py`) are saved with the account; change the version whenever the wording of `templates/components/privacy_terms.html` changes. The notice gives the support email and phone from System Settings › General as the contact for privacy questions, so set them.
 3. You are logged in as the new guardian and taken to **Mga Bata**, ready to add a child.
 
 #### A child
@@ -227,7 +227,6 @@ static/
 media/                  Uploaded pictures and recordings (not in Git)
 docs/feature-map.md     Which PHP route became which Django view, and what was added since
 .vscode/settings.json   Makes VS Code activate .venv in new terminals
-legacy/                 The PHP application
 ```
 
 Uploaded files are private to the account that owns them. They are served by login-protected views, never from a public `/media/` address, so do not configure a web server to expose the `media/` folder.
@@ -455,7 +454,3 @@ To bring the PHP application's data to production instead, run `import_php_data`
 | `no such table` after pulling new code                    | New migrations were added. Run `python manage.py migrate`.                                             |
 | Recording a sound does nothing                            | Open the app through `localhost` or HTTPS and allow the microphone in the browser.                      |
 | "CSRF verification failed" in production                  | Add the site's address, with `https://`, to `CSRF_TRUSTED_ORIGINS`.                                     |
-
-## The PHP application
-
-`legacy/` holds the PHP application exactly as it was, with its own [README](legacy/README.md). It still runs from inside that folder (`cd legacy`, then `php -S localhost:8001`), which is useful for comparing behaviour. Nothing in the Django project depends on it. Delete the folder once the conversion has been checked.

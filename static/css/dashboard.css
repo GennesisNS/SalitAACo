@@ -1078,6 +1078,7 @@
 .termsBox p {
   margin: 0 0 8px;
 }
+/* .consentCheck input is in base.css: the sign-up page has one too. */
 .settingsBody .consentCheck {
   display: flex;
   align-items: flex-start;
@@ -1085,9 +1086,4 @@
   margin-top: 12px;
   font-weight: 400;
   cursor: pointer;
-}
-.consentCheck input {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
 }
