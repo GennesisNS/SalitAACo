@@ -1,7 +1,0 @@
-# Send every address that is not a real file to index.php,
-# which looks it up in routes.php.
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
-</IfModule>

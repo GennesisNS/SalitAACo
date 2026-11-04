@@ -11,7 +11,9 @@ from django.urls import clear_url_caches, resolve, reverse
 from django.utils.functional import SimpleLazyObject
 
 from salitaaco import urls
+from salitaaco.defaults.privacy import PRIVACY_TERMS_VERSION
 from salitaaco.models.admin_account import AdminAccount
+from salitaaco.models.site_setting import SiteSetting
 from salitaaco.routes import error_handler
 from salitaaco.models.child_account import ChildAccount
 from salitaaco.tests.users_base import GUARDIAN_PASSWORD, UserBase, make_guardian
@@ -82,11 +84,15 @@ class LoginRouteTest(UserBase):
 
 
 class RegisterRouteTest(UserBase):
+    def register(self, **changes):
+        data = {
+            "display_name": "Bagong Magulang", "email": "bago@example.com", "age": "35", "username": "bago",
+            "password": "Bagong#123", "confirm_password": "Bagong#123", "privacy_consent": "on", **changes,
+        }
+        return self.client.post(reverse("register"), data)
+
     def test_register_creates_a_guardian_account_and_logs_in(self):
-        response = self.client.post(
-            reverse("register"),
-            {"display_name": "Bagong Magulang", "username": "bago", "password": "Bagong#123", "confirm_password": "Bagong#123"},
-        )
+        response = self.register()
         # A new guardian lands on the page where they add their children.
         self.assertRedirects(response, reverse("children"))
 
@@ -97,23 +103,61 @@ class RegisterRouteTest(UserBase):
         self.assertFalse(ChildAccount.objects.filter(user=user).exists())
         self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
 
+    def test_register_keeps_the_email_the_age_and_the_privacy_consent(self):
+        self.register()
+        user = User.objects.get(username="bago")
+        guardian = user.guardian_account
+        self.assertEqual((user.email, guardian.age, guardian.privacy_consent_version), ("bago@example.com", 35, PRIVACY_TERMS_VERSION))
+        self.assertIsNotNone(guardian.privacy_consent_at)
+
+    def test_the_consent_checkbox_opens_the_privacy_notice_in_a_modal(self):
+        response = self.client.get(reverse("register"))
+        self.assertContains(response, 'name="privacy_consent"')
+        self.assertContains(response, '<button class="linkBtn" type="button" data-open-modal="privacy-terms">Paalala sa Privacy</button>')
+        self.assertContains(response, 'data-modal="privacy-terms"')
+        self.assertContains(response, '<h2 id="privacyTermsTitle">Paalala sa Privacy</h2>')
+        self.assertContains(response, f"<small>Bersyon {PRIVACY_TERMS_VERSION}</small>")
+        # Ticking the box opens the notice first, and agreeing in it ticks the box (register.js).
+        self.assertContains(response, 'id="privacyAgreeBtn">Sumasang-ayon ako</button>')
+        self.assertContains(response, "js/register.js")
+        # Without a support contact set, the notice points to the support page after logging in.
+        self.assertContains(response, "sa Tulong at Suporta kapag naka-log in ka na.")
+
+        setting = SiteSetting.load()
+        setting.contact_email = "suporta@example.com"
+        setting.save()
+        response = self.client.get(reverse("register"))
+        self.assertContains(response, 'href="mailto:suporta@example.com"')
+        self.assertNotContains(response, "sa Tulong at Suporta kapag naka-log in ka na.")
+
+    def test_register_without_the_privacy_consent_makes_no_account(self):
+        response = self.register(privacy_consent="")
+        self.assertContains(response, "Kailangang sumang-ayon sa Paalala sa Privacy para makagawa ng account.")
+        self.assertFalse(User.objects.filter(username="bago").exists())
+
+    def test_register_under_18_makes_no_account(self):
+        response = self.register(age="17")
+        self.assertContains(response, "18 taong gulang pataas lang ang puwedeng gumawa ng account.")
+        self.assertFalse(User.objects.filter(username="bago").exists())
+
     def test_register_with_passwords_that_differ_shows_the_error(self):
-        response = self.client.post(
-            reverse("register"),
-            {"display_name": "Bagong Magulang", "username": "bago", "password": "Bagong#123", "confirm_password": "Iba#12345"},
-        )
+        response = self.register(confirm_password="Iba#12345")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Hindi magkatugma ang password at kumpirmasyon.")
         self.assertFalse(User.objects.filter(username="bago").exists())
 
     def test_register_with_a_taken_username_shows_the_error(self):
-        response = self.client.post(
-            reverse("register"),
-            {"display_name": "Isa Pa", "username": "Miguel", "password": "Bagong#123", "confirm_password": "Bagong#123"},
-        )
+        response = self.register(display_name="Isa Pa", username="Miguel")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Ginagamit na ang username na ito.")
         self.assertEqual(User.objects.filter(username__iexact="miguel").count(), 1)
+
+    def test_register_with_a_taken_email_shows_the_error(self):
+        self.register()
+        self.client.post(reverse("logout"))
+        response = self.register(username="iba", email="BAGO@example.com")
+        self.assertContains(response, "May account na ang email na ito.")
+        self.assertFalse(User.objects.filter(username="iba").exists())
 
 
 class LogoutAndRedirectsTest(UserBase):

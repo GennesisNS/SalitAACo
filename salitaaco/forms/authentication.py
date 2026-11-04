@@ -1,7 +1,14 @@
 from django import forms
 
 from .helpers import BaseForm
-from .validators import name_validator, username_exists, validate_password_strength, validate_username
+from .validators import (
+    MIN_GUARDIAN_AGE,
+    email_exists,
+    name_validator,
+    username_exists,
+    validate_password_strength,
+    validate_username,
+)
 
 
 class LoginForm(BaseForm):
@@ -30,6 +37,30 @@ class RegisterForm(BaseForm):
         label="Pangalan mo (magulang / tagapag-alaga)",
         validators=[name_validator]
     )
+    email = forms.EmailField(
+        required=True,
+        max_length=254,
+        widget=forms.EmailInput(attrs={"class": "input", "autocomplete": "email", "placeholder": "hal. maria@email.com"}),
+        error_messages={
+            "required": "Ilagay ang email mo.",
+            "invalid": "Hindi tama ang email address.",
+        },
+        label="Email",
+        validators=[email_exists],
+    )
+    age = forms.IntegerField(
+        required=True,
+        min_value=MIN_GUARDIAN_AGE,
+        max_value=120,
+        widget=forms.NumberInput(attrs={"class": "input", "min": MIN_GUARDIAN_AGE, "max": 120, "placeholder": "hal. 35"}),
+        error_messages={
+            "required": "Ilagay ang edad mo.",
+            "invalid": "Hindi tama ang edad.",
+            "min_value": f"{MIN_GUARDIAN_AGE} taong gulang pataas lang ang puwedeng gumawa ng account.",
+            "max_value": "Hindi tama ang edad.",
+        },
+        label="Edad mo",
+    )
     username = forms.CharField(
         required=True,
         max_length=50,
@@ -52,6 +83,12 @@ class RegisterForm(BaseForm):
         widget=forms.PasswordInput(attrs={"class": "input", "autocomplete": "new-password"}),
         error_messages={"required": "Hindi magkatugma ang bagong password at kumpirmasyon."},
         label="Kumpirmahin ang Password",
+    )
+    privacy_consent = forms.BooleanField(
+        required=True,
+        error_messages={"required": "Kailangang sumang-ayon sa Paalala sa Privacy para makagawa ng account."},
+        # auth/register.html writes this label itself, with the notice's name as the button that opens it.
+        label="Sumasang-ayon ako sa Paalala sa Privacy.",
     )
 
     def clean(self):

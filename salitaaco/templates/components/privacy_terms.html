@@ -1,0 +1,46 @@
+{% comment %}
+  The privacy notice a guardian agrees to on sign-up, for their own data and their children's,
+  shown in a modal from the consent checkbox (auth/register.html).
+  It says what the Data Privacy Act of 2012 (RA 10173, Section 16(b)) asks to be told before
+  collection, and only what the app does: keep it true when a feature changes what is kept or sent.
+  Family voices have their own notice (components/family_voice_terms.html).
+  When the wording changes, change PRIVACY_TERMS_VERSION in defaults/privacy.py.
+  site_setting gives the contact details of the people who run SalitAACo (System Settings > General).
+{% endcomment %}
+<p class="desc"><b>Sino ang mangangalaga.</b> Ang SalitAACo ang mangangalaga ng impormasyong ibibigay mo, sa ilalim ng
+Data Privacy Act of 2012 (Republic Act No. 10173).</p>
+
+<p class="desc"><b>Anong impormasyon ang kukunin.</b> Tungkol sa iyo: ang pangalan, email, edad, username at password mo
+(itinatago ang password sa paraang hindi ito mababasa ninuman, kahit ng admin). Kung gagamitin mo ang mga ito: larawan ng
+profile, larawan ng bayad sa GCash, mga mensahe sa suporta, at rating. Tungkol sa mga batang idaragdag mo: pangalan,
+username, password, edad kung ilalagay mo, at larawan. Kung aling mga tile at board ang ginagamit ng bawat isa, bilang
+lang bawat araw: hindi itinatago ang mga pangungusap na nabubuo. Pati ang mga sariling tile, board at recording na
+gagawin mo.</p>
+
+<p class="desc"><b>Para saan.</b> Para gumana ang app: ang mga account, ang mga board ng mga bata, ang pahina ng paggamit
+para sa iyo, ang mga plano at bayad, at ang suporta. Nakikita ng admin ng SalitAACo ang mga bilang ng paggamit, hindi
+ang mga pangungusap. Hindi ito ibinebenta, at hindi ginagamit sa advertising.</p>
+
+<p class="desc"><b>Sino pa ang makakatanggap.</b> Ang mga salita ng sarili mong tile ay ipinapadala sa ElevenLabs,
+isang serbisyo ng boses na nagtatago ng datos sa Estados Unidos, para mabigkas ang mga ito. Kung gagamitin mo ang Boses
+ng Pamilya, may hiwalay na paalala at kasunduan bago ipadala ang anumang recording.</p>
+
+<p class="desc"><b>Gaano katagal itatago.</b> Hangga't may account. Kapag binura mo ang account ng isang bata o ang
+sarili mong account, permanenteng mabubura ang impormasyon at mga file nito. Ang mga ulat na nagawa na ng admin bago
+nito ay maaaring may username mo pa rin.</p>
+
+<p class="desc"><b>Ang pahintulot mo.</b> Kailangan ito para makagawa ng account. Bilang magulang o tagapag-alaga, ikaw
+rin ang nagbibigay ng pahintulot para sa impormasyon ng mga batang idaragdag mo. Puwede mo itong bawiin anumang oras sa
+pagbura ng account sa Profile; hindi nito binabago ang nangyari bago ito binawi.</p>
+
+<p class="desc"><b>Mga karapatan mo.</b> May karapatan kang malaman kung paano ginagamit ang impormasyon mo at ng mga
+bata, makita ito, ipaitama ito, tumutol at humiling na ipabura ito, makakuha ng kopya nito, mabayaran sa pinsalang dulot
+ng maling paggamit nito, at magreklamo sa National Privacy Commission (privacy.gov.ph). Makipag-ugnayan sa SalitAACo
+{% if site_setting.contact_email or site_setting.contact_phone %}sa
+{% if site_setting.contact_email %}<a href="mailto:{{ site_setting.contact_email }}">{{ site_setting.contact_email }}</a>{% endif %}
+{% if site_setting.contact_email and site_setting.contact_phone %}o sa{% endif %}
+{% if site_setting.contact_phone %}<b>{{ site_setting.contact_phone }}</b>{% endif %}.
+{% else %}sa Tulong at Suporta kapag naka-log in ka na.{% endif %}</p>
+
+<p class="desc"><b>Ang kinukumpirma mo.</b> Na 18 taong gulang ka pataas, at ikaw ang magulang o tagapag-alaga ng mga
+batang idaragdag mo.</p>
