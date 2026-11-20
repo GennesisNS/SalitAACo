@@ -21,5 +21,9 @@ db.sqlite3
 /media/*/*
 !/media/*/.gitkeep
 
+# Screenshots: their own database and uploads (screenshots/capture.py)
+screenshots.sqlite3
+/screenshots/_media/
+
 # Claude Code
 /CLAUDE.md
